@@ -19,22 +19,29 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      # openapi-codegen comes from a release of its repository, whose hash uv.lock records.
-      - name: Install
-        run: uv sync --frozen
+      # openapi-codegen comes from a release of its repository, whose hash uv.lock records. Not the project itself:
+      # its code doesn't exist until openapi-codegen has written it.
+      - name: Install openapi-codegen
+        run: uv sync --frozen --no-install-project
       # What a release publishes: openapi-codegen run on openapi.yaml (the models, the requests client and the Flask
-      # views), checked, and archived.
-      - name: Build the code from openapi.yaml
+      # views), then built into a wheel that also carries the contract.
+      - name: Build the wheel from openapi.yaml
         run: |
           mkdir dist
           cp openapi.yaml dist/
-          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api
-          # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
-          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
-            -cf - -C build countdown_api | gzip -n > dist/countdown_api.tar.gz
+          uv run --frozen --no-sync openapi-codegen dist/openapi.yaml --out src/countdown_api
+          cp dist/openapi.yaml src/countdown_api/openapi.yaml
+          uv build --wheel --out-dir dist
           ls -l dist
-      - name: Import what was built
+      # Each side of the API installs with its own extra and must import without the other's dependency.
+      - name: Install the wheel with each extra, then import it
         run: |
-          dir="$(mktemp -d)"
-          tar xzf dist/countdown_api.tar.gz -C "$dir"
-          uv run --frozen python -I scripts/check_imports.py "$dir" models,clients,blueprints
+          for side in client:models,clients server:models,blueprints; do
+            extra="${side%%:*}"; modules="${side#*:}"
+            uv venv --python 3.12 "$RUNNER_TEMP/$extra"
+            uv pip install --python "$RUNNER_TEMP/$extra/bin/python" "$(ls dist/*.whl)[$extra]"
+            cd "$RUNNER_TEMP"
+            for module in ${modules//,/ }; do "$extra/bin/python" -I -c "import countdown_api.$module"; done
+            "$extra/bin/python" -I -c "import importlib.resources as r; assert r.files('countdown_api').joinpath('openapi.yaml').is_file()"
+            cd "$GITHUB_WORKSPACE"
+          done
