@@ -38,7 +38,7 @@ jobs:
         run: |
           for side in client:models,clients server:models,blueprints; do
             extra="${side%%:*}"; modules="${side#*:}"
-            uv venv --python 3.12 "$RUNNER_TEMP/$extra"
+            uv venv --python 3.14 "$RUNNER_TEMP/$extra"
             uv pip install --python "$RUNNER_TEMP/$extra/bin/python" "$(ls dist/*.whl)[$extra]"
             cd "$RUNNER_TEMP"
             for module in ${modules//,/ }; do "$extra/bin/python" -I -c "import countdown_api.$module"; done
