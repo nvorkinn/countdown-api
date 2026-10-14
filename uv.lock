@@ -174,7 +174,7 @@ provides-extras = ["client", "server"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "openapi-codegen", extras = ["yaml"], url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.0.0/openapi_codegen-1.0.0-py3-none-any.whl" },
+    { name = "openapi-codegen", extras = ["yaml"], url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.1.0/openapi_codegen-1.1.0-py3-none-any.whl" },
     { name = "pre-commit" },
     { name = "ruff" },
 ]
@@ -342,10 +342,10 @@ wheels = [
 
 [[package]]
 name = "openapi-codegen"
-version = "1.0.0"
-source = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.0.0/openapi_codegen-1.0.0-py3-none-any.whl" }
+version = "1.1.0"
+source = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.1.0/openapi_codegen-1.1.0-py3-none-any.whl" }
 wheels = [
-    { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.0.0/openapi_codegen-1.0.0-py3-none-any.whl", hash = "sha256:b0aa6f208f03ad2cf602859381c871b1427b5811a33494891b162cd844ad51b1" },
+    { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.1.0/openapi_codegen-1.1.0-py3-none-any.whl", hash = "sha256:84f51dd1b888b81ed4a3627b22fca642427829ebfcee5e0626c2b99bd2c27fcf" },
 ]
 
 [package.optional-dependencies]
@@ -354,16 +354,8 @@ yaml = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "flask", marker = "extra == 'test'" },
-    { name = "pydantic", marker = "extra == 'test'" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pyyaml", marker = "extra == 'test'" },
-    { name = "pyyaml", marker = "extra == 'yaml'" },
-    { name = "requests", marker = "extra == 'test'" },
-    { name = "ruff", marker = "extra == 'test'", specifier = "==0.16.10" },
-]
-provides-extras = ["yaml", "test"]
+requires-dist = [{ name = "pyyaml", marker = "extra == 'yaml'" }]
+provides-extras = ["yaml"]
 
 [[package]]
 name = "packaging"
