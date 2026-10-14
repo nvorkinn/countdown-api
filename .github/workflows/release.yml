@@ -130,12 +130,8 @@ jobs:
           path: dist
       - name: Build the site
         run: python3 scripts/make_site.py dist site "$TAG" "$GITHUB_REPOSITORY" "$GITHUB_SHA"
-      - uses: astral-sh/setup-uv@v6
-      - name: Publish the locked versions as a uv constraints file
-        run: |
-          uv export --frozen --format requirements-txt --no-hashes --no-emit-project --no-dev --all-extras \
-            --no-header --no-annotate > site/constraints.txt
-          echo "countdown-api==${TAG#v}" >> site/constraints.txt
+      - name: Publish the release's version as a uv constraints file
+        run: echo "countdown-api==${TAG#v}" > site/constraints.txt
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

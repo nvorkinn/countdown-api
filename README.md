@@ -48,8 +48,8 @@ countdown-api = { index = "countdown-api" }
 `uv.lock`; `uv sync --frozen` then installs exactly that. The page links the wheel at its address on the release,
 which stays valid after the next release replaces the page, so an older lockfile keeps working until you upgrade.
 
-The page also publishes `constraints.txt`: the exact versions of this package's dependencies as locked here, plus
-`countdown-api` itself. Keep dependencies ranged in `pyproject.toml` and let this file choose the versions:
+The page also publishes `constraints.txt`, which pins only `countdown-api` to the latest release. Keep it ranged in
+`pyproject.toml` and let this file choose the version:
 
 ```
 uv sync --constraints https://nvorkinn.github.io/countdown-api/constraints.txt
