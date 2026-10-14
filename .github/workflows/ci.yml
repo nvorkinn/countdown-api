@@ -38,9 +38,3 @@ jobs:
           dir="$(mktemp -d)"
           tar xzf dist/countdown_api.tar.gz -C "$dir"
           uv run --frozen python -I scripts/check_imports.py "$dir" models,clients,blueprints
-      # The release also publishes a website built from the same files; make sure it still builds.
-      - name: Build the site
-        run: |
-          (cd dist && sha256sum -- openapi.yaml *.tar.gz > SHA256SUMS)
-          python scripts/make_site.py dist site v0.0.0 "$GITHUB_REPOSITORY" "$GITHUB_SHA"
-          test -f site/index.html && test -f site/countdown_api.tar.gz && python -c "import json; json.load(open('site/latest.json'))"

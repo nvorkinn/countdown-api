@@ -36,7 +36,7 @@ Settings > Pages > Source set to "GitHub Actions" and a `v*` tag rule on the `gi
 
 ## Changing it
 
-Edit `openapi.yaml` in a PR (CI builds everything from it, checks it and imports the result). To publish, push a tag
+Edit `openapi.yaml` in a PR (CI builds the code from it and imports the result). To publish, push a tag
 `v<version>` on main; the release workflow stamps the version into the contract, builds the code from it and makes it
 the latest release. Because devices in the field keep running older renderers, change the contract additively: new
 optional fields and new operations are safe, removing or tightening something needs both sides released together.
