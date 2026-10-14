@@ -3,7 +3,9 @@
     python scripts/make_site.py <dist dir> <site dir> <tag> <repository> <commit>
 
 The site is the same at the same address whatever version of any repo reads it, and always the latest release's:
-every file of it, SHA256SUMS and latest.json (the version, each file's checksum and where the release is).
+every file of it, SHA256SUMS and latest.json (the version, each file's checksum and where the release is). The
+release workflow adds constraints.txt, the exact versions of the dependencies locked in uv.lock, for
+`uv sync --constraints URL` or `UV_CONSTRAINT=URL` (the dependencies stay ranged in pyproject.toml).
 
 It is also a flat package index (https://docs.astral.sh/uv/concepts/indexes/#flat-indexes): the page links to the
 wheel, with its hash, so `[[tool.uv.index]] url = "https://nvorkinn.github.io/countdown-api/" format = "flat"` lets a
@@ -65,6 +67,7 @@ th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 <ul>
 {listing}
 <li><a href="latest.json">latest.json</a></li>
+<li><a href="constraints.txt">constraints.txt</a> (pins for `uv sync --constraints` / <code>UV_CONSTRAINT</code>)</li>
 </ul>
 </body>
 </html>
