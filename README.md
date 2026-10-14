@@ -8,7 +8,7 @@ code generated from it.
 
 This repository depends on [openapi-codegen](https://github.com/nvorkinn/openapi-codegen), as a **release** of it:
 `pyproject.toml` points at the release's wheel and `uv.lock` records its hash. The workflows run its command line on
-`openapi.yaml` (then `--check`) and archive what it generates:
+`openapi.yaml` and archive what it generates:
 
 `countdown_api.tar.gz` holds the whole generated `countdown_api/` package: the Pydantic models (`models.py`), the
 `requests` client (`clients/`) and the Flask views (`blueprints/`). Each side imports only what it needs, so the

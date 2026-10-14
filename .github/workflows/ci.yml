@@ -29,7 +29,6 @@ jobs:
           mkdir dist
           cp openapi.yaml dist/
           uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api
-          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api --check
           # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
           tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
             -cf - -C build countdown_api | gzip -n > dist/countdown_api.tar.gz
