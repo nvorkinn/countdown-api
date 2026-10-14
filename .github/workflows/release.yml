@@ -6,30 +6,33 @@ name: Release
 #   https://github.com/nvorkinn/countdown-api/releases/latest/download/openapi.yaml
 #
 # on every build and generate from it, so that URL is the whole interface: it is the same whatever version of any
-# repo is asking. The version is stamped into the published file from the tag. Same shape as the other release
-# workflows; run it by hand with an existing tag to (re)attach files to its release.
+# repo is asking. The version is stamped into the published file from the tag (GITHUB_REF_NAME). A tag push is the
+# only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab (same tag); if the
+# release was already created, the files are added to it.
 
 on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: An existing tag to publish, e.g. v1.0.0
-        required: true
-        type: string
 
 permissions:
   contents: read
 
 env:
-  TAG: ${{ inputs.tag || github.ref_name }}
+  # The tag that triggered the run (GITHUB_REF_NAME); the first step makes sure it is one.
+  TAG: ${{ github.ref_name }}
 
 jobs:
   verify-tag:
     runs-on: ubuntu-latest
     steps:
+      # The trigger already only matches tags; this keeps the workflow safe if that ever changes.
+      - name: Verify the run is for a tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" != tag ]; then
+            echo "::error::This runs on a pushed tag, not a $GITHUB_REF_TYPE ($GITHUB_REF_NAME)."
+            exit 1
+          fi
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
