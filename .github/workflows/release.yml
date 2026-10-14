@@ -70,6 +70,9 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    # Settings > Environments > release: "Deployment branches and tags" set to "Selected branches and tags" with a Tag
+    # rule `v*`, so GitHub itself refuses to publish from anything but a version tag. Only this job uses it.
+    environment: release
     permissions:
       contents: write
     env:
