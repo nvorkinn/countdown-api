@@ -59,6 +59,8 @@ components:
           type: string
         interval:
           type: integer
+          exclusiveMinimum: 0
+          description: Seconds between updates.
         screen:
           $ref: '#/components/schemas/Screen'
         weather:
