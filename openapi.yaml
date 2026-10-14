@@ -73,10 +73,6 @@ components:
           anyOf:
           - type: string
           - type: 'null'
-        setup_missing:
-          items:
-            type: string
-          type: array
       required:
       - device_id
       - interval
@@ -87,7 +83,6 @@ components:
       - spotify
       - glowmarkt
       - pairing_code
-      - setup_missing
       title: ConfigResponse
       type: object
     Error:
