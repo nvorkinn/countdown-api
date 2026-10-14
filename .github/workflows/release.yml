@@ -7,7 +7,7 @@ name: Release
 # The release is also published to the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/. It is
 # a flat package index listing the latest wheel, so a consumer that depends on countdown-api and points uv at it
 # finds the latest version there (`uv lock --upgrade-package countdown-api`) and records it, with its hash, in its
-# own lockfile. It is also a simple (PEP 503) index, simple/, listing every release's wheel. The links point at the release's own files, which stay when the next release replaces the page.
+# own lockfile. The links point at the release's own files, which stay when the next release replaces the page.
 #
 # A tag push is the only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab
 # (same tag); if the release was already created, the files are added to it.
@@ -129,16 +129,8 @@ jobs:
         with:
           name: dist
           path: dist
-      - name: List the wheels of all releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.draft | not) | .assets[]
-            | select(.name | endswith(".whl"))
-            | {name, url: .browser_download_url, sha256: ((.digest // "") | ltrimstr("sha256:"))}' \
-            | jq -s . > releases.json
       - name: Build the site
-        run: python3 scripts/make_site.py dist site "$TAG" "$GITHUB_REPOSITORY" "$GITHUB_SHA" releases.json
+        run: python3 scripts/make_site.py dist site "$TAG" "$GITHUB_REPOSITORY" "$GITHUB_SHA"
       - name: Publish the release's version as a uv constraints file
         run: echo "countdown-api==${TAG#v}" > site/constraints.txt
       - uses: actions/upload-pages-artifact@v3

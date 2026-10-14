@@ -1,22 +1,19 @@
 """Builds the GitHub Pages site for a release from the files the release publishes.
 
-    python scripts/make_site.py <dist dir> <site dir> <tag> <repository> <commit> [<releases json>]
+    python scripts/make_site.py <dist dir> <site dir> <tag> <repository> <commit>
 
 The site is the same at the same address whatever version of any repo reads it, and always the latest release's:
 every file of it, SHA256SUMS and latest.json (the version, each file's checksum and where the release is). The
 release workflow adds constraints.txt, which pins only countdown-api, for `uv sync --constraints URL` or
 `UV_CONSTRAINT=URL` (the dependency stays ranged in pyproject.toml).
+requirements.txt, written here, is just the URL of the wheel, for `pip install -r URL`.
 
 It is also a flat package index (https://docs.astral.sh/uv/concepts/indexes/#flat-indexes): the page links to the
 wheel, with its hash, so `[[tool.uv.index]] url = "https://nvorkinn.github.io/countdown-api/" format = "flat"` lets a
 project depend on countdown-api and find the latest version here. The wheel is linked at its address on the release,
 not on this site, because that address stays valid after the next release replaces the site, and a lockfile records
 it.
-
-It is also a simple (PEP 503) index, under simple/, which lists every release's wheel, not just the latest: the
-optional <releases json> is a list of {"name", "url", "sha256"} for the wheels of all releases (the workflow reads it
-from GitHub), and the wheel built here is always added. With constraints.txt pinning one version, a project that
-lists countdown-api without a version gets exactly that one, and can still ask for an older one."""
+"""
 
 from __future__ import annotations
 
@@ -35,23 +32,7 @@ def link(name: str, digest: str, repository: str, tag: str) -> str:
     return name
 
 
-def simple_index(site: Path, wheels: list[dict]) -> None:
-    """simple/index.html lists the project; simple/countdown-api/index.html links each wheel, at its address on its
-    release, with its hash when it has one (https://peps.python.org/pep-0503/)."""
-    root = site / "simple"
-    project = root / "countdown-api"
-    project.mkdir(parents=True, exist_ok=True)
-    (root / "index.html").write_text(
-        '<!doctype html>\n<html><body>\n<a href="countdown-api/">countdown-api</a>\n</body></html>\n'
-    )
-    links = "\n".join(
-        f'<a href="{html.escape(w["url"] + ("#sha256=" + w["sha256"] if w.get("sha256") else ""))}">{html.escape(w["name"])}</a><br>'
-        for w in sorted(wheels, key=lambda w: w["name"])
-    )
-    (project / "index.html").write_text(f"<!doctype html>\n<html><body>\n{links}\n</body></html>\n")
-
-
-def main(dist: Path, site: Path, tag: str, repository: str, commit: str, releases: Path | None = None) -> None:
+def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None:
     site.mkdir(parents=True, exist_ok=True)
     release_url = f"https://github.com/{repository}/releases/tag/{tag}"
     files = {}
@@ -59,11 +40,9 @@ def main(dist: Path, site: Path, tag: str, repository: str, commit: str, release
         if path.is_file():
             (site / path.name).write_bytes(path.read_bytes())
             files[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
-    wheels = {w["name"]: w for w in json.loads(releases.read_text())} if releases else {}
     for name, digest in files.items():
         if name.endswith(".whl"):
-            wheels[name] = {"name": name, "url": link(name, digest, repository, tag).split("#")[0], "sha256": digest}
-    simple_index(site, list(wheels.values()))
+            (site / "requirements.txt").write_text(link(name, digest, repository, tag).split("#")[0] + "\n")
     latest = {"version": tag.removeprefix("v"), "tag": tag, "commit": commit, "release": release_url, "files": files}
     (site / "latest.json").write_text(json.dumps(latest, indent=2) + "\n")
 
@@ -95,6 +74,7 @@ th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 <ul>
 {listing}
 <li><a href="latest.json">latest.json</a></li>
+<li><a href="requirements.txt">requirements.txt</a> (the URL of the wheel, for <code>pip install -r</code>)</li>
 <li><a href="constraints.txt">constraints.txt</a> (pins countdown-api, for <code>uv sync --constraints</code> / <code>UV_CONSTRAINT</code>)</li>
 </ul>
 </body>
@@ -104,4 +84,4 @@ th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]), Path(sys.argv[2]), *sys.argv[3:6], *(Path(a) for a in sys.argv[6:7]))
+    main(Path(sys.argv[1]), Path(sys.argv[2]), *sys.argv[3:6])
