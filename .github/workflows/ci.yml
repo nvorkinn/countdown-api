@@ -44,3 +44,11 @@ jobs:
             openapi-codegen openapi.yaml --out "$out/countdown_api" "${args[@]}" --check
             python -I scripts/check_imports.py "$out" "$modules"
           done
+      # The release publishes a website built from the same files; make sure it still builds.
+      - name: Build the site
+        run: |
+          mkdir /tmp/dist
+          cp openapi.yaml /tmp/dist/
+          (cd /tmp/dist && sha256sum openapi.yaml > SHA256SUMS)
+          python scripts/make_site.py /tmp/dist /tmp/site v0.0.0 "$GITHUB_REPOSITORY" "$GITHUB_SHA"
+          test -f /tmp/site/index.html && test -f /tmp/site/openapi.yaml && python -c "import json; json.load(open('/tmp/site/latest.json'))"

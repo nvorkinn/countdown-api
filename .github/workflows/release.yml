@@ -8,7 +8,8 @@ name: Release
 # on every build and generate from it, so that URL is the whole interface: it is the same whatever version of any
 # repo is asking. The version is stamped into the published file from the tag (GITHUB_REF_NAME). A tag push is the
 # only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab (same tag); if the
-# release was already created, the files are added to it.
+# release was already created, the files are added to it. The release is also published to the project's GitHub Pages
+# site, which always shows the latest one (https://nvorkinn.github.io/countdown-api/).
 
 on:
   push:
@@ -94,3 +95,30 @@ jobs:
             gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
               --title "$TAG" --generate-notes --verify-tag "${flags[@]}"
           fi
+
+  # The website: the same files at fixed addresses, always the latest release's. Settings > Pages > Source must be
+  # "GitHub Actions", and the github-pages environment must allow tag `v*` to deploy (Settings > Environments).
+  pages:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Build the site
+        run: python3 scripts/make_site.py dist site "$TAG" "$GITHUB_REPOSITORY" "$GITHUB_SHA"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
