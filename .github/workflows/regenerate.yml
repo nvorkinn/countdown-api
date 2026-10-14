@@ -1,0 +1,48 @@
+name: Regenerate
+
+# When a PR changes openapi.yaml, regenerate src/countdown_api and push the result to the PR branch,
+# so the reviewer sees the effect of the change in the same PR.
+on:
+  pull_request:
+    branches: [main]
+    paths: [openapi.yaml]
+
+# One run per PR; a newer push cancels the older run.
+concurrency:
+  group: regenerate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    # Fork PRs get a read-only token and can't be pushed to.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          # Pushes made with the default GITHUB_TOKEN don't trigger other workflows, so CI wouldn't run on the
+          # generated commit. Set the REGENERATE_TOKEN secret (a PAT or app token with contents: write) to have it run.
+          token: ${{ secrets.REGENERATE_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Install openapi-codegen
+        run: uv sync --frozen --no-install-project
+      - name: Regenerate src/countdown_api
+        run: uv run --frozen --no-sync python generate.py
+      - name: Commit the changes to the PR branch
+        run: |
+          if [ -z "$(git status --porcelain -- src/countdown_api)" ]; then
+            echo "Generated code is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/countdown_api
+          git commit -m "Regenerate src/countdown_api from openapi.yaml"
+          git push
