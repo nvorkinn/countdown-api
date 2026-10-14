@@ -22,31 +22,26 @@ jobs:
       # openapi-codegen comes from a release of its repository, whose hash uv.lock records.
       - name: Install
         run: uv sync --frozen
-      # What a release publishes: openapi-codegen run on openapi.yaml, once for each side of the API (client: the
-      # models and the requests client; server: the models and the Flask views), checked, and archived.
+      # What a release publishes: openapi-codegen run on openapi.yaml (the models, the requests client and the Flask
+      # views), checked, and archived.
       - name: Build the code from openapi.yaml
         run: |
           mkdir dist
           cp openapi.yaml dist/
-          for side in client:clients server:blueprints; do
-            name="${side%%:*}"; only="${side#*:}"
-            uv run --frozen openapi-codegen dist/openapi.yaml --out "build/$name/countdown_api" --only "$only"
-            uv run --frozen openapi-codegen dist/openapi.yaml --out "build/$name/countdown_api" --only "$only" --check
-            # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
-            tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
-              -cf - -C "build/$name" countdown_api | gzip -n > "dist/countdown_api-$name.tar.gz"
-          done
+          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api
+          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api --check
+          # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
+            -cf - -C build countdown_api | gzip -n > dist/countdown_api.tar.gz
           ls -l dist
       - name: Import what was built
         run: |
-          for side in client:models,clients server:models,blueprints; do
-            dir="$(mktemp -d)"
-            tar xzf "dist/countdown_api-${side%%:*}.tar.gz" -C "$dir"
-            uv run --frozen python -I scripts/check_imports.py "$dir" "${side#*:}"
-          done
+          dir="$(mktemp -d)"
+          tar xzf dist/countdown_api.tar.gz -C "$dir"
+          uv run --frozen python -I scripts/check_imports.py "$dir" models,clients,blueprints
       # The release also publishes a website built from the same files; make sure it still builds.
       - name: Build the site
         run: |
           (cd dist && sha256sum -- openapi.yaml *.tar.gz > SHA256SUMS)
           python scripts/make_site.py dist site v0.0.0 "$GITHUB_REPOSITORY" "$GITHUB_SHA"
-          test -f site/index.html && test -f site/countdown_api-client.tar.gz && python -c "import json; json.load(open('site/latest.json'))"
+          test -f site/index.html && test -f site/countdown_api.tar.gz && python -c "import json; json.load(open('site/latest.json'))"

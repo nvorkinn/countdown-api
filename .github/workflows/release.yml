@@ -1,10 +1,10 @@
 name: Release
 
 # Pushing a tag v<version> (from main) publishes the contract, openapi.yaml, and the code openapi-codegen builds from
-# it (countdown_api-client.tar.gz, countdown_api-server.tar.gz) as a GitHub release, and makes it the latest one.
+# it (countdown_api.tar.gz) as a GitHub release, and makes it the latest one.
 # Consumers fetch, e.g.,
 #
-#   https://github.com/nvorkinn/countdown-api/releases/latest/download/countdown_api-client.tar.gz
+#   https://github.com/nvorkinn/countdown-api/releases/latest/download/countdown_api.tar.gz
 #
 # on every build, so those URLs are the whole interface: the same whatever version of any repo is asking. The
 # version is stamped into the published contract from the tag (GITHUB_REF_NAME), before the code is built from it.
@@ -72,14 +72,11 @@ jobs:
       # openapi-codegen run on the stamped contract: what is built here is what gets published.
       - name: Build the code from the contract
         run: |
-          for side in client:clients server:blueprints; do
-            name="${side%%:*}"; only="${side#*:}"
-            uv run --frozen openapi-codegen dist/openapi.yaml --out "build/$name/countdown_api" --only "$only"
-            uv run --frozen openapi-codegen dist/openapi.yaml --out "build/$name/countdown_api" --only "$only" --check
-            # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
-            tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
-              -cf - -C "build/$name" countdown_api | gzip -n > "dist/countdown_api-$name.tar.gz"
-          done
+          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api
+          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api --check
+          # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
+            -cf - -C build countdown_api | gzip -n > dist/countdown_api.tar.gz
       - name: Checksums
         working-directory: dist
         run: sha256sum -- openapi.yaml *.tar.gz | tee SHA256SUMS
