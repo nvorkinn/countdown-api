@@ -23,7 +23,7 @@ build-backend = "uv_build"
 # wheel's hash, so a build fails if that file ever changes. To move to a newer release, change the URL here and
 # run `uv lock --upgrade-package openapi-codegen`.
 [tool.uv.sources]
-openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.1.0/openapi_codegen-1.1.0-py3-none-any.whl" }
+openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.0.0/openapi_codegen-2.0.0-py3-none-any.whl" }
 
 [dependency-groups]
 dev = ["openapi-codegen[yaml]", "pre-commit", "ruff"]
