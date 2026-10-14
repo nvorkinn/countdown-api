@@ -18,7 +18,9 @@ A build fails when its code no longer fits the contract.
 
 ## Changing it
 
-Edit `openapi.yaml` in a PR (CI checks that every part still generates and imports). To publish, push a tag
-`v<version>` on main; the release workflow stamps the version into the file and makes it the latest release. Because
-devices in the field keep running older renderers, change the contract additively: new optional fields and new
-operations are safe, removing or tightening something needs both sides released together.
+Edit `openapi.yaml` in a PR (CI checks that every part still generates and imports). Merging it to main is the
+release: the release workflow works out the next version itself (the latest release's patch number plus one, v1.0.0
+for the first), stamps it into the published file and makes it the latest release. Keep `info.version` as
+`0.0.0-dev` in the repo. Because devices in the field keep running older renderers, change the contract additively:
+new optional fields and new operations are safe, removing or tightening something needs both sides released
+together.

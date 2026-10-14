@@ -1,63 +1,62 @@
 name: Release
 
-# Pushing a tag v<version> (from main) publishes openapi.yaml, the contract, as a GitHub release, and makes it the
+# Every merge to main that changes openapi.yaml publishes it as the next GitHub release, and that release becomes the
 # latest one. Consumers fetch
 #
 #   https://github.com/nvorkinn/countdown-api/releases/latest/download/openapi.yaml
 #
 # on every build and generate from it, so that URL is the whole interface: it is the same whatever version of any
-# repo is asking. The version is stamped into the published file from the tag. Same shape as the other release
-# workflows; run it by hand with an existing tag to (re)attach files to its release.
+# repo is asking. Nobody picks a version: CI takes the latest release's and adds one to the patch number (v1.0.0 for
+# the first), stamps it into the published file and creates the tag on the commit it built. The version only labels
+# a release; consumers always use the latest, so there is no bump to get right.
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+    paths: [openapi.yaml]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: An existing tag to publish, e.g. v1.0.0
-        required: true
-        type: string
 
 permissions:
   contents: read
 
-env:
-  TAG: ${{ inputs.tag || github.ref_name }}
+# One release at a time, so two merges can't both compute the same next version.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  verify-tag:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.TAG }}
-          fetch-depth: 0
-      - name: Verify tag is on main
-        run: |
-          git fetch origin main
-          if ! git merge-base --is-ancestor "$(git rev-parse "$TAG^{commit}")" origin/main; then
-            echo "::error::Tag $TAG does not point at a commit on main."
-            exit 1
-          fi
-
   build:
-    needs: verify-tag
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.TAG }}
-      - name: Stamp version
+      - name: Next version
+        id: version
         run: |
-          case "$TAG" in
-            v*) ;;
-            *) echo "::error::The tag is $TAG, but release tags are v<version>, e.g. v1.0.0."; exit 1 ;;
-          esac
+          latest=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases \
+            --limit 1 --json tagName --jq '.[0].tagName // empty')
+          if [ -z "$latest" ]; then
+            next="1.0.0"
+          else
+            if ! [[ "$latest" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "::error::The latest release is $latest, which isn't v<major>.<minor>.<patch>."
+              exit 1
+            fi
+            next="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+          fi
+          echo "Latest release: ${latest:-none}; this one: v$next"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "tag=v$next" >> "$GITHUB_OUTPUT"
+      - name: Stamp version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
           mkdir dist
-          sed "s/^  version: 0.0.0-dev\$/  version: ${TAG#v}/" openapi.yaml > dist/openapi.yaml
-          grep -q "^  version: ${TAG#v}\$" dist/openapi.yaml || { echo "::error::No placeholder version to stamp."; exit 1; }
+          sed "s/^  version: 0.0.0-dev\$/  version: $VERSION/" openapi.yaml > dist/openapi.yaml
+          grep -q "^  version: $VERSION\$" dist/openapi.yaml || { echo "::error::No placeholder version to stamp."; exit 1; }
       - name: Checksums
         working-directory: dist
         run: sha256sum openapi.yaml | tee SHA256SUMS
@@ -74,20 +73,14 @@ jobs:
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.build.outputs.tag }}
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
-      # No --clobber: a published file is never replaced. --latest: "latest" is the contract the consumers use, so
-      # a pre-release (anything but plain digits and dots) must never take it.
-      - name: Create the GitHub release, or add the files to the one that exists
+      # No --clobber: a published file is never replaced. --target makes the tag on the commit that was built.
+      - name: Create the GitHub release
         run: |
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
-          else
-            flags=(--latest)
-            if ! [[ "${TAG#v}" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then flags=(--prerelease); fi
-            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
-              --title "$TAG" --generate-notes --verify-tag "${flags[@]}"
-          fi
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$TAG" --generate-notes --latest
