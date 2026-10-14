@@ -9,30 +9,42 @@ from pydantic import BaseModel
 
 
 class Glowmarkt(BaseModel):
+    """The ``Glowmarkt`` object."""
+
     username: str | None
     password: str | None
 
 
 class NoticeBoard(BaseModel):
+    """The ``NoticeBoard`` object."""
+
     postcode: str | None
 
 
 class Screen(BaseModel):
+    """The ``Screen`` object."""
+
     orientation: Literal["horizontal", "vertical"]
     width: int
     height: int
 
 
 class Spotify(BaseModel):
+    """The ``Spotify`` object."""
+
     enabled: bool
 
 
 class Tfl(BaseModel):
+    """The ``Tfl`` object."""
+
     app_key: str
     stop_ids: list[str]
 
 
 class Weather(BaseModel):
+    """The ``Weather`` object."""
+
     api_key: str
     location: str
 
@@ -53,4 +65,6 @@ class ConfigResponse(BaseModel):
 
 
 class Error(BaseModel):
+    """The ``Error`` object."""
+
     error: str

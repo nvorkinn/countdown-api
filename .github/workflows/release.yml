@@ -73,7 +73,7 @@ jobs:
       # published. The wheel carries the contract too, and takes its version from the tag.
       - name: Build the wheel from the contract
         run: |
-          uv run --frozen --no-sync openapi-codegen dist/openapi.yaml --out src/countdown_api
+          uv run --frozen --no-sync openapi-codegen dist/openapi.yaml --out src/countdown_api --package countdown_api
           cp dist/openapi.yaml src/countdown_api/openapi.yaml
           uv version --frozen "${TAG#v}"
           uv build --wheel --out-dir dist

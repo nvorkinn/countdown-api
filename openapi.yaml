@@ -9,6 +9,7 @@ info:
 paths:
   /api/config:
     get:
+      operationId: getConfig
       summary: The renderer's config.
       parameters:
       - name: X-Device-Name
@@ -18,7 +19,8 @@ paths:
         schema:
           type: string
       security:
-      - deviceSecret: []
+      - deviceSecret:
+        - renderer
       responses:
         '200':
           description: OK

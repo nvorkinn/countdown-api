@@ -19,9 +19,10 @@ OUT = ROOT / "src" / "countdown_api"
 
 
 def main() -> int:
+    """Generate the package and put the contract beside it."""
     OUT.mkdir(parents=True, exist_ok=True)
     codegen = shutil.which("openapi-codegen") or "openapi-codegen"
-    subprocess.run([codegen, str(SPEC), "--out", str(OUT)], check=True)
+    subprocess.run([codegen, str(SPEC), "--out", str(OUT), "--package", "countdown_api"], check=True)  # noqa: S603
     shutil.copy(SPEC, OUT / "openapi.yaml")
     (OUT / "__init__.py").touch(exist_ok=True)
     return 0
