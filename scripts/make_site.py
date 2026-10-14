@@ -25,14 +25,18 @@ from pathlib import Path
 
 
 def link(name: str, digest: str, repository: str, tag: str) -> str:
-    """Where a file is linked from the page: a wheel at its permanent address on the release, with its hash (what a
-    flat index needs); anything else beside the page."""
+    """Return where a file is linked from the page.
+
+    A wheel is linked at its permanent address on the release, with its hash (what a flat index needs); anything
+    else beside the page.
+    """
     if name.endswith(".whl"):
         return f"https://github.com/{repository}/releases/download/{tag}/{name}#sha256={digest}"
     return name
 
 
 def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None:
+    """Write the site for the release `tag` of `repository` into `site`."""
     site.mkdir(parents=True, exist_ok=True)
     release_url = f"https://github.com/{repository}/releases/tag/{tag}"
     files = {}

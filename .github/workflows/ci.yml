@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir dist
           cp openapi.yaml dist/
-          uv run --frozen --no-sync openapi-codegen dist/openapi.yaml --out src/countdown_api
+          uv run --frozen --no-sync openapi-codegen dist/openapi.yaml --out src/countdown_api --package countdown_api
           cp dist/openapi.yaml src/countdown_api/openapi.yaml
           uv build --wheel --out-dir dist
           ls -l dist

@@ -8,14 +8,17 @@ code generated from it, published as an ordinary Python package.
 
 This repository depends on [openapi-codegen](https://github.com/nvorkinn/openapi-codegen), as a **release** of it:
 `pyproject.toml` points at the release's wheel and `uv.lock` records its hash. The workflows run its command line on
-`openapi.yaml`, which writes the `countdown_api` package (the Pydantic models, a `requests` client and Flask views)
-into `src/`, and then build the wheel, `countdown_api-<version>-py3-none-any.whl`. The wheel also carries the contract
-(`countdown_api/openapi.yaml`). `src/` isn't committed. By hand:
+`openapi.yaml`, which writes the `countdown_api` package (the Pydantic models, a `requests` client and a registry for
+the Flask server) into `src/`, and then build the wheel, `countdown_api-<version>-py3-none-any.whl`. The wheel also
+carries the contract (`countdown_api/openapi.yaml`). `src/countdown_api` is committed too, so that a change to the
+contract shows up as a change to the code; regenerate it with `python generate.py`. By hand:
 
     uv sync --frozen --no-install-project
-    uv run --frozen --no-sync openapi-codegen openapi.yaml --out src/countdown_api
+    uv run --frozen --no-sync openapi-codegen openapi.yaml --out src/countdown_api --package countdown_api
     cp openapi.yaml src/countdown_api/
     uv build --wheel
+
+All of it, generated code included, passes `ruff` with `select = ["ALL"]`.
 
 ## Using it
 
@@ -26,6 +29,28 @@ broker doesn't need `requests`:
 | --- | --- | --- |
 | the renderer | `countdown-api[client]` | `countdown_api.models`, `countdown_api.clients` |
 | the broker | `countdown-api[server]` | `countdown_api.models`, `countdown_api.blueprints` |
+
+The server registers a handler for every operation and an authenticator for every security scheme; registering
+checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
+until it is implemented. The roles an operation allows are the scopes in its `security`:
+
+```python
+from countdown_api.blueprints import Api, ApiHTTPError
+
+api = Api()
+
+
+@api.authenticator("deviceSecret", provides=("device_id",))
+def device_secret(context):  # context.credential: the bearer token; context.scopes: ("renderer",)
+    ...  # look the device up; raise ApiHTTPError(401) or (403); return {"device_id": ...}
+
+
+@api.get_config(decorators=[...])  # optional: filters that aren't part of the contract, outermost first
+def get_config(*, device_id, x_device_name=None): ...
+
+
+api.register(app)  # raises RegistrationError, naming everything that is missing or doesn't fit
+```
 
 The package isn't on PyPI. Its **latest page**, https://nvorkinn.github.io/countdown-api/, is a flat package index
 that always lists the latest release's wheel, so a project finds the current version there. In `pyproject.toml`:
