@@ -10,45 +10,31 @@ on:
 permissions:
   contents: read
 
-env:
-  # The generator is itself a released artifact, never a git ref.
-  CODEGEN_WHEEL: https://github.com/nvorkinn/openapi-codegen/releases/download/v0.2.0/openapi_codegen-0.2.0-py3-none-any.whl
-  CODEGEN_SHA256: ccf70707e24940dee7c9c7df11fe81850fe0b511db59fbaf473be9facb5996ba
-
 jobs:
-  spec:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Install the generator and what its output imports
+      # openapi-codegen comes from a release of its repository, whose hash uv.lock records.
+      - name: Install
+        run: uv sync --frozen
+      # What a release publishes: openapi-codegen run on openapi.yaml (the models, the requests client and the Flask
+      # views), checked, and archived.
+      - name: Build the code from openapi.yaml
         run: |
-          mkdir /tmp/wheel
-          # pip reads name and version from the file's own name, so keep the release's.
-          curl -fsSL --output-dir /tmp/wheel -O "$CODEGEN_WHEEL"
-          echo "$CODEGEN_SHA256  /tmp/wheel/openapi_codegen-0.2.0-py3-none-any.whl" | sha256sum -c -
-          pip install /tmp/wheel/openapi_codegen-0.2.0-py3-none-any.whl pyyaml pydantic requests flask
-      # Everything the consumers generate from this file has to generate, and what comes out has to import.
-      - name: Generate every part, then import it
+          mkdir dist
+          cp openapi.yaml dist/
+          uv run --frozen openapi-codegen dist/openapi.yaml --out build/countdown_api
+          # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
+            -cf - -C build countdown_api | gzip -n > dist/countdown_api.tar.gz
+          ls -l dist
+      - name: Import what was built
         run: |
-          # Each combination, and what it must produce to import.
-          for case in "all:models,clients,blueprints" "clients,models:models,clients" "blueprints,models:models,blueprints"; do
-            only="${case%%:*}"
-            modules="${case#*:}"
-            out="/tmp/out/$only"
-            args=()
-            if [ "$only" != all ]; then args+=(--only "$only"); fi
-            openapi-codegen openapi.yaml --out "$out/countdown_api" "${args[@]}"
-            openapi-codegen openapi.yaml --out "$out/countdown_api" "${args[@]}" --check
-            python -I scripts/check_imports.py "$out" "$modules"
-          done
-      # The release publishes a website built from the same files; make sure it still builds.
-      - name: Build the site
-        run: |
-          mkdir /tmp/dist
-          cp openapi.yaml /tmp/dist/
-          (cd /tmp/dist && sha256sum openapi.yaml > SHA256SUMS)
-          python scripts/make_site.py /tmp/dist /tmp/site v0.0.0 "$GITHUB_REPOSITORY" "$GITHUB_SHA"
-          test -f /tmp/site/index.html && test -f /tmp/site/openapi.yaml && python -c "import json; json.load(open('/tmp/site/latest.json'))"
+          dir="$(mktemp -d)"
+          tar xzf dist/countdown_api.tar.gz -C "$dir"
+          uv run --frozen python -I scripts/check_imports.py "$dir" models,clients,blueprints
