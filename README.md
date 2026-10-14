@@ -16,6 +16,11 @@ Always the latest release, whichever version of whichever repo is asking:
 
 A build fails when its code no longer fits the contract.
 
+The same release is published as a website, https://nvorkinn.github.io/countdown-api/: `openapi.yaml`, `SHA256SUMS`
+and `latest.json` (version, checksum, release link) at fixed addresses, and a page showing the current version. It
+needs Settings > Pages > Source set to "GitHub Actions" and a `v*` tag rule on the `github-pages` environment
+(Settings > Environments), since releases are deployed from tags.
+
 ## Changing it
 
 Edit `openapi.yaml` in a PR (CI checks that every part still generates and imports). To publish, push a tag
