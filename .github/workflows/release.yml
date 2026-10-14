@@ -1,15 +1,16 @@
 name: Release
 
-# Pushing a tag v<version> (from main) publishes openapi.yaml, the contract, as a GitHub release, and makes it the
-# latest one. Consumers fetch
+# Pushing a tag v<version> (from main) publishes the contract, openapi.yaml, and the code openapi-codegen builds from
+# it (countdown_api-client.tar.gz, countdown_api-server.tar.gz) as a GitHub release, and makes it the latest one.
+# Consumers fetch, e.g.,
 #
-#   https://github.com/nvorkinn/countdown-api/releases/latest/download/openapi.yaml
+#   https://github.com/nvorkinn/countdown-api/releases/latest/download/countdown_api-client.tar.gz
 #
-# on every build and generate from it, so that URL is the whole interface: it is the same whatever version of any
-# repo is asking. The version is stamped into the published file from the tag (GITHUB_REF_NAME). A tag push is the
-# only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab (same tag); if the
-# release was already created, the files are added to it. The release is also published to the project's GitHub Pages
-# site, which always shows the latest one (https://nvorkinn.github.io/countdown-api/).
+# on every build, so those URLs are the whole interface: the same whatever version of any repo is asking. The
+# version is stamped into the published contract from the tag (GITHUB_REF_NAME), before the code is built from it.
+# A tag push is the only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab
+# (same tag); if the release was already created, the files are added to it. The release is also published to the
+# project's GitHub Pages site, which always shows the latest one (https://nvorkinn.github.io/countdown-api/).
 
 on:
   push:
@@ -53,6 +54,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
       - name: Stamp version
         run: |
           case "$TAG" in
@@ -62,9 +67,16 @@ jobs:
           mkdir dist
           sed "s/^  version: 0.0.0-dev\$/  version: ${TAG#v}/" openapi.yaml > dist/openapi.yaml
           grep -q "^  version: ${TAG#v}\$" dist/openapi.yaml || { echo "::error::No placeholder version to stamp."; exit 1; }
+      - name: Install openapi-codegen
+        run: uv sync --frozen
+      # Runs openapi-codegen on the stamped contract: what is built here is what gets published.
+      - name: Build the code from the contract
+        run: |
+          uv run --frozen python scripts/build.py dist/openapi.yaml build
+          cp build/*.tar.gz dist/
       - name: Checksums
         working-directory: dist
-        run: sha256sum openapi.yaml | tee SHA256SUMS
+        run: sha256sum -- openapi.yaml *.tar.gz | tee SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: dist

@@ -1,0 +1,26 @@
+[project]
+name = "countdown-api"
+# Not a package: this repository is the contract (openapi.yaml) and the code generated from it. The version of a
+# release is its tag, stamped into the published openapi.yaml.
+version = "0.0.0"
+description = "The API between the countdown renderer and auth-broker, and the code generated from it."
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+
+# openapi-codegen is a dependency like any other, but of a released file, not a git ref: the lock records the
+# wheel's hash, so a build fails if that file ever changes. To move to a newer release, change the URL here and
+# run `uv lock --upgrade-package openapi-codegen`.
+[tool.uv.sources]
+openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v0.2.0/openapi_codegen-0.2.0-py3-none-any.whl" }
+
+[dependency-groups]
+# What builds the code (openapi-codegen, with YAML input) and what the built code imports, to try it.
+dev = [
+    "openapi-codegen[yaml]",
+    "flask>=3.1",
+    "pydantic>=2.13",
+    "requests>=2.32",
+]

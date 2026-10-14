@@ -2,8 +2,9 @@
 
     python scripts/make_site.py <dist dir> <site dir> <tag> <repository> <commit>
 
-The site is the same at the same address whatever version of any repo reads it: openapi.yaml, SHA256SUMS and
-latest.json (the version, the file's checksum and where the release is) are always the latest release's."""
+The site is the same at the same address whatever version of any repo reads it: every file of the release (the
+contract and the code built from it), SHA256SUMS and latest.json (the version, each file's checksum and where the
+release is) are always the latest release's."""
 
 import hashlib
 import html
@@ -14,22 +15,25 @@ from pathlib import Path
 
 def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None:
     site.mkdir(parents=True, exist_ok=True)
-    spec = (dist / "openapi.yaml").read_bytes()
-    sha256 = hashlib.sha256(spec).hexdigest()
     release_url = f"https://github.com/{repository}/releases/tag/{tag}"
-
-    (site / "openapi.yaml").write_bytes(spec)
-    (site / "SHA256SUMS").write_bytes((dist / "SHA256SUMS").read_bytes())
-    latest = {"version": tag.removeprefix("v"), "tag": tag, "sha256": sha256, "commit": commit, "release": release_url}
+    files = {}
+    for path in sorted(dist.iterdir()):
+        if path.is_file():
+            (site / path.name).write_bytes(path.read_bytes())
+            files[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    latest = {"version": tag.removeprefix("v"), "tag": tag, "commit": commit, "release": release_url, "files": files}
     (site / "latest.json").write_text(json.dumps(latest, indent=2) + "\n")
 
     rows = "".join(
         f"<tr><th>{html.escape(name)}</th><td>{value}</td></tr>"
         for name, value in [
             ("Version", f"<strong>{html.escape(tag)}</strong>"),
-            ("SHA-256", f"<code>{sha256}</code>"),
             ("Release", f'<a href="{html.escape(release_url)}">{html.escape(release_url)}</a>'),
         ]
+    )
+    listing = "\n".join(
+        f'<li><a href="{html.escape(name)}">{html.escape(name)}</a> <code>{digest}</code></li>'
+        for name, digest in files.items()
     )
     (site / "index.html").write_text(
         f"""<!doctype html>
@@ -46,8 +50,7 @@ th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 <p>The contract between the countdown renderer and the auth-broker. Both generate their side from the file below on every build.</p>
 <table>{rows}</table>
 <ul>
-<li><a href="openapi.yaml">openapi.yaml</a></li>
-<li><a href="SHA256SUMS">SHA256SUMS</a></li>
+{listing}
 <li><a href="latest.json">latest.json</a></li>
 </ul>
 </body>
