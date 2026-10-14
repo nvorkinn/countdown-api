@@ -23,6 +23,12 @@ jobs:
       # its code doesn't exist until openapi-codegen has written it.
       - name: Install openapi-codegen
         run: uv sync --frozen --no-install-project
+      # src/countdown_api is committed, so it has to be what openapi-codegen writes for the current openapi.yaml:
+      # `python generate.py` brings it up to date. This runs before the build step, which regenerates it.
+      - name: Check src/countdown_api is up to date with openapi.yaml
+        run: |
+          uv run --frozen --no-sync openapi-codegen openapi.yaml --out src/countdown_api --package countdown_api --check
+          diff openapi.yaml src/countdown_api/openapi.yaml
       # What a release publishes: openapi-codegen run on openapi.yaml (the models, the requests client and the Flask
       # views), then built into a wheel that also carries the contract.
       - name: Build the wheel from openapi.yaml

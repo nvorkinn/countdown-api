@@ -91,7 +91,7 @@ Settings > Pages > Source set to "GitHub Actions" and a `v*` tag rule on the `gi
 
 ## Changing it
 
-Edit `openapi.yaml` in a PR (CI builds the wheel from it and installs it with each extra). To publish, push a tag
+Edit `openapi.yaml` in a PR and run `python generate.py` to update the committed `src/countdown_api` (CI fails with "out of date" if you forget; it then builds the wheel and installs it with each extra). To publish, push a tag
 `v<version>` on main; the release workflow stamps the version into the contract and the wheel, builds them and makes
 that the latest release. Because devices in the field keep running older renderers, change the contract additively:
 new optional fields and new operations are safe, removing or tightening something needs both sides released together.
