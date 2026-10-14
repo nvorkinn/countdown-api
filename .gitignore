@@ -1,3 +1,7 @@
 build/
+dist/
+site/
 __pycache__/
 .venv/
+# Written by openapi-codegen from openapi.yaml before the wheel is built.
+/src/

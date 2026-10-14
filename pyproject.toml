@@ -1,14 +1,23 @@
 [project]
 name = "countdown-api"
-# Not a package: this repository is the contract (openapi.yaml) and the code generated from it. The version of a
-# release is its tag, stamped into the published openapi.yaml.
+# Stamped from the release's tag when it is built (`uv version`); this is only a placeholder for checkouts.
 version = "0.0.0"
-description = "The API between the countdown renderer and auth-broker, and the code generated from it."
+description = "The API between the countdown renderer and auth-broker: the contract, and the code generated from it."
+license = "MIT"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["pydantic>=2.13"]
 
-[tool.uv]
-package = false
+# Each side of the API needs one of these: the renderer the `requests` client, the broker the Flask views.
+[project.optional-dependencies]
+client = ["requests>=2.32"]
+server = ["flask>=3.1"]
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+# src/countdown_api/ is not committed: openapi-codegen writes it from openapi.yaml just before the wheel is built
+# (see .github/workflows/ci.yml).
 
 # openapi-codegen is a dependency like any other, but of a released file, not a git ref: the lock records the
 # wheel's hash, so a build fails if that file ever changes. To move to a newer release, change the URL here and
@@ -17,10 +26,4 @@ package = false
 openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v1.0.0/openapi_codegen-1.0.0-py3-none-any.whl" }
 
 [dependency-groups]
-# What builds the code (openapi-codegen, with YAML input) and what the built code imports, to try it.
-dev = [
-    "openapi-codegen[yaml]",
-    "flask>=3.1",
-    "pydantic>=2.13",
-    "requests>=2.32",
-]
+dev = ["openapi-codegen[yaml]"]

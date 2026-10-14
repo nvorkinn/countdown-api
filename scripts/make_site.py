@@ -2,15 +2,28 @@
 
     python scripts/make_site.py <dist dir> <site dir> <tag> <repository> <commit>
 
-The site is the same at the same address whatever version of any repo reads it: every file of the release (the
-contract and the code built from it), SHA256SUMS and latest.json (the version, each file's checksum and where the
-release is) are always the latest release's."""
+The site is the same at the same address whatever version of any repo reads it, and always the latest release's:
+every file of it, SHA256SUMS and latest.json (the version, each file's checksum and where the release is).
+
+It is also a flat package index (https://docs.astral.sh/uv/concepts/indexes/#flat-indexes): the page links to the
+wheel, with its hash, so `[[tool.uv.index]] url = "https://nvorkinn.github.io/countdown-api/" format = "flat"` lets a
+project depend on countdown-api and find the latest version here. The wheel is linked at its address on the release,
+not on this site, because that address stays valid after the next release replaces the site, and a lockfile records
+it."""
 
 import hashlib
 import html
 import json
 import sys
 from pathlib import Path
+
+
+def link(name: str, digest: str, repository: str, tag: str) -> str:
+    """Where a file is linked from the page: a wheel at its permanent address on the release, with its hash (what a
+    flat index needs); anything else beside the page."""
+    if name.endswith(".whl"):
+        return f"https://github.com/{repository}/releases/download/{tag}/{name}#sha256={digest}"
+    return name
 
 
 def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None:
@@ -32,7 +45,7 @@ def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None
         ]
     )
     listing = "\n".join(
-        f'<li><a href="{html.escape(name)}">{html.escape(name)}</a> <code>{digest}</code></li>'
+        f'<li><a href="{html.escape(link(name, digest, repository, tag))}">{html.escape(name)}</a> <code>{digest}</code></li>'
         for name, digest in files.items()
     )
     (site / "index.html").write_text(
