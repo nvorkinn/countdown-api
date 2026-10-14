@@ -40,6 +40,14 @@ class Tfl(BaseModel):
 
     app_key: str
     stop_ids: list[str]
+    style: Literal["classic", "hero", "grouped", "card"] = Field(
+        default="classic",
+        description=(
+            "How each stop's departures are drawn. classic is a row per departure under a black header; hero makes the"
+            " next departure big; grouped gives each route one row with its next few times; card puts the stop in a "
+            "rounded card with a column of minutes. Optional, so a broker that doesn't send it gets classic."
+        ),
+    )
 
 
 class Weather(BaseModel):
