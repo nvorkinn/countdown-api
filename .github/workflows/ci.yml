@@ -18,7 +18,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       # openapi-codegen comes from a release of its repository, whose hash uv.lock records. Not the project itself:
       # its code doesn't exist until openapi-codegen has written it.
       - name: Install openapi-codegen
