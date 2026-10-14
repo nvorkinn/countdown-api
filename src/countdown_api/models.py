@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Glowmarkt(BaseModel):
@@ -53,7 +53,7 @@ class ConfigResponse(BaseModel):
     """GET /api/config."""
 
     device_id: str
-    interval: int
+    interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
     screen: Screen
     weather: Weather
     notice_board: NoticeBoard
