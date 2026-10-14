@@ -69,11 +69,17 @@ jobs:
           grep -q "^  version: ${TAG#v}\$" dist/openapi.yaml || { echo "::error::No placeholder version to stamp."; exit 1; }
       - name: Install openapi-codegen
         run: uv sync --frozen
-      # Runs openapi-codegen on the stamped contract: what is built here is what gets published.
+      # openapi-codegen run on the stamped contract: what is built here is what gets published.
       - name: Build the code from the contract
         run: |
-          uv run --frozen python scripts/build.py dist/openapi.yaml build
-          cp build/*.tar.gz dist/
+          for side in client:clients server:blueprints; do
+            name="${side%%:*}"; only="${side#*:}"
+            uv run --frozen openapi-codegen dist/openapi.yaml --out "build/$name/countdown_api" --only "$only"
+            uv run --frozen openapi-codegen dist/openapi.yaml --out "build/$name/countdown_api" --only "$only" --check
+            # Sorted, no timestamps or owners, no name in the gzip header: the same code is the same bytes.
+            tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
+              -cf - -C "build/$name" countdown_api | gzip -n > "dist/countdown_api-$name.tar.gz"
+          done
       - name: Checksums
         working-directory: dist
         run: sha256sum -- openapi.yaml *.tar.gz | tee SHA256SUMS
@@ -95,18 +101,16 @@ jobs:
         with:
           name: dist
           path: dist
-      # No --clobber: a published file is never replaced. --latest: "latest" is the contract the consumers use, so
-      # a pre-release (anything but plain digits and dots) must never take it.
-      - name: Create the GitHub release, or add the files to the one that exists
+      # No --clobber: a published file is never replaced, so a hash recorded for it stays valid; if a file is
+      # already on the release this stops rather than swapping it.
+      - name: Create the GitHub release if there isn't one
         run: |
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
-          else
-            flags=(--latest)
-            if ! [[ "${TAG#v}" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then flags=(--prerelease); fi
-            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
-              --title "$TAG" --generate-notes --verify-tag "${flags[@]}"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "$TAG" --generate-notes --latest --verify-tag
           fi
+      - name: Upload the contract, the code built from it and the checksums
+        run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
 
   # The website: the same files at fixed addresses, always the latest release's. Settings > Pages > Source must be
   # "GitHub Actions", and the github-pages environment must allow tag `v*` to deploy (Settings > Environments).

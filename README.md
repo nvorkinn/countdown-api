@@ -7,16 +7,17 @@ code generated from it.
 ## How it is built
 
 This repository depends on [openapi-codegen](https://github.com/nvorkinn/openapi-codegen), as a **release** of it:
-`pyproject.toml` points at the release's wheel and `uv.lock` records its hash. `scripts/build.py` runs it on
-`openapi.yaml` and archives what it generates:
+`pyproject.toml` points at the release's wheel and `uv.lock` records its hash. The workflows run its command line on
+`openapi.yaml` (once for each side of the API, then `--check`) and archive what it generates:
 
 | file | contains | for |
 | --- | --- | --- |
 | `countdown_api-client.tar.gz` | the Pydantic models and a `requests` client | the renderer |
 | `countdown_api-server.tar.gz` | the Pydantic models and Flask views | the broker |
 
-Each unpacks to a `countdown_api/` package. The archives are reproducible (same input, same bytes). To build them
-yourself: `uv sync --frozen && uv run --frozen python scripts/build.py` (they land in `build/`).
+Each unpacks to a `countdown_api/` package. The archives are reproducible (same input, same bytes). The commands
+are in `.github/workflows/ci.yml`; `uv sync --frozen`, then `uv run --frozen openapi-codegen openapi.yaml --out
+some/countdown_api --only clients` (or `blueprints`) does it by hand.
 
 ## Using it
 
