@@ -1,0 +1,93 @@
+name: Release
+
+# Pushing a tag v<version> (from main) publishes openapi.yaml, the contract, as a GitHub release, and makes it the
+# latest one. Consumers fetch
+#
+#   https://github.com/nvorkinn/countdown-api/releases/latest/download/openapi.yaml
+#
+# on every build and generate from it, so that URL is the whole interface: it is the same whatever version of any
+# repo is asking. The version is stamped into the published file from the tag. Same shape as the other release
+# workflows; run it by hand with an existing tag to (re)attach files to its release.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: An existing tag to publish, e.g. v1.0.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  verify-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+      - name: Verify tag is on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$(git rev-parse "$TAG^{commit}")" origin/main; then
+            echo "::error::Tag $TAG does not point at a commit on main."
+            exit 1
+          fi
+
+  build:
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - name: Stamp version
+        run: |
+          case "$TAG" in
+            v*) ;;
+            *) echo "::error::The tag is $TAG, but release tags are v<version>, e.g. v1.0.0."; exit 1 ;;
+          esac
+          mkdir dist
+          sed "s/^  version: 0.0.0-dev\$/  version: ${TAG#v}/" openapi.yaml > dist/openapi.yaml
+          grep -q "^  version: ${TAG#v}\$" dist/openapi.yaml || { echo "::error::No placeholder version to stamp."; exit 1; }
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum openapi.yaml | tee SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      # No --clobber: a published file is never replaced. --latest: "latest" is the contract the consumers use, so
+      # a pre-release (anything but plain digits and dots) must never take it.
+      - name: Create the GitHub release, or add the files to the one that exists
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
+          else
+            flags=(--latest)
+            if ! [[ "${TAG#v}" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then flags=(--prerelease); fi
+            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" --generate-notes --verify-tag "${flags[@]}"
+          fi
