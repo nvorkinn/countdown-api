@@ -33,11 +33,14 @@ jobs:
       # Everything the consumers generate from this file has to generate, and what comes out has to import.
       - name: Generate every part, then import it
         run: |
-          for only in "" clients,models blueprints,models; do
-            out="/tmp/out/${only:-all}"
+          # Each combination, and what it must produce to import.
+          for case in "all:models,clients,blueprints" "clients,models:models,clients" "blueprints,models:models,blueprints"; do
+            only="${case%%:*}"
+            modules="${case#*:}"
+            out="/tmp/out/$only"
             args=()
-            if [ -n "$only" ]; then args+=(--only "$only"); fi
+            if [ "$only" != all ]; then args+=(--only "$only"); fi
             openapi-codegen openapi.yaml --out "$out/countdown_api" "${args[@]}"
             openapi-codegen openapi.yaml --out "$out/countdown_api" "${args[@]}" --check
-            (cd "$out" && python -I -c "import countdown_api.models")
+            python -I scripts/check_imports.py "$out" "$modules"
           done
