@@ -48,6 +48,10 @@ countdown-api = { index = "countdown-api" }
 `uv.lock`; `uv sync --frozen` then installs exactly that. The page links the wheel at its address on the release,
 which stays valid after the next release replaces the page, so an older lockfile keeps working until you upgrade.
 
+The page is also a simple (PEP 503) index at https://nvorkinn.github.io/countdown-api/simple/ that lists the wheel of
+every release, so older versions can be pinned too. Use it as the index URL without `format = "flat"`. With
+`constraints.txt` pinning the version below, the dependency can stay versionless in `pyproject.toml`.
+
 The page also publishes `constraints.txt`, which pins only `countdown-api` to the latest release. Keep it ranged in
 `pyproject.toml` and let this file choose the version:
 
