@@ -18,7 +18,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       # openapi-codegen comes from a release of its repository, whose hash uv.lock records. Not the project itself:
       # its code doesn't exist until openapi-codegen has written it.
       - name: Install openapi-codegen
@@ -38,7 +38,7 @@ jobs:
         run: |
           for side in client:models,clients server:models,blueprints; do
             extra="${side%%:*}"; modules="${side#*:}"
-            uv venv --python 3.12 "$RUNNER_TEMP/$extra"
+            uv venv --python 3.14 "$RUNNER_TEMP/$extra"
             uv pip install --python "$RUNNER_TEMP/$extra/bin/python" "$(ls dist/*.whl)[$extra]"
             cd "$RUNNER_TEMP"
             for module in ${modules//,/ }; do "$extra/bin/python" -I -c "import countdown_api.$module"; done
