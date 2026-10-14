@@ -25,9 +25,11 @@ jobs:
           python-version: "3.12"
       - name: Install the generator and what its output imports
         run: |
-          curl -fsSL "$CODEGEN_WHEEL" -o /tmp/openapi_codegen.whl
-          echo "$CODEGEN_SHA256  /tmp/openapi_codegen.whl" | sha256sum -c -
-          pip install /tmp/openapi_codegen.whl pyyaml pydantic requests flask
+          mkdir /tmp/wheel
+          # pip reads name and version from the file's own name, so keep the release's.
+          curl -fsSL --output-dir /tmp/wheel -O "$CODEGEN_WHEEL"
+          echo "$CODEGEN_SHA256  /tmp/wheel/openapi_codegen-0.2.0-py3-none-any.whl" | sha256sum -c -
+          pip install /tmp/wheel/openapi_codegen-0.2.0-py3-none-any.whl pyyaml pydantic requests flask
       # Everything the consumers generate from this file has to generate, and what comes out has to import.
       - name: Generate every part, then import it
         run: |
