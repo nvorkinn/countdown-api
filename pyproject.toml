@@ -4,7 +4,7 @@ name = "countdown-api"
 version = "0.0.0"
 description = "The API between the countdown renderer and auth-broker: the contract, and the code generated from it."
 license = "MIT"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = ["pydantic>=2.13"]
 
 # Each side of the API needs one of these: the renderer the `requests` client, the broker the Flask views.
