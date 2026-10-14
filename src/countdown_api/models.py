@@ -61,7 +61,6 @@ class ConfigResponse(BaseModel):
     spotify: Spotify
     glowmarkt: Glowmarkt
     pairing_code: str | None
-    setup_missing: list[str]
 
 
 class Error(BaseModel):
