@@ -61,6 +61,14 @@ components:
           type: integer
           exclusiveMinimum: 0
           description: Seconds between updates.
+        clock_format:
+          enum:
+          - 12h
+          - 24h
+          default: 24h
+          type: string
+          description: Application-wide format for user-facing clock times. Does not change machine timestamps,
+            durations, time zones or log formats. Optional, so a broker that doesn't send it gets 24h.
         screen:
           $ref: '#/components/schemas/Screen'
         weather:

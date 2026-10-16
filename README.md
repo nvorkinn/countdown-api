@@ -30,6 +30,12 @@ broker doesn't need `requests`:
 | the renderer | `countdown-api[client]` | `countdown_api.models`, `countdown_api.clients` |
 | the broker | `countdown-api[server]` | `countdown_api.models`, `countdown_api.blueprints` |
 
+`ConfigResponse.clock_format` is the application-wide format for user-facing clock times: `"12h"` or `"24h"`.
+It is optional and defaults to `"24h"` when absent, so older brokers retain the existing behavior; explicit `null`
+and other values are invalid. It does not change machine timestamps, durations, time zones or log formats.
+Brokers should explicitly supply the saved value when constructing the response, since unset defaults are omitted
+from the JSON response.
+
 The server registers a handler for every operation and an authenticator for every security scheme; registering
 checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
 until it is implemented. The roles an operation allows are the scopes in its `security`:
