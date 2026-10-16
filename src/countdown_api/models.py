@@ -8,6 +8,33 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 
+class DepartureStop(BaseModel):
+    """The ``DepartureStop`` object."""
+
+    source: Literal["tfl", "entur"] = Field(
+        description=(
+            "Who to ask for the stop's departures. tfl is Transport for London; entur is Norway's national journey "
+            "planner (Ruter and every other Norwegian operator)."
+        ),
+    )
+    id: str = Field(
+        description=(
+            "The stop's id at its source. A NaPTAN id for tfl (490000077E, 940GZZLUOVL); an NSR StopPlace or Quay for "
+            "entur (NSR:StopPlace:58381, NSR:Quay:7333)."
+        ),
+    )
+
+
+class Departures(BaseModel):
+    """The ``Departures`` object."""
+
+    stops: list[DepartureStop]
+    style: Literal["classic", "hero", "grouped", "card"] = Field(
+        default="classic",
+        description="How each stop's departures are drawn, the same for every source. See tfl.style.",
+    )
+
+
 class Glowmarkt(BaseModel):
     """The ``Glowmarkt`` object."""
 
@@ -19,6 +46,13 @@ class NoticeBoard(BaseModel):
     """The ``NoticeBoard`` object."""
 
     postcode: str | None
+    country: Literal["GB", "NO"] | None = Field(
+        default=None,
+        description=(
+            "The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional; without it a "
+            "postcode is taken to be British."
+        ),
+    )
 
 
 class Screen(BaseModel):
@@ -78,10 +112,32 @@ class ConfigResponse(BaseModel):
             "zones or log formats. Optional, so a broker that doesn't send it gets 24h."
         ),
     )
+    language: Literal["en", "nb"] = Field(
+        default="en",
+        description=(
+            "The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål). Optional, so a "
+            "broker that doesn't send it gets en."
+        ),
+    )
+    timezone: str = Field(
+        default="Europe/London",
+        description=(
+            "The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. Optional, so a "
+            "broker that doesn't send it gets Europe/London."
+        ),
+    )
     screen: Screen
     weather: Weather
     notice_board: NoticeBoard
     tfl: Tfl
+    departures: Departures | None = Field(
+        default=None,
+        description=(
+            "Every stop whose departures the screen shows, from any source, in the owner's order. A renderer that "
+            "reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it leaves the "
+            "renderer on tfl."
+        ),
+    )
     spotify: Spotify
     glowmarkt: Glowmarkt
     pairing_code: str | None
