@@ -46,6 +46,11 @@ counts as today. Both are optional, defaulting to `"en"` and `"Europe/London"`.
 gets an id it can't look up. `tfl.app_key` is still where the TfL key comes from. `NoticeBoard.country` (`"GB"` or
 `"NO"`) says whose postcode `notice_board.postcode` is; without it, it is taken to be British.
 
+`ConfigResponse.style` (`"airy"`, `"hero"` or `"card"`) is the one look every panel is drawn in. A renderer that reads
+it ignores the panels' own `style` fields (`tfl`, `departures`, `spotify`, `notice_board`), which a broker keeps
+sending so older renderers still get a look they know (the shared `airy` is their `grouped` for the departures). It is
+optional and defaults to null, which leaves the renderer on the panels' own fields.
+
 The server registers a handler for every operation and an authenticator for every security scheme; registering
 checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
 until it is implemented. The roles an operation allows are the scopes in its `security`:

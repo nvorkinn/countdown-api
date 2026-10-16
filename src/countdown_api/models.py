@@ -31,7 +31,10 @@ class Departures(BaseModel):
     stops: list[DepartureStop]
     style: Literal["classic", "hero", "grouped", "card"] = Field(
         default="hero",
-        description="How each stop's departures are drawn, the same for every source. See tfl.style.",
+        description=(
+            "How each stop's departures are drawn, the same for every source. Superseded by style; see tfl.style for "
+            "the values."
+        ),
     )
 
 
@@ -59,7 +62,8 @@ class NoticeBoard(BaseModel):
             "How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-"
             "caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); "
             "boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send"
-            " it gets hero."
+            " it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws "
+            "boxed as card."
         ),
     )
 
@@ -83,7 +87,7 @@ class Spotify(BaseModel):
             "weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a "
             "rounded card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the "
             "original look, is retired; it is still accepted, so an older broker that sends it keeps validating, and "
-            "it is drawn as hero."
+            "it is drawn as hero. Superseded by style."
         ),
     )
 
@@ -100,7 +104,7 @@ class Tfl(BaseModel):
             " with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a "
             "broker that doesn't send it gets hero. classic, the original row per departure under a black header, is "
             "retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as "
-            "hero."
+            "hero. Superseded by style, where grouped is called airy."
         ),
     )
 
@@ -136,6 +140,17 @@ class ConfigResponse(BaseModel):
         description=(
             "The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. Optional, so a "
             "broker that doesn't send it gets Europe/London."
+        ),
+    )
+    style: Literal["airy", "hero", "card"] | None = Field(
+        default=None,
+        description=(
+            "How every panel is drawn (the departures, Spotify and the notice board, and any panel added later), so "
+            "the screen has one look. airy has small-caps labels over a hairline, like the weather; hero has an icon "
+            "header over a heavy rule and makes the first item big; card puts each panel in a rounded card with a "
+            "black title bar. A renderer that reads it ignores tfl.style, departures.style, spotify.style and "
+            "notice_board.style, which a broker keeps sending for older renderers. Optional, so a broker that doesn't "
+            "send it leaves the renderer on those."
         ),
     )
     screen: Screen
