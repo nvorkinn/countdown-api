@@ -30,7 +30,7 @@ class Departures(BaseModel):
 
     stops: list[DepartureStop]
     style: Literal["classic", "hero", "grouped", "card"] = Field(
-        default="classic",
+        default="hero",
         description="How each stop's departures are drawn, the same for every source. See tfl.style.",
     )
 
@@ -68,12 +68,13 @@ class Spotify(BaseModel):
 
     enabled: bool
     style: Literal["classic", "airy", "hero", "card"] = Field(
-        default="classic",
+        default="hero",
         description=(
-            "How the Spotify panel is drawn, now playing and top tracks alike. classic is the original look; airy has "
-            "small-caps labels like the weather; hero has an icon header and makes the top track big, like the hero "
-            "arrivals; card puts it in a rounded card with a black title bar. Optional, so a broker that doesn't send "
-            "it gets classic."
+            "How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps labels like the "
+            "weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a "
+            "rounded card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the "
+            "original look, is retired; it is still accepted, so an older broker that sends it keeps validating, and "
+            "it is drawn as hero."
         ),
     )
 
@@ -84,11 +85,13 @@ class Tfl(BaseModel):
     app_key: str
     stop_ids: list[str]
     style: Literal["classic", "hero", "grouped", "card"] = Field(
-        default="classic",
+        default="hero",
         description=(
-            "How each stop's departures are drawn. classic is a row per departure under a black header; hero makes the"
-            " next departure big; grouped gives each route one row with its next few times; card puts the stop in a "
-            "rounded card with a column of minutes. Optional, so a broker that doesn't send it gets classic."
+            "How each stop's departures are drawn. hero makes the next departure big; grouped gives each route one row"
+            " with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a "
+            "broker that doesn't send it gets hero. classic, the original row per departure under a black header, is "
+            "retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as "
+            "hero."
         ),
     )
 
