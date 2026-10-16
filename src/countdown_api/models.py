@@ -71,6 +71,13 @@ class ConfigResponse(BaseModel):
 
     device_id: str
     interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
+    clock_format: Literal["12h", "24h"] = Field(
+        default="24h",
+        description=(
+            "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time "
+            "zones or log formats. Optional, so a broker that doesn't send it gets 24h."
+        ),
+    )
     screen: Screen
     weather: Weather
     notice_board: NoticeBoard
