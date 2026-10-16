@@ -194,6 +194,18 @@ components:
           default: null
           description: The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional;
             without it a postcode is taken to be British.
+        style:
+          enum:
+          - airy
+          - hero
+          - card
+          - boxed
+          default: hero
+          type: string
+          description: How the notice board is drawn. airy, hero and card match the Spotify styles of the same name
+            (a small-caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title
+            bar); boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't
+            send it gets hero.
       required:
       - postcode
       title: NoticeBoard
