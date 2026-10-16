@@ -53,6 +53,15 @@ class NoticeBoard(BaseModel):
             "postcode is taken to be British."
         ),
     )
+    style: Literal["airy", "hero", "card", "boxed"] = Field(
+        default="hero",
+        description=(
+            "How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-"
+            "caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); "
+            "boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send"
+            " it gets hero."
+        ),
+    )
 
 
 class Screen(BaseModel):
