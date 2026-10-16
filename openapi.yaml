@@ -187,7 +187,7 @@ components:
         country:
           anyOf:
           - enum:
-            - GB
+            - 'GB'
             - 'NO'
             type: string
           - type: 'null'
