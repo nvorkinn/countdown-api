@@ -69,6 +69,19 @@ components:
           type: string
           description: Application-wide format for user-facing clock times. Does not change machine timestamps,
             durations, time zones or log formats. Optional, so a broker that doesn't send it gets 24h.
+        language:
+          enum:
+          - en
+          - nb
+          default: en
+          type: string
+          description: The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål).
+            Optional, so a broker that doesn't send it gets en.
+        timezone:
+          default: Europe/London
+          type: string
+          description: The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.
+            Optional, so a broker that doesn't send it gets Europe/London.
         screen:
           $ref: '#/components/schemas/Screen'
         weather:
@@ -77,6 +90,14 @@ components:
           $ref: '#/components/schemas/NoticeBoard'
         tfl:
           $ref: '#/components/schemas/Tfl'
+        departures:
+          anyOf:
+          - $ref: '#/components/schemas/Departures'
+          - type: 'null'
+          default: null
+          description: Every stop whose departures the screen shows, from any source, in the owner's order. A
+            renderer that reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it
+            leaves the renderer on tfl.
         spotify:
           $ref: '#/components/schemas/Spotify'
         glowmarkt:
@@ -96,6 +117,43 @@ components:
       - glowmarkt
       - pairing_code
       title: ConfigResponse
+      type: object
+    DepartureStop:
+      properties:
+        source:
+          enum:
+          - tfl
+          - entur
+          type: string
+          description: Who to ask for the stop's departures. tfl is Transport for London; entur is Norway's
+            national journey planner (Ruter and every other Norwegian operator).
+        id:
+          type: string
+          description: The stop's id at its source. A NaPTAN id for tfl (490000077E, 940GZZLUOVL); an NSR
+            StopPlace or Quay for entur (NSR:StopPlace:58381, NSR:Quay:7333).
+      required:
+      - source
+      - id
+      title: DepartureStop
+      type: object
+    Departures:
+      properties:
+        stops:
+          items:
+            $ref: '#/components/schemas/DepartureStop'
+          type: array
+        style:
+          enum:
+          - classic
+          - hero
+          - grouped
+          - card
+          default: classic
+          type: string
+          description: How each stop's departures are drawn, the same for every source. See tfl.style.
+      required:
+      - stops
+      title: Departures
       type: object
     Error:
       properties:
@@ -126,6 +184,16 @@ components:
           anyOf:
           - type: string
           - type: 'null'
+        country:
+          anyOf:
+          - enum:
+            - 'GB'
+            - 'NO'
+            type: string
+          - type: 'null'
+          default: null
+          description: The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional;
+            without it a postcode is taken to be British.
       required:
       - postcode
       title: NoticeBoard

@@ -36,6 +36,16 @@ and other values are invalid. It does not change machine timestamps, durations, 
 Brokers should explicitly supply the saved value when constructing the response, since unset defaults are omitted
 from the JSON response.
 
+`ConfigResponse.language` (`"en"` or `"nb"`) is the language of everything the screen shows, and
+`ConfigResponse.timezone` (an IANA name such as `"Europe/Oslo"`) is the screen's local time, for its clock and for what
+counts as today. Both are optional, defaulting to `"en"` and `"Europe/London"`.
+
+`ConfigResponse.departures` lists every stop the screen shows departures for, each with its `source` (`"tfl"` or
+`"entur"`) and its `id` there, in the owner's order, plus the `style` they're drawn in. A renderer that reads it ignores
+`tfl.stop_ids` and `tfl.style`; `tfl` keeps carrying the TfL stops alone, so a renderer that predates `departures` never
+gets an id it can't look up. `tfl.app_key` is still where the TfL key comes from. `NoticeBoard.country` (`"GB"` or
+`"NO"`) says whose postcode `notice_board.postcode` is; without it, it is taken to be British.
+
 The server registers a handler for every operation and an authenticator for every security scheme; registering
 checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
 until it is implemented. The roles an operation allows are the scopes in its `security`:
