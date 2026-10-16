@@ -33,6 +33,15 @@ class Spotify(BaseModel):
     """The ``Spotify`` object."""
 
     enabled: bool
+    style: Literal["classic", "airy", "hero", "card"] = Field(
+        default="classic",
+        description=(
+            "How the Spotify panel is drawn, now playing and top tracks alike. classic is the original look; airy has "
+            "small-caps labels like the weather; hero has an icon header and makes the top track big, like the hero "
+            "arrivals; card puts it in a rounded card with a black title bar. Optional, so a broker that doesn't send "
+            "it gets classic."
+        ),
+    )
 
 
 class Tfl(BaseModel):
