@@ -38,6 +38,17 @@ class Departures(BaseModel):
     )
 
 
+class Developer(BaseModel):
+    """The ``Developer`` object."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the screen shows the developer panel. Its data comes from the broker's /api/developer, which "
+            "holds the GitHub token, so no token is sent here."
+        ),
+    )
+
+
 class Glowmarkt(BaseModel):
     """The ``Glowmarkt`` object."""
 
@@ -167,6 +178,13 @@ class ConfigResponse(BaseModel):
     )
     spotify: Spotify
     glowmarkt: Glowmarkt
+    developer: Developer | None = Field(
+        default=None,
+        description=(
+            "The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that doesn't send "
+            "it leaves the panel off."
+        ),
+    )
     pairing_code: str | None
 
 

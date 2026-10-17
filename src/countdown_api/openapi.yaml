@@ -117,6 +117,13 @@ components:
           $ref: '#/components/schemas/Spotify'
         glowmarkt:
           $ref: '#/components/schemas/Glowmarkt'
+        developer:
+          anyOf:
+          - $ref: '#/components/schemas/Developer'
+          - type: 'null'
+          default: null
+          description: The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that
+            doesn't send it leaves the panel off.
         pairing_code:
           anyOf:
           - type: string
@@ -170,6 +177,16 @@ components:
       required:
       - stops
       title: Departures
+      type: object
+    Developer:
+      properties:
+        enabled:
+          type: boolean
+          description: Whether the screen shows the developer panel. Its data comes from the broker's
+            /api/developer, which holds the GitHub token, so no token is sent here.
+      required:
+      - enabled
+      title: Developer
       type: object
     Error:
       properties:
