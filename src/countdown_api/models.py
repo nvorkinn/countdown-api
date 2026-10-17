@@ -65,8 +65,30 @@ class Developer(BaseModel):
 class Glowmarkt(BaseModel):
     """The ``Glowmarkt`` object."""
 
-    username: str | None
-    password: str | None
+    enabled: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the screen shows the energy panel. Its data comes from the store, which the broker's Glowmarkt "
+            "provider fills, so no credentials are sent here. Optional; a renderer that gets null (a broker that "
+            "predates it) shows the panel when username and password are both non-blank."
+        ),
+    )
+    username: str | None = Field(
+        default=None,
+        description=(
+            "Deprecated and no longer sent, since the energy data comes from the store. A broker sends null "
+            "explicitly, because renderers that predate enabled require the key. To be removed in a later contract "
+            "change."
+        ),
+    )
+    password: str | None = Field(
+        default=None,
+        description=(
+            "Deprecated and no longer sent, since the energy data comes from the store. A broker sends null "
+            "explicitly, because renderers that predate enabled require the key. To be removed in a later contract "
+            "change."
+        ),
+    )
 
 
 class NoticeBoard(BaseModel):
