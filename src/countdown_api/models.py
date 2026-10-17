@@ -8,6 +8,19 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 
+class AppleMusic(BaseModel):
+    """The ``AppleMusic`` object."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the Spotify area shows Apple Music too. Its data comes from the broker's /api/apple-music in "
+            "/api/spotify's shapes, which holds the Apple token, so no token is sent here. Apple Music has no now "
+            "playing or queue, so that is what was played last and before it, and top tracks and artists the broker "
+            "counts from the plays it has seen."
+        ),
+    )
+
+
 class DepartureStop(BaseModel):
     """The ``DepartureStop`` object."""
 
@@ -101,15 +114,6 @@ class Spotify(BaseModel):
             "it is drawn as hero. Superseded by style."
         ),
     )
-    source: Literal["spotify", "apple_music"] = Field(
-        default="spotify",
-        description=(
-            "Which service the music panel shows. spotify is what's playing, what's up next and the listener's top "
-            "tracks and artists, from /api/spotify. apple_music is what was played last and before it (Apple Music has"
-            " no now playing or queue), and top tracks and artists the broker counts from the plays it has seen, from "
-            "/api/apple-music in the same shapes. Optional, so a broker that doesn't send it gets spotify."
-        ),
-    )
 
 
 class Tfl(BaseModel):
@@ -192,6 +196,13 @@ class ConfigResponse(BaseModel):
         description=(
             "The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that doesn't send "
             "it leaves the panel off."
+        ),
+    )
+    apple_music: AppleMusic | None = Field(
+        default=None,
+        description=(
+            "Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker that doesn't "
+            "send it leaves it off."
         ),
     )
     pairing_code: str | None
