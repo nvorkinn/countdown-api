@@ -101,6 +101,15 @@ class Spotify(BaseModel):
             "it is drawn as hero. Superseded by style."
         ),
     )
+    source: Literal["spotify", "apple_music"] = Field(
+        default="spotify",
+        description=(
+            "Which service the music panel shows. spotify is what's playing, what's up next and the listener's top "
+            "tracks and artists, from /api/spotify. apple_music is what was played last and before it (Apple Music has"
+            " no now playing or queue), and top tracks and artists the broker counts from the plays it has seen, from "
+            "/api/apple-music in the same shapes. Optional, so a broker that doesn't send it gets spotify."
+        ),
+    )
 
 
 class Tfl(BaseModel):
