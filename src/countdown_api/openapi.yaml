@@ -124,6 +124,13 @@ components:
           default: null
           description: The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that
             doesn't send it leaves the panel off.
+        apple_music:
+          anyOf:
+          - $ref: '#/components/schemas/AppleMusic'
+          - type: 'null'
+          default: null
+          description: Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker
+            that doesn't send it leaves it off.
         pairing_code:
           anyOf:
           - type: string
@@ -177,6 +184,18 @@ components:
       required:
       - stops
       title: Departures
+      type: object
+    AppleMusic:
+      properties:
+        enabled:
+          type: boolean
+          description: Whether the Spotify area shows Apple Music too. Its data comes from the broker's
+            /api/apple-music in /api/spotify's shapes, which holds the Apple token, so no token is sent here. Apple
+            Music has no now playing or queue, so that is what was played last and before it, and top tracks and
+            artists the broker counts from the plays it has seen.
+      required:
+      - enabled
+      title: AppleMusic
       type: object
     Developer:
       properties:
