@@ -123,7 +123,6 @@ class Spotify(BaseModel):
 class Tfl(BaseModel):
     """The ``Tfl`` object."""
 
-    app_key: str
     stop_ids: list[str]
     style: Literal["classic", "hero", "grouped", "card"] = Field(
         default="hero",

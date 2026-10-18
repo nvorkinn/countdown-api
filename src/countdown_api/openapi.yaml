@@ -298,8 +298,6 @@ components:
       type: object
     Tfl:
       properties:
-        app_key:
-          type: string
         stop_ids:
           items:
             type: string
@@ -318,7 +316,6 @@ components:
             under a black header, is retired; it is still accepted, so an older broker that sends it keeps
             validating, and it is drawn as hero. Superseded by style, where grouped is called airy.
       required:
-      - app_key
       - stop_ids
       title: Tfl
       type: object
