@@ -69,11 +69,9 @@ that picked the same place share one forecast however its name was typed. `Weath
 `key` is optional and defaults to null, which an older broker sends; a renderer then reads the weather under
 `location`, as before `key`.
 
-`Weather.api_key` is unused and on its way out: the renderer reads the weather from the store, and the weather
-provider fills it from Open-Meteo, which needs no key. It is optional and defaults to `""`, so a renderer built on
-this contract reads a broker that leaves it out. Renderers built before it was optional require it, so a broker keeps
-sending it, empty and explicitly (an unset default is left out of the response), until none of those renderers is
-left; then the broker stops and the field goes.
+`Weather` carries no key either. The renderer reads the weather from the store, and the weather provider fills it
+from Open-Meteo, which needs no key. The `api_key` it used to carry is gone; the models ignore fields they don't know,
+so a broker that still sends it is still read.
 
 The server registers a handler for every operation and an authenticator for every security scheme; registering
 checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
