@@ -321,13 +321,6 @@ components:
       type: object
     Weather:
       properties:
-        api_key:
-          type: string
-          default: ''
-          deprecated: true
-          description: Unused, and going away. The renderer reads the weather from the store, which the weather
-            provider fills from Open-Meteo, which needs no key. Optional, so a renderer reads a broker that doesn't
-            send it; a broker keeps sending it (empty) until no renderer that requires it is left.
         location:
           type: string
         key:
