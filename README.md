@@ -43,8 +43,12 @@ counts as today. Both are optional, defaulting to `"en"` and `"Europe/London"`.
 `ConfigResponse.departures` lists every stop the screen shows departures for, each with its `source` (`"tfl"` or
 `"entur"`) and its `id` there, in the owner's order, plus the `style` they're drawn in. A renderer that reads it ignores
 `tfl.stop_ids` and `tfl.style`; `tfl` keeps carrying the TfL stops alone, so a renderer that predates `departures` never
-gets an id it can't look up. `tfl.app_key` is still where the TfL key comes from. `NoticeBoard.country` (`"GB"` or
-`"NO"`) says whose postcode `notice_board.postcode` is; without it, it is taken to be British.
+gets an id it can't look up. `NoticeBoard.country` (`"GB"` or `"NO"`) says whose postcode `notice_board.postcode` is;
+without it, it is taken to be British.
+
+`Tfl` carries no TfL key. The renderer reads the departures and TfL's disruptions from the store, and the providers
+that fill it read TfL's key from their own environment. The `app_key` it used to carry is gone; the models ignore
+fields they don't know, so a broker that still sends it is still read.
 
 `ConfigResponse.style` (`"airy"`, `"hero"` or `"card"`) is the one look every panel is drawn in. A renderer that reads
 it ignores the panels' own `style` fields (`tfl`, `departures`, `spotify`, `notice_board`), which a broker keeps
