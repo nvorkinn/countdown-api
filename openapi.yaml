@@ -218,31 +218,11 @@ components:
     Glowmarkt:
       properties:
         enabled:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          default: null
+          type: boolean
           description: Whether the screen shows the energy panel. Its data comes from the store, which the broker's
-            Glowmarkt provider fills, so no credentials are sent here. Optional; a renderer that gets null (a broker
-            that predates it) shows the panel when username and password are both non-blank.
-        username:
-          anyOf:
-          - type: string
-          - type: 'null'
-          default: null
-          deprecated: true
-          description: Deprecated and no longer sent, since the energy data comes from the store. A broker sends
-            null explicitly, because renderers that predate enabled require the key. To be removed in a later
-            contract change.
-        password:
-          anyOf:
-          - type: string
-          - type: 'null'
-          default: null
-          deprecated: true
-          description: Deprecated and no longer sent, since the energy data comes from the store. A broker sends
-            null explicitly, because renderers that predate enabled require the key. To be removed in a later
-            contract change.
+            Glowmarkt provider fills, so no credentials are sent here.
+      required:
+      - enabled
       title: Glowmarkt
       type: object
     NoticeBoard:

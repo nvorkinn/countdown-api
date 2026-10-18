@@ -55,10 +55,9 @@ optional and defaults to null, which leaves the renderer on the panels' own fiel
 `enabled`. It carries no token: the broker keeps the GitHub token and the renderer fetches the panel's data from the
 broker's `/api/developer`, as it does Spotify's. It is optional and defaults to null, which leaves the panel off.
 
-`Glowmarkt.enabled` switches the energy panel on. It carries no credentials: the broker's Glowmarkt provider signs in
-and fills the store, which the renderer reads. `username` and `password` are deprecated and sent as null (explicitly,
-since renderers that predate `enabled` require them); when `enabled` is null (an older broker), a renderer falls back
-to showing the panel when both are non-blank. They will be removed in a later contract change.
+`Glowmarkt.enabled` (required) switches the energy panel on. It carries no credentials: the broker's Glowmarkt
+provider signs in and fills the store, which the renderer reads. The `username` and `password` it used to carry are
+gone; the models ignore fields they don't know, so a broker that still sends them as null is still read.
 
 The server registers a handler for every operation and an authenticator for every security scheme; registering
 checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
