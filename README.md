@@ -52,8 +52,8 @@ sending so older renderers still get a look they know (the shared `airy` is thei
 optional and defaults to null, which leaves the renderer on the panels' own fields.
 
 `ConfigResponse.developer` switches the developer panel (GitHub pull requests and builds, AI plans) on with
-`enabled`. It carries no token: the broker keeps the GitHub token and the renderer fetches the panel's data from the
-broker's `/api/developer`, as it does Spotify's. It is optional and defaults to null, which leaves the panel off.
+`enabled`. It carries no token: the broker keeps the GitHub token, and its developer provider fills the store with the
+panel's data, which the renderer reads. It is optional and defaults to null, which leaves the panel off.
 
 `Glowmarkt.enabled` (required) switches the energy panel on. It carries no credentials: the broker's Glowmarkt
 provider signs in and fills the store, which the renderer reads. The `username` and `password` it used to carry are

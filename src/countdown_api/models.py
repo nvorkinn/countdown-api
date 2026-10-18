@@ -56,8 +56,8 @@ class Developer(BaseModel):
 
     enabled: bool = Field(
         description=(
-            "Whether the screen shows the developer panel. Its data comes from the broker's /api/developer, which "
-            "holds the GitHub token, so no token is sent here."
+            "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer"
+            " provider fills with the GitHub token it holds, so no token is sent here."
         ),
     )
 
