@@ -139,7 +139,14 @@ class Tfl(BaseModel):
 class Weather(BaseModel):
     """The ``Weather`` object."""
 
-    api_key: str
+    api_key: str = Field(
+        default="",
+        description=(
+            "Unused, and going away. The renderer reads the weather from the store, which the weather provider fills "
+            "from Open-Meteo, which needs no key. Optional, so a renderer reads a broker that doesn't send it; a "
+            "broker keeps sending it (empty) until no renderer that requires it is left."
+        ),
+    )
     location: str
     key: str | None = Field(
         default=None,

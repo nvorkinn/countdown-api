@@ -323,6 +323,11 @@ components:
       properties:
         api_key:
           type: string
+          default: ''
+          deprecated: true
+          description: Unused, and going away. The renderer reads the weather from the store, which the weather
+            provider fills from Open-Meteo, which needs no key. Optional, so a renderer reads a broker that doesn't
+            send it; a broker keeps sending it (empty) until no renderer that requires it is left.
         location:
           type: string
         key:
@@ -335,7 +340,6 @@ components:
             the slug of location for one saved before places were picked (london). Optional; a renderer that gets
             null (a broker that predates it) reads the weather under location instead.
       required:
-      - api_key
       - location
       title: Weather
       type: object
