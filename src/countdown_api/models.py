@@ -142,6 +142,15 @@ class Weather(BaseModel):
 
     api_key: str
     location: str
+    key: str | None = Field(
+        default=None,
+        description=(
+            "The key the place's weather is kept under in the store, which the renderer reads as v1:weather:<key>, "
+            "e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or the slug of location "
+            "for one saved before places were picked (london). Optional; a renderer that gets null (a broker that "
+            "predates it) reads the weather under location instead."
+        ),
+    )
 
 
 class ConfigResponse(BaseModel):
