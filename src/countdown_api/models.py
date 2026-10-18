@@ -13,10 +13,10 @@ class AppleMusic(BaseModel):
 
     enabled: bool = Field(
         description=(
-            "Whether the Spotify area shows Apple Music too. Its data comes from the broker's /api/apple-music in "
-            "/api/spotify's shapes, which holds the Apple token, so no token is sent here. Apple Music has no now "
-            "playing or queue, so that is what was played last and before it, and top tracks and artists the broker "
-            "counts from the plays it has seen."
+            "Whether the Spotify area shows Apple Music too. Its data comes from the store, in Spotify's shapes, "
+            "written by the broker's music provider, which holds the Apple token, so no token is sent here. Apple "
+            "Music has no now playing or queue, so that is what was played last and before it, and top tracks and "
+            "artists the broker counts from the plays it has seen."
         ),
     )
 
