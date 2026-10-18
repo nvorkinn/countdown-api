@@ -60,6 +60,12 @@ and fills the store, which the renderer reads. `username` and `password` are dep
 since renderers that predate `enabled` require them); when `enabled` is null (an older broker), a renderer falls back
 to showing the panel when both are non-blank. They will be removed in a later contract change.
 
+`Weather.key` is the key the screen's weather is kept under in the store (the renderer reads `v1:weather:<key>`): for a
+place picked on the settings page it is the place's name, country and Open-Meteo id (`london-gb-2643743`), so screens
+that picked the same place share one forecast however its name was typed. `Weather.location` stays the place's name.
+`key` is optional and defaults to null, which an older broker sends; a renderer then reads the weather under
+`location`, as before `key`.
+
 The server registers a handler for every operation and an authenticator for every security scheme; registering
 checks that nothing is missing, so adding an operation to `openapi.yaml` fails the broker's startup (and its tests)
 until it is implemented. The roles an operation allows are the scopes in its `security`:
