@@ -61,7 +61,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.13" }]
 [package.metadata.requires-dev]
 dev = [
     { name = "jsonschema", specifier = ">=4.25" },
-    { name = "openapi-codegen", extras = ["yaml"], url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.0.0/openapi_codegen-2.0.0-py3-none-any.whl" },
+    { name = "openapi-codegen", extras = ["yaml"], url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl" },
     { name = "pre-commit" },
     { name = "pytest", specifier = ">=8.4" },
     { name = "ruff" },
@@ -141,10 +141,10 @@ wheels = [
 
 [[package]]
 name = "openapi-codegen"
-version = "2.0.0"
-source = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.0.0/openapi_codegen-2.0.0-py3-none-any.whl" }
+version = "2.1.0"
+source = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl" }
 wheels = [
-    { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.0.0/openapi_codegen-2.0.0-py3-none-any.whl", hash = "sha256:37496a621bb3f1550d62ef5e137b6fdac25ef46e82801bc51abf1240d1cfe07a" },
+    { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl", hash = "sha256:21c3255366388d25373d5cd44ad854d6b3e0686fd03e9c44f7a8073c2ac273f5" },
 ]
 
 [package.optional-dependencies]

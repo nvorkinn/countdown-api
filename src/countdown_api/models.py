@@ -227,7 +227,7 @@ class ConfigResponse(BaseModel):
     pairing_code: str | None
 
 
-DeviceId = str
+DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
 
@@ -239,13 +239,13 @@ class FrameRecord(BaseModel):
     frame: bytes = Field(
         description="The panel's 48,000 bytes (800x480 at one bit a pixel), as the screen takes them. Raw, not base64.",
     )
-    etag: str = Field(
+    etag: Annotated[str, Field(pattern="^[0-9a-f]{16}$")] = Field(
         description=(
             "The frame's 8-byte BLAKE2b in hex, the ETag the broker serves it with (in quotes), whichever copy it "
             "serves."
         ),
     )
-    rendered_at: str = Field(
+    rendered_at: Annotated[str, Field(pattern="^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+00:00$")] = Field(
         description=(
             "When this picture was first written, ISO 8601 in UTC to the millisecond, e.g. "
             "2026-10-18T12:00:00.000+00:00. It doesn't move while the picture stays the same."
@@ -277,7 +277,7 @@ MusicTopLists = dict[str, MusicTopRange]
 """A service's top lists by Spotify's time range ("long_term", "short_term")."""
 
 
-Pace = str
+Pace = Annotated[str, Field(pattern="^[0-9]+$")]
 """Seconds, as decimal text (what SET of an integer stores)."""
 
 
@@ -288,18 +288,20 @@ class PairingConfig(ConfigResponse):
     with the code it is to show.
     """
 
-    pairing_code: str = Field(description="The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L.")
+    pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] = Field(
+        description="The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L.",
+    )
 
 
 RenderJobs = list[DeviceId]
 """v1:render:jobs, device ids, newest first (LPUSH; the workers BRPOP the oldest)."""
 
 
-RenderQueuedFlag = str
+RenderQueuedFlag = Annotated[str, Field(pattern="^[0-9]+$")]
 """When the job was queued, in Unix milliseconds by Redis's clock (TIME), as decimal text."""
 
 
-RenderScreens = dict[str, str]
+RenderScreens = dict[str, Annotated[str, Field(pattern="^[a-z0-9][a-z0-9_-]{1,31}$")]]
 """v1:render:screens, device id to the screen's slug."""
 
 
@@ -326,7 +328,7 @@ class StoredEnergy(BaseModel):
 
     fetched_at: datetime
     device_id: str
-    offset: str = Field(
+    offset: Annotated[str, Field(pattern="^-?\\d+$")] = Field(
         description=(
             "Glowmarkt's `offset` parameter the readings were asked for with: minutes to add to local time to get UTC,"
             ' so BST is "-60".'
@@ -387,7 +389,7 @@ Subscription = list[Annotated[str, Field(min_length=1)]]
 """A subscription set's members, in no order. See `sources` for each source's."""
 
 
-WeatherKey = str
+WeatherKey = Annotated[str, Field(pattern="^[^\\s:]+$")]
 """A weather key. For a place picked on the settings page it is the slug of its name, its country (xx
 for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a
 typed location, that text's slug. weather_keys.json has examples.

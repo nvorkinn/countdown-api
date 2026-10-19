@@ -93,8 +93,7 @@ Edit `store.yaml` (and `lua/`), then regenerate the committed `src/countdown_api
 the contract's schemas as an OpenAPI document's components: JSON Schema 2020-12 is what OpenAPI 3.1's schemas are, so
 the models are the same classes they were when the contract was an HTTP API. It writes `keys.py`, `scripts.py`,
 `store.json` and `__init__.py` itself, from the same file, and runs `ruff check --fix` and `ruff format` on all of it.
-(The models don't check the schemas' `pattern`s, which openapi-codegen 2.0.0 quotes twice; the tests check every
-example against the schemas, patterns and all, with jsonschema.)
+The models check the schemas' `pattern`s too, and the tests check every example against the schemas with jsonschema.
 
 CI checks it's up to date (`python generate.py --check`), runs ruff (`select = ["ALL"]`, generated code included) and
 the tests (`uv run --frozen pytest`), and builds the wheel. A PR that changes `store.yaml` gets the regenerated code
