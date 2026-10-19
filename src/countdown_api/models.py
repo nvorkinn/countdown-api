@@ -231,12 +231,6 @@ DeviceId = str
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
 
-class Error(BaseModel):
-    """The ``Error`` object."""
-
-    error: str
-
-
 class FrameRecord(BaseModel):
     """The fields of the v1:frame:<device id> hash, all of them always there."""
 

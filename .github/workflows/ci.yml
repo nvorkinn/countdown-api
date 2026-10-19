@@ -20,8 +20,8 @@ jobs:
       # ruff (which generate.py formats with), pytest and jsonschema.
       - name: Install the dev tools and the package
         run: uv sync --frozen
-      # src/countdown_api is committed, so it has to be what generate.py writes from store.yaml (and lua/, and the
-      # deprecated openapi.yaml): `python generate.py` brings it up to date.
+      # src/countdown_api is committed, so it has to be what generate.py writes from store.yaml (and lua/):
+      # `python generate.py` brings it up to date.
       - name: Check src/countdown_api is up to date with store.yaml
         run: uv run --frozen python generate.py --check
       - name: Ruff
@@ -37,19 +37,13 @@ jobs:
           uv build --wheel --out-dir dist
           ls -l dist
       # What a consumer installs: the models need only pydantic, and the contract, the Lua and the examples come in
-      # the wheel. The deprecated extras still install and import, until they go.
-      - name: Install the wheel, and with each deprecated extra, then import it
+      # the wheel.
+      - name: Install the wheel, then import it
         run: |
-          for side in base:models,keys,scripts,fixtures client:models,clients server:models,blueprints; do
-            extra="${side%%:*}"; modules="${side#*:}"
-            spec="$(ls dist/*.whl)"; [ "$extra" = base ] || spec="$spec[$extra]"
-            uv venv --python 3.14 "$RUNNER_TEMP/$extra"
-            uv pip install --python "$RUNNER_TEMP/$extra/bin/python" "$spec"
-            cd "$RUNNER_TEMP"
-            for module in ${modules//,/ }; do "$extra/bin/python" -I -c "import countdown_api.$module"; done
-            cd "$GITHUB_WORKSPACE"
-          done
+          uv venv --python 3.14 "$RUNNER_TEMP/base"
+          uv pip install --python "$RUNNER_TEMP/base/bin/python" "$(ls dist/*.whl)"
           cd "$RUNNER_TEMP"
+          for module in models keys scripts fixtures; do base/bin/python -I -c "import countdown_api.$module"; done
           base/bin/python -I -c "
           import importlib.resources as r
           from countdown_api import fixtures, keys, scripts

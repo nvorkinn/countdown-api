@@ -81,14 +81,6 @@ format = "flat" explicit = true`, then `uv lock --upgrade-package countdown-api`
 URL), `constraints.txt` (pins only countdown-api to the latest release), `latest.json`, `store.yaml` and `SHA256SUMS`.
 It needs Settings > Pages > Source set to "GitHub Actions" and a `v*` tag rule on the `github-pages` environment.
 
-### Deprecated: the HTTP API
-
-What is left of the old `GET /api/config` is [`openapi.yaml`](openapi.yaml): nothing serves it or calls it any more.
-It stays only until both repositories use the store contract, so that nothing they import goes away under them:
-`countdown_api.clients` and `countdown_api.blueprints` are still generated from it (with the same schemas as the
-contract, which `generate.py` puts in as its components), the `client` and `server` extras still install, and the
-wheel still carries `countdown_api/openapi.yaml`. A later PR removes them.
-
 ## Changing it
 
 Edit `store.yaml` (and `lua/`), then regenerate the committed `src/countdown_api`:

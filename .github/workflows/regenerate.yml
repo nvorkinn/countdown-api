@@ -1,11 +1,11 @@
 name: Regenerate
 
-# When a PR changes the contract (store.yaml, lua/, or the deprecated openapi.yaml), regenerate src/countdown_api and
+# When a PR changes the contract (store.yaml or lua/), regenerate src/countdown_api and
 # push the result to the PR branch, so the reviewer sees the effect of the change in the same PR.
 on:
   pull_request:
     branches: [main]
-    paths: [store.yaml, lua/**, openapi.yaml, generate.py]
+    paths: [store.yaml, lua/**, generate.py]
 
 # One run per PR; a newer push cancels the older run.
 concurrency:

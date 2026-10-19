@@ -3,8 +3,7 @@ name: Release
 # Pushing a tag v<version> (from main) publishes the store contract, store.yaml, and the wheel generate.py builds
 # from it (countdown_api-<version>-py3-none-any.whl, which carries the contract as store.json, the Lua and the
 # examples too) as a GitHub release, and makes it the latest one. The version is stamped into the contract and the
-# wheel from the tag (GITHUB_REF_NAME). Until the HTTP API's leftovers go, the deprecated openapi.yaml is published
-# beside it, as before.
+# wheel from the tag (GITHUB_REF_NAME).
 #
 # The release is also published to the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/. It is
 # a flat package index listing the latest wheel, so a consumer that depends on countdown-api and points uv at it
@@ -74,12 +73,11 @@ jobs:
       - name: Build the wheel from the contract
         run: |
           uv run --frozen --no-sync python generate.py
-          cp src/countdown_api/openapi.yaml dist/openapi.yaml
           uv version --frozen "${TAG#v}"
           uv build --wheel --out-dir dist
       - name: Checksums
         working-directory: dist
-        run: sha256sum -- store.yaml openapi.yaml *.whl | tee SHA256SUMS
+        run: sha256sum -- store.yaml *.whl | tee SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: dist
