@@ -81,17 +81,11 @@ def openapi_document(contract: dict[str, Any]) -> dict[str, Any]:
 
 
 def _as_components(node: Any) -> Any:  # noqa: ANN401 -- any JSON
-    """Return `node` with its `#/$defs/` references pointed at an OpenAPI document's components instead.
-
-    Without the schemas' `pattern`s: openapi-codegen 2.0.0 quotes a string constraint twice (it writes
-    `pattern='"^...$"'`, a regex that wants the quotes too), so the models don't check them. The contract's tests
-    check every example against the schemas, patterns and all, with jsonschema.
-    """
+    """Return `node` with its `#/$defs/` references pointed at an OpenAPI document's components instead."""
     if isinstance(node, dict):
         return {
             key: value.replace("#/$defs/", "#/components/schemas/", 1) if key == "$ref" else _as_components(value)
             for key, value in node.items()
-            if not (key == "pattern" and isinstance(value, str))
         }
     if isinstance(node, list):
         return [_as_components(item) for item in node]
