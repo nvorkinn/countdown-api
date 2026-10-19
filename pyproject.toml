@@ -2,12 +2,13 @@
 name = "countdown-api"
 # Stamped from the release's tag when it is built (`uv version`); this is only a placeholder for checkouts.
 version = "0.0.0"
-description = "The API between the countdown renderer and auth-broker: the contract, and the code generated from it."
+description = "The countdown Redis store contract between auth-broker and pi-dashboard: the keys, the schemas of their values, the Lua scripts, canonical examples, and the code generated from them."
 license = "MIT"
 requires-python = ">=3.14"
 dependencies = ["pydantic>=2.13"]
 
-# Each side of the API needs one of these: the renderer the `requests` client, the broker the Flask views.
+# Deprecated, with the HTTP API they were for: nothing needs them any more. They go once auth-broker and pi-dashboard
+# both use the store contract; until then they stay, so neither side's install changes.
 [project.optional-dependencies]
 client = ["requests>=2.32"]
 server = ["flask>=3.1"]
@@ -16,8 +17,9 @@ server = ["flask>=3.1"]
 requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
 
-# src/countdown_api/ is committed, but openapi-codegen writes it from openapi.yaml: run `python generate.py` after
-# changing the contract. The workflows regenerate it just before building the wheel (see .github/workflows/ci.yml).
+# src/countdown_api/ is committed, but generate.py writes most of it from store.yaml (with openapi-codegen for the
+# models): run `python generate.py` after changing the contract. CI fails if it is out of date.
+# src/countdown_api/fixtures/ is not generated: those are the contract's canonical examples.
 
 # openapi-codegen is a dependency like any other, but of a released file, not a git ref: the lock records the
 # wheel's hash, so a build fails if that file ever changes. To move to a newer release, change the URL here and
@@ -26,7 +28,8 @@ build-backend = "uv_build"
 openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.0.0/openapi_codegen-2.0.0-py3-none-any.whl" }
 
 [dependency-groups]
-dev = ["openapi-codegen[yaml]", "pre-commit", "ruff"]
+# pytest and jsonschema for the contract's own tests (tests/), which check every example against the schemas.
+dev = ["jsonschema>=4.25", "openapi-codegen[yaml]", "pre-commit", "pytest>=8.4", "ruff"]
 
 [tool.ruff]
 line-length = 120
@@ -44,3 +47,13 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/make_site.py" = ["E501", "INP001"] # long HTML template lines; a script, not a package
+"generate.py" = ["T201"] # a command-line script: printing is its output
+"tests/**" = [
+    "S101",    # pytest is built on assert
+    "PLR2004", # a test compares against the literal values it expects
+    "D1",      # a test's name says what it checks
+    "INP001",  # tests/ is a pytest rootdir, not a package
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -16,35 +16,45 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v5
-      # openapi-codegen comes from a release of its repository, whose hash uv.lock records. Not the project itself:
-      # its code doesn't exist until openapi-codegen has written it.
-      - name: Install openapi-codegen
-        run: uv sync --frozen --no-install-project
-      # src/countdown_api is committed, so it has to be what openapi-codegen writes for the current openapi.yaml:
-      # `python generate.py` brings it up to date. This runs before the build step, which regenerates it.
-      - name: Check src/countdown_api is up to date with openapi.yaml
+      # openapi-codegen comes from a release of its repository, whose hash uv.lock records; the dev group also has
+      # ruff (which generate.py formats with), pytest and jsonschema.
+      - name: Install the dev tools and the package
+        run: uv sync --frozen
+      # src/countdown_api is committed, so it has to be what generate.py writes from store.yaml (and lua/, and the
+      # deprecated openapi.yaml): `python generate.py` brings it up to date.
+      - name: Check src/countdown_api is up to date with store.yaml
+        run: uv run --frozen python generate.py --check
+      - name: Ruff
         run: |
-          uv run --frozen --no-sync openapi-codegen openapi.yaml --out src/countdown_api --package countdown_api --check
-          diff openapi.yaml src/countdown_api/openapi.yaml
-      # What a release publishes: openapi-codegen run on openapi.yaml (the models, the requests client and the Flask
-      # views), then built into a wheel that also carries the contract.
-      - name: Build the wheel from openapi.yaml
+          uv run --frozen ruff check --output-format=github .
+          uv run --frozen ruff format --check --diff .
+      # Every canonical example is what the schemas allow (jsonschema and the generated models both), under the key
+      # and TTL the contract gives it.
+      - name: Test the contract
+        run: uv run --frozen pytest -q
+      - name: Build the wheel
         run: |
-          mkdir dist
-          cp openapi.yaml dist/
-          uv run --frozen --no-sync openapi-codegen dist/openapi.yaml --out src/countdown_api --package countdown_api
-          cp dist/openapi.yaml src/countdown_api/openapi.yaml
           uv build --wheel --out-dir dist
           ls -l dist
-      # Each side of the API installs with its own extra and must import without the other's dependency.
-      - name: Install the wheel with each extra, then import it
+      # What a consumer installs: the models need only pydantic, and the contract, the Lua and the examples come in
+      # the wheel. The deprecated extras still install and import, until they go.
+      - name: Install the wheel, and with each deprecated extra, then import it
         run: |
-          for side in client:models,clients server:models,blueprints; do
+          for side in base:models,keys,scripts,fixtures client:models,clients server:models,blueprints; do
             extra="${side%%:*}"; modules="${side#*:}"
+            spec="$(ls dist/*.whl)"; [ "$extra" = base ] || spec="$spec[$extra]"
             uv venv --python 3.14 "$RUNNER_TEMP/$extra"
-            uv pip install --python "$RUNNER_TEMP/$extra/bin/python" "$(ls dist/*.whl)[$extra]"
+            uv pip install --python "$RUNNER_TEMP/$extra/bin/python" "$spec"
             cd "$RUNNER_TEMP"
             for module in ${modules//,/ }; do "$extra/bin/python" -I -c "import countdown_api.$module"; done
-            "$extra/bin/python" -I -c "import importlib.resources as r; assert r.files('countdown_api').joinpath('openapi.yaml').is_file()"
             cd "$GITHUB_WORKSPACE"
           done
+          cd "$RUNNER_TEMP"
+          base/bin/python -I -c "
+          import importlib.resources as r
+          from countdown_api import fixtures, keys, scripts
+          assert r.files('countdown_api').joinpath('store.json').is_file()
+          assert fixtures.load('config_store.json')['key'] == keys.config('a1b2c3d4e5f6')
+          assert len(fixtures.read_bytes('frame_record.bin')) == 48000
+          assert scripts.ENQUEUE.sha1 == fixtures.load('render_queue.json')['enqueue_sha1']
+          "

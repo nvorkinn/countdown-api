@@ -1,0 +1,15 @@
+{
+  "about": "The subscription sets auth-broker writes for the two devices of config_store.json and pairing_key.json, whose `settings` are their rows in its database (a device's settings subscribe it whether it's paired or not; only config_store.json's has a Glowmarkt password), and the nudge it publishes after them: v1:sub:<source> for every source, each a set (the members' order means nothing), replaced whole in one transaction, a source nothing wants being no key at all; then an empty message on v1:sub:changed. pi-dashboard's providers each read their own source's set.",
+  "devices": ["config_store.json", "pairing_key.json"],
+  "sets": {
+    "v1:sub:tfl": ["490000077E", "940GZZLUOVL"],
+    "v1:sub:entur": ["NSR:StopPlace:58381"],
+    "v1:sub:weather": ["london-gb-2643743", "oslo-no-3143244"],
+    "v1:sub:glow": ["a1b2c3d4e5f6"],
+    "v1:sub:spotify": ["a1b2c3d4e5f6"],
+    "v1:sub:developer": ["a1b2c3d4e5f6"],
+    "v1:sub:postcode": ["0150", "SE17 3LL"]
+  },
+  "channel": "v1:sub:changed",
+  "message": ""
+}

@@ -1,11 +1,8 @@
-# The countdown API contract. Edit this file; releases publish it as openapi.yaml.
-# `info.version` is a placeholder: the release workflow stamps it from the tag.
 openapi: 3.1.0
 info:
-  title: countdown API
+  title: countdown API (deprecated)
   version: 0.0.0-dev
-  description: What the countdown renderer and the auth-broker say to each other. The released file is the single
-    source of truth for both; see the README.
+  description: Deprecated. The old GET /api/config, which nothing serves or calls any more; see store.yaml.
 paths:
   /api/config:
     get:
@@ -52,8 +49,193 @@ components:
       type: http
       scheme: bearer
   schemas:
+    DeviceId:
+      type: string
+      description: A device's id, 12 hex digits (six random bytes), as the broker registered it.
+    Subscription:
+      type: array
+      uniqueItems: true
+      items:
+        type: string
+        minLength: 1
+      description: A subscription set's members, in no order. See `sources` for each source's.
+    SubChanged:
+      const: ''
+      description: The nudge on v1:sub:changed carries nothing.
+    PairingConfig:
+      description: 'The value of v1:pairing:<device id>: the device''s config, as v1:config:<device id> would hold it, with
+        the code it is to show.'
+      allOf:
+      - $ref: '#/components/schemas/ConfigResponse'
+      properties:
+        pairing_code:
+          type: string
+          description: 'The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L.'
+      required:
+      - pairing_code
+      type: object
+    RenderScreens:
+      type: object
+      propertyNames:
+        $ref: '#/components/schemas/DeviceId'
+      additionalProperties:
+        type: string
+      description: v1:render:screens, device id to the screen's slug.
+    RenderJobs:
+      type: array
+      items:
+        $ref: '#/components/schemas/DeviceId'
+      description: v1:render:jobs, device ids, newest first (LPUSH; the workers BRPOP the oldest).
+    RenderQueuedFlag:
+      type: string
+      description: When the job was queued, in Unix milliseconds by Redis's clock (TIME), as decimal text.
+    FrameRecord:
+      description: The fields of the v1:frame:<device id> hash, all of them always there.
+      properties:
+        frame:
+          type: string
+          format: binary
+          description: The panel's 48,000 bytes (800x480 at one bit a pixel), as the screen takes them. Raw, not base64.
+        etag:
+          type: string
+          description: The frame's 8-byte BLAKE2b in hex, the ETag the broker serves it with (in quotes), whichever copy it
+            serves.
+        rendered_at:
+          type: string
+          description: When this picture was first written, ISO 8601 in UTC to the millisecond, e.g. 2026-10-18T12:00:00.000+00:00.
+            It doesn't move while the picture stays the same.
+      required:
+      - frame
+      - etag
+      - rendered_at
+      additionalProperties: false
+      type: object
+    StoredEnergy:
+      description: 'The value of v1:energy:<device id>: Glowmarkt''s own readings answers, as the broker got them, in a thin
+        wrapper. Each page''s readings run from the start of its window''s first bucket as of fetched_at (the hour 24 hours
+        before, midnight 31 days before, 1st January) to fetched_at; the renderer cuts each to its window when it draws.'
+      properties:
+        fetched_at:
+          type: string
+          format: date-time
+        device_id:
+          type: string
+        offset:
+          type: string
+          description: 'Glowmarkt''s `offset` parameter the readings were asked for with: minutes to add to local time to
+            get UTC, so BST is "-60".'
+        resource_id:
+          type: string
+          description: The meter's "electricity consumption" resource the readings are of.
+        hourly:
+          $ref: '#/components/schemas/GlowmarktReadings'
+        daily:
+          $ref: '#/components/schemas/GlowmarktReadings'
+        monthly:
+          $ref: '#/components/schemas/GlowmarktReadings'
+      required:
+      - fetched_at
+      - device_id
+      - offset
+      - resource_id
+      - hourly
+      - daily
+      - monthly
+      type: object
+    GlowmarktReadings:
+      type: object
+      description: 'Glowmarkt''s answer to GET /resource/<id>/readings, as it gave it: its `data` is [Unix seconds, kWh] pairs.
+        The renderer reads it with its own model of Glowmarkt''s answer.'
+    StoredPlayer:
+      description: 'The value of v1:spotify:<device id>. Each service''s part is in Spotify''s own shape (/me/player/queue:
+        its currently_playing, null when nothing plays, and its queue; Apple Music''s made to look like it, from the last
+        played track and the ones before it), null when the service is off for the device or couldn''t be fetched.'
+      properties:
+        fetched_at:
+          type: string
+          format: date-time
+        spotify:
+          anyOf:
+          - $ref: '#/components/schemas/MusicQueue'
+          - type: 'null'
+        apple_music:
+          anyOf:
+          - $ref: '#/components/schemas/MusicQueue'
+          - type: 'null'
+      required:
+      - fetched_at
+      type: object
+    MusicQueue:
+      type: object
+      description: Spotify's /me/player/queue answer (or Apple Music's, made to look like it), as the provider got it.
+    StoredTop:
+      description: 'The value of v1:spotify-top:<device id>: each service''s top lists by Spotify''s time range ("long_term",
+        "short_term"), each its /me/top/tracks and /me/top/artists answers, null when the service is off for the device or
+        couldn''t be fetched.'
+      properties:
+        fetched_at:
+          type: string
+          format: date-time
+        spotify:
+          anyOf:
+          - $ref: '#/components/schemas/MusicTopLists'
+          - type: 'null'
+        apple_music:
+          anyOf:
+          - $ref: '#/components/schemas/MusicTopLists'
+          - type: 'null'
+      required:
+      - fetched_at
+      type: object
+    MusicTopLists:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/MusicTopRange'
+      description: A service's top lists by Spotify's time range ("long_term", "short_term").
+    MusicTopRange:
+      description: A service's top tracks and artists over one time range, as its /top/tracks and /top/artists answer.
+      properties:
+        tracks:
+          type: object
+        artists:
+          type: object
+      required:
+      - tracks
+      - artists
+      type: object
+    StoredDeveloper:
+      description: 'The value of v1:developer:<device id>: the GitHub summary (null until the owner adds a GitHub token) and
+        the AI plans, as the broker''s services/developer.py builds them.'
+      properties:
+        fetched_at:
+          type: string
+          format: date-time
+        github:
+          anyOf:
+          - type: object
+          - type: 'null'
+        plans:
+          type: array
+          items:
+            type: object
+      required:
+      - fetched_at
+      type: object
+    AlbumArt:
+      type: string
+      format: binary
+      description: An image file's own bytes (a JPEG, as the music service serves it).
+    Pace:
+      type: string
+      description: Seconds, as decimal text (what SET of an integer stores).
+    WeatherKey:
+      type: string
+      description: A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for
+        none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed location, that
+        text's slug. weather_keys.json has examples.
     ConfigResponse:
-      description: GET /api/config.
+      description: A screen's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code
+        set, of v1:pairing:<device id> (PairingConfig).
       properties:
         device_id:
           type: string
@@ -67,21 +249,21 @@ components:
           - 24h
           default: 24h
           type: string
-          description: Application-wide format for user-facing clock times. Does not change machine timestamps,
-            durations, time zones or log formats. Optional, so a broker that doesn't send it gets 24h.
+          description: Application-wide format for user-facing clock times. Does not change machine timestamps, durations,
+            time zones or log formats. Optional, so a broker that doesn't send it gets 24h.
         language:
           enum:
           - en
           - nb
           default: en
           type: string
-          description: The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål).
-            Optional, so a broker that doesn't send it gets en.
+          description: The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål). Optional, so
+            a broker that doesn't send it gets en.
         timezone:
           default: Europe/London
           type: string
-          description: The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.
-            Optional, so a broker that doesn't send it gets Europe/London.
+          description: The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. Optional, so
+            a broker that doesn't send it gets Europe/London.
         style:
           anyOf:
           - enum:
@@ -91,12 +273,11 @@ components:
             type: string
           - type: 'null'
           default: null
-          description: How every panel is drawn (the departures, Spotify and the notice board, and any panel added
-            later), so the screen has one look. airy has small-caps labels over a hairline, like the weather; hero
-            has an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded
-            card with a black title bar. A renderer that reads it ignores tfl.style, departures.style,
-            spotify.style and notice_board.style, which a broker keeps sending for older renderers. Optional, so a
-            broker that doesn't send it leaves the renderer on those.
+          description: How every panel is drawn (the departures, Spotify and the notice board, and any panel added later),
+            so the screen has one look. airy has small-caps labels over a hairline, like the weather; hero has an icon header
+            over a heavy rule and makes the first item big; card puts each panel in a rounded card with a black title bar.
+            A renderer that reads it ignores tfl.style, departures.style, spotify.style and notice_board.style, which a broker
+            keeps sending for older renderers. Optional, so a broker that doesn't send it leaves the renderer on those.
         screen:
           $ref: '#/components/schemas/Screen'
         weather:
@@ -110,9 +291,9 @@ components:
           - $ref: '#/components/schemas/Departures'
           - type: 'null'
           default: null
-          description: Every stop whose departures the screen shows, from any source, in the owner's order. A
-            renderer that reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it
-            leaves the renderer on tfl.
+          description: Every stop whose departures the screen shows, from any source, in the owner's order. A renderer that
+            reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it leaves the renderer on
+            tfl.
         spotify:
           $ref: '#/components/schemas/Spotify'
         glowmarkt:
@@ -122,15 +303,15 @@ components:
           - $ref: '#/components/schemas/Developer'
           - type: 'null'
           default: null
-          description: The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that
-            doesn't send it leaves the panel off.
+          description: The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that doesn't
+            send it leaves the panel off.
         apple_music:
           anyOf:
           - $ref: '#/components/schemas/AppleMusic'
           - type: 'null'
           default: null
-          description: Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker
-            that doesn't send it leaves it off.
+          description: Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker that doesn't
+            send it leaves it off.
         pairing_code:
           anyOf:
           - type: string
@@ -154,12 +335,12 @@ components:
           - tfl
           - entur
           type: string
-          description: Who to ask for the stop's departures. tfl is Transport for London; entur is Norway's
-            national journey planner (Ruter and every other Norwegian operator).
+          description: Who to ask for the stop's departures. tfl is Transport for London; entur is Norway's national journey
+            planner (Ruter and every other Norwegian operator).
         id:
           type: string
-          description: The stop's id at its source. A NaPTAN id for tfl (490000077E, 940GZZLUOVL); an NSR
-            StopPlace or Quay for entur (NSR:StopPlace:58381, NSR:Quay:7333).
+          description: The stop's id at its source. A NaPTAN id for tfl (490000077E, 940GZZLUOVL); an NSR StopPlace or Quay
+            for entur (NSR:StopPlace:58381, NSR:Quay:7333).
       required:
       - source
       - id
@@ -179,8 +360,8 @@ components:
           - card
           default: hero
           type: string
-          description: How each stop's departures are drawn, the same for every source. Superseded by style; see
-            tfl.style for the values.
+          description: How each stop's departures are drawn, the same for every source. Superseded by style; see tfl.style
+            for the values.
       required:
       - stops
       title: Departures
@@ -189,10 +370,10 @@ components:
       properties:
         enabled:
           type: boolean
-          description: Whether the Spotify area shows Apple Music too. Its data comes from the store, in Spotify's
-            shapes, written by the broker's music provider, which holds the Apple token, so no token is sent here.
-            Apple Music has no now playing or queue, so that is what was played last and before it, and top tracks
-            and artists the broker counts from the plays it has seen.
+          description: Whether the Spotify area shows Apple Music too. Its data comes from the store, in Spotify's shapes,
+            written by the broker's music provider, which holds the Apple token, so no token is sent here. Apple Music has
+            no now playing or queue, so that is what was played last and before it, and top tracks and artists the broker
+            counts from the plays it has seen.
       required:
       - enabled
       title: AppleMusic
@@ -201,26 +382,18 @@ components:
       properties:
         enabled:
           type: boolean
-          description: Whether the screen shows the developer panel. Its data comes from the store, which the
-            broker's developer provider fills with the GitHub token it holds, so no token is sent here.
+          description: Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer
+            provider fills with the GitHub token it holds, so no token is sent here.
       required:
       - enabled
       title: Developer
-      type: object
-    Error:
-      properties:
-        error:
-          type: string
-      required:
-      - error
-      title: Error
       type: object
     Glowmarkt:
       properties:
         enabled:
           type: boolean
-          description: Whether the screen shows the energy panel. Its data comes from the store, which the broker's
-            Glowmarkt provider fills, so no credentials are sent here.
+          description: Whether the screen shows the energy panel. Its data comes from the store, which the broker's Glowmarkt
+            provider fills, so no credentials are sent here.
       required:
       - enabled
       title: Glowmarkt
@@ -234,13 +407,13 @@ components:
         country:
           anyOf:
           - enum:
-            - 'GB'
+            - GB
             - 'NO'
             type: string
           - type: 'null'
           default: null
-          description: The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional;
-            without it a postcode is taken to be British.
+          description: The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional; without it
+            a postcode is taken to be British.
         style:
           enum:
           - airy
@@ -249,11 +422,10 @@ components:
           - boxed
           default: hero
           type: string
-          description: How the notice board is drawn. airy, hero and card match the Spotify styles of the same name
-            (a small-caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title
-            bar); boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't
-            send it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws
-            boxed as card.
+          description: How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-caps
+            label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); boxed puts it
+            in a square box with a black title bar and a count. Optional, so a broker that doesn't send it gets hero. Superseded
+            by style, which has no boxed; a renderer that reads this field alone draws boxed as card.
       required:
       - postcode
       title: NoticeBoard
@@ -287,11 +459,11 @@ components:
           - card
           default: hero
           type: string
-          description: How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps
-            labels like the weather; hero has an icon header and makes the top track big, like the hero arrivals;
-            card puts it in a rounded card with a black title bar. Optional, so a broker that doesn't send it gets
-            hero. classic, the original look, is retired; it is still accepted, so an older broker that sends it
-            keeps validating, and it is drawn as hero. Superseded by style.
+          description: How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps labels like the
+            weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a rounded
+            card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the original look,
+            is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero.
+            Superseded by style.
       required:
       - enabled
       title: Spotify
@@ -310,11 +482,11 @@ components:
           - card
           default: hero
           type: string
-          description: How each stop's departures are drawn. hero makes the next departure big; grouped gives
-            each route one row with its next few times; card puts the stop in a rounded card with a column of
-            minutes. Optional, so a broker that doesn't send it gets hero. classic, the original row per departure
-            under a black header, is retired; it is still accepted, so an older broker that sends it keeps
-            validating, and it is drawn as hero. Superseded by style, where grouped is called airy.
+          description: How each stop's departures are drawn. hero makes the next departure big; grouped gives each route one
+            row with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a broker
+            that doesn't send it gets hero. classic, the original row per departure under a black header, is retired; it is
+            still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style,
+            where grouped is called airy.
       required:
       - stop_ids
       title: Tfl
@@ -328,11 +500,19 @@ components:
           - type: string
           - type: 'null'
           default: null
-          description: The key the place's weather is kept under in the store, which the renderer reads as
-            v1:weather:<key>, e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or
-            the slug of location for one saved before places were picked (london). Optional; a renderer that gets
-            null (a broker that predates it) reads the weather under location instead.
+          description: The key the place's weather is kept under in the store, which the renderer reads as v1:weather:<key>,
+            e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or the slug of location for one
+            saved before places were picked (london). Optional; a renderer that gets null (a broker that predates it) reads
+            the weather under location instead.
       required:
       - location
       title: Weather
+      type: object
+    Error:
+      properties:
+        error:
+          type: string
+      required:
+      - error
+      title: Error
       type: object
