@@ -1,0 +1,886 @@
+{
+  "info": {
+    "title": "countdown store contract",
+    "version": "0.0.0-dev",
+    "description": "What auth-broker (the config site) and pi-dashboard (the providers and the render pool) keep in the Redis they share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and who reads it, the scripts both sides run, and canonical examples (countdown_api/fixtures) that both sides' tests and this repository's check against."
+  },
+  "prefix": "v1",
+  "sources": {
+    "tfl": "TfL NaPTAN stop ids (490000077E, 940GZZLUOVL).",
+    "entur": "Entur NSR stop ids (NSR:StopPlace:58381, NSR:Quay:7333).",
+    "weather": "Weather keys (WeatherKey): the place picked on the settings page by name, country and Open-Meteo id (london-gb-2643743), or the slug of a typed location (london). The members are the <key> of v1:weather:<key>, and a screen's config carries its own as weather.key.",
+    "glow": "Device ids with a Glowmarkt account the broker's glow provider signs in with.",
+    "spotify": "Device ids with Spotify (or Apple Music) switched on.",
+    "developer": "Device ids with the developer panel switched on.",
+    "postcode": "The notice board's place: every screen's postcode in the broker's canonical form (\"SW1A 1AA\", or \"0150\" for a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads). Never logged."
+  },
+  "keys": {
+    "subscription": {
+      "pattern": "v1:sub:{source}",
+      "params": {
+        "source": "one of `sources`."
+      },
+      "redis": "set",
+      "value": "Subscription",
+      "encoding": "text",
+      "written_by": "auth-broker, on every config save, rebuilt whole from its database in one transaction",
+      "read_by": "pi-dashboard's providers, each its own source's",
+      "examples": [
+        "subscriptions.json",
+        "weather_keys.json"
+      ],
+      "description": "The ids some screen wants from `source`, replaced atomically (DEL then SADD in one transaction) whenever a config is saved, then a nudge on sub_changed. A missing key is an empty set."
+    },
+    "sub_changed": {
+      "pattern": "v1:sub:changed",
+      "redis": "channel",
+      "value": "SubChanged",
+      "encoding": "text",
+      "written_by": "auth-broker, after replacing the subscriptions",
+      "read_by": "every provider, so it needn't wait for its next tick",
+      "examples": [
+        "subscriptions.json"
+      ],
+      "description": "A pub/sub channel, not a key; the message is empty."
+    },
+    "config": {
+      "pattern": "v1:config:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "ConfigResponse",
+      "encoding": "json",
+      "written_by": "auth-broker, from its database on every config save, as it starts and every minute",
+      "read_by": "pi-dashboard's render pool",
+      "examples": [
+        "config_store.json"
+      ],
+      "description": "A paired screen's config, with no pairing code (null) and no secret of any kind. A missing key means there's nothing to render: a device not paired, or with a pairing code to show (pairing)."
+    },
+    "pairing": {
+      "pattern": "v1:pairing:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "PairingConfig",
+      "encoding": "json",
+      "ttl_s": 600,
+      "ttl": "the code's own expiry, ten minutes from when it was issued (set with PXAT to the millisecond). The broker deletes it sooner when the code is used, or the device paired, unpaired or forgotten.",
+      "written_by": "auth-broker, whenever it issues a pairing code",
+      "read_by": "pi-dashboard's render pool, for the pairing screen",
+      "examples": [
+        "pairing_key.json"
+      ],
+      "description": "While a device has a pairing code to show: its config with `pairing_code` set (there's no config key then). Plaintext by decision: any Redis reader on the host can see a live code. Never logged."
+    },
+    "render_screens": {
+      "pattern": "v1:render:screens",
+      "redis": "hash",
+      "value": "RenderScreens",
+      "encoding": "text",
+      "written_by": "auth-broker, whole, wherever it differs, whenever it writes the configs",
+      "read_by": "pi-dashboard's render pool (the ticker, and the claim script's HGET, which drops a job for any other)",
+      "examples": [
+        "render_screens.json"
+      ],
+      "description": "The screens the render pool draws: device id to slug, the slug naming the screen in the pool's metrics (their `device` label)."
+    },
+    "render_jobs": {
+      "pattern": "v1:render:jobs",
+      "redis": "list",
+      "value": "RenderJobs",
+      "encoding": "text",
+      "written_by": "the enqueue script, run by auth-broker and pi-dashboard alike",
+      "read_by": "pi-dashboard's render workers, with BRPOP",
+      "examples": [
+        "render_queue.json"
+      ],
+      "description": "The render pool's job queue, of device ids; a screen is in it at most once (render_queued)."
+    },
+    "render_queued": {
+      "pattern": "v1:render:queued:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "RenderQueuedFlag",
+      "encoding": "text",
+      "ttl_ms": 60000,
+      "ttl": "the ticker's minute, so a worker that dies between the pop and the claim keeps the screen out of the queue for no longer than that.",
+      "written_by": "the enqueue script",
+      "read_by": "pi-dashboard's claim script, which deletes it",
+      "examples": [
+        "render_queue.json"
+      ],
+      "description": "That a job for the screen is in the queue, holding when it was queued (Redis's clock)."
+    },
+    "frame": {
+      "pattern": "v1:frame:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "hash",
+      "value": "FrameRecord",
+      "encoding": "bytes",
+      "ttl_s": 86400,
+      "ttl": "a day from the last change: a render whose frame is the record's (its etag) writes nothing and doesn't renew it.",
+      "written_by": "pi-dashboard's render pool, whole in one transaction, when the picture changes",
+      "read_by": "auth-broker, which serves it to the screen",
+      "examples": [
+        "frame_record.json",
+        "frame_record.bin"
+      ],
+      "description": "A screen's latest frame, its ETag and when it was first drawn."
+    },
+    "energy": {
+      "pattern": "v1:energy:{device_id}",
+      "params": {
+        "device_id": "the Glow device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "StoredEnergy",
+      "encoding": "json",
+      "ttl_s": 86400,
+      "written_by": "auth-broker's glow provider",
+      "read_by": "pi-dashboard's energy panel",
+      "examples": [
+        "glow_energy.json"
+      ],
+      "description": "A Glow device's electricity use, as Glowmarkt gave it."
+    },
+    "spotify": {
+      "pattern": "v1:spotify:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "StoredPlayer",
+      "encoding": "json",
+      "ttl_s": 180,
+      "written_by": "auth-broker's music provider",
+      "read_by": "pi-dashboard's Spotify area",
+      "examples": [
+        "music_player.json"
+      ],
+      "description": "What a device's Spotify and Apple Music are playing, and what's up next."
+    },
+    "spotify_top": {
+      "pattern": "v1:spotify-top:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "StoredTop",
+      "encoding": "json",
+      "ttl_s": 7200,
+      "written_by": "auth-broker's music provider",
+      "read_by": "pi-dashboard's Spotify area",
+      "examples": [
+        "music_top.json"
+      ],
+      "description": "A device's Spotify and Apple Music top tracks and artists. Apart from the player's key because it's fetched far less often (every half hour) and kept far longer."
+    },
+    "album_art": {
+      "pattern": "v1:art:{url}",
+      "params": {
+        "url": "the image's URL as the music service gave it; the key holds its SHA1 in hex."
+      },
+      "hash": {
+        "url": "sha1"
+      },
+      "redis": "string",
+      "value": "AlbumArt",
+      "encoding": "bytes",
+      "ttl_s": 300,
+      "ttl": "renewed every minute a spotify key still shows it.",
+      "written_by": "auth-broker's music provider",
+      "read_by": "pi-dashboard's Spotify area",
+      "examples": [
+        "music_art.json",
+        "music_art.jpg"
+      ],
+      "description": "An album's cover, by its URL, so every screen showing the same album reads one copy: the image file's own bytes, as the service serves it (the smallest of its sizes at least 120 px tall, else the tallest)."
+    },
+    "developer": {
+      "pattern": "v1:developer:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "StoredDeveloper",
+      "encoding": "json",
+      "ttl_s": 900,
+      "written_by": "auth-broker's developer provider",
+      "read_by": "pi-dashboard's developer panel",
+      "examples": [
+        "developer.json"
+      ],
+      "description": "A device's developer panel data (GitHub summary and AI plans)."
+    },
+    "pace": {
+      "pattern": "v1:pace:{source}:{item_id}",
+      "params": {
+        "source": "the provider's name (one of `sources`).",
+        "item_id": "what it fetched, e.g. a device id."
+      },
+      "redis": "string",
+      "value": "Pace",
+      "encoding": "text",
+      "ttl_s": 60,
+      "ttl": "renewed each cycle the provider still wants it; so it lapses by itself when the provider stops, or dies.",
+      "written_by": "any provider whose data is bursty (pi-dashboard's provider runner, auth-broker's developer provider)",
+      "read_by": "auth-broker, which paces the screen's polls",
+      "description": "The seconds a provider wants the screen to poll at while what it fetched for `item_id` is bursty."
+    }
+  },
+  "scripts": {
+    "enqueue": {
+      "file": "lua/enqueue.lua",
+      "keys": [
+        "render_queued",
+        "render_jobs"
+      ],
+      "args": [
+        "the device id",
+        "the queued flag's TTL in ms (RENDER_QUEUED_TTL_MS)"
+      ],
+      "returns": "1 if it queued the screen, 0 if it was queued already.",
+      "examples": [
+        "render_queue.json"
+      ],
+      "description": "Queue a render of a screen unless one is queued already: SET the queued flag NX with its TTL (to Redis's clock, in Unix ms), and only if that set it, LPUSH the device id onto the jobs. So a screen is in the queue at most once however many ask."
+    }
+  },
+  "$defs": {
+    "DeviceId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$",
+      "description": "A device's id, 12 hex digits (six random bytes), as the broker registered it."
+    },
+    "Subscription": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "A subscription set's members, in no order. See `sources` for each source's."
+    },
+    "SubChanged": {
+      "const": "",
+      "description": "The nudge on v1:sub:changed carries nothing."
+    },
+    "PairingConfig": {
+      "description": "The value of v1:pairing:<device id>: the device's config, as v1:config:<device id> would hold it, with the code it is to show.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/ConfigResponse"
+        }
+      ],
+      "properties": {
+        "pairing_code": {
+          "type": "string",
+          "pattern": "^[A-HJKMNP-Z2-9]{6}$",
+          "description": "The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L."
+        }
+      },
+      "required": [
+        "pairing_code"
+      ],
+      "type": "object"
+    },
+    "RenderScreens": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/DeviceId"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_-]{1,31}$"
+      },
+      "description": "v1:render:screens, device id to the screen's slug."
+    },
+    "RenderJobs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/DeviceId"
+      },
+      "description": "v1:render:jobs, device ids, newest first (LPUSH; the workers BRPOP the oldest)."
+    },
+    "RenderQueuedFlag": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "When the job was queued, in Unix milliseconds by Redis's clock (TIME), as decimal text."
+    },
+    "FrameRecord": {
+      "description": "The fields of the v1:frame:<device id> hash, all of them always there.",
+      "properties": {
+        "frame": {
+          "type": "string",
+          "format": "binary",
+          "description": "The panel's 48,000 bytes (800x480 at one bit a pixel), as the screen takes them. Raw, not base64."
+        },
+        "etag": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$",
+          "description": "The frame's 8-byte BLAKE2b in hex, the ETag the broker serves it with (in quotes), whichever copy it serves."
+        },
+        "rendered_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+00:00$",
+          "description": "When this picture was first written, ISO 8601 in UTC to the millisecond, e.g. 2026-10-18T12:00:00.000+00:00. It doesn't move while the picture stays the same."
+        }
+      },
+      "required": [
+        "frame",
+        "etag",
+        "rendered_at"
+      ],
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "StoredEnergy": {
+      "description": "The value of v1:energy:<device id>: Glowmarkt's own readings answers, as the broker got them, in a thin wrapper. Each page's readings run from the start of its window's first bucket as of fetched_at (the hour 24 hours before, midnight 31 days before, 1st January) to fetched_at; the renderer cuts each to its window when it draws.",
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "device_id": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^-?\\d+$",
+          "description": "Glowmarkt's `offset` parameter the readings were asked for with: minutes to add to local time to get UTC, so BST is \"-60\"."
+        },
+        "resource_id": {
+          "type": "string",
+          "description": "The meter's \"electricity consumption\" resource the readings are of."
+        },
+        "hourly": {
+          "$ref": "#/$defs/GlowmarktReadings"
+        },
+        "daily": {
+          "$ref": "#/$defs/GlowmarktReadings"
+        },
+        "monthly": {
+          "$ref": "#/$defs/GlowmarktReadings"
+        }
+      },
+      "required": [
+        "fetched_at",
+        "device_id",
+        "offset",
+        "resource_id",
+        "hourly",
+        "daily",
+        "monthly"
+      ],
+      "type": "object"
+    },
+    "GlowmarktReadings": {
+      "type": "object",
+      "description": "Glowmarkt's answer to GET /resource/<id>/readings, as it gave it: its `data` is [Unix seconds, kWh] pairs. The renderer reads it with its own model of Glowmarkt's answer."
+    },
+    "StoredPlayer": {
+      "description": "The value of v1:spotify:<device id>. Each service's part is in Spotify's own shape (/me/player/queue: its currently_playing, null when nothing plays, and its queue; Apple Music's made to look like it, from the last played track and the ones before it), null when the service is off for the device or couldn't be fetched.",
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "spotify": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MusicQueue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "apple_music": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MusicQueue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "fetched_at"
+      ],
+      "type": "object"
+    },
+    "MusicQueue": {
+      "type": "object",
+      "description": "Spotify's /me/player/queue answer (or Apple Music's, made to look like it), as the provider got it."
+    },
+    "StoredTop": {
+      "description": "The value of v1:spotify-top:<device id>: each service's top lists by Spotify's time range (\"long_term\", \"short_term\"), each its /me/top/tracks and /me/top/artists answers, null when the service is off for the device or couldn't be fetched.",
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "spotify": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MusicTopLists"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "apple_music": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MusicTopLists"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "fetched_at"
+      ],
+      "type": "object"
+    },
+    "MusicTopLists": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/MusicTopRange"
+      },
+      "description": "A service's top lists by Spotify's time range (\"long_term\", \"short_term\")."
+    },
+    "MusicTopRange": {
+      "description": "A service's top tracks and artists over one time range, as its /top/tracks and /top/artists answer.",
+      "properties": {
+        "tracks": {
+          "type": "object"
+        },
+        "artists": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "tracks",
+        "artists"
+      ],
+      "type": "object"
+    },
+    "StoredDeveloper": {
+      "description": "The value of v1:developer:<device id>: the GitHub summary (null until the owner adds a GitHub token) and the AI plans, as the broker's services/developer.py builds them.",
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "github": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "fetched_at"
+      ],
+      "type": "object"
+    },
+    "AlbumArt": {
+      "type": "string",
+      "format": "binary",
+      "description": "An image file's own bytes (a JPEG, as the music service serves it)."
+    },
+    "Pace": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Seconds, as decimal text (what SET of an integer stores)."
+    },
+    "WeatherKey": {
+      "type": "string",
+      "pattern": "^[^\\s:]+$",
+      "description": "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed location, that text's slug. weather_keys.json has examples."
+    },
+    "ConfigResponse": {
+      "description": "A screen's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig).",
+      "properties": {
+        "device_id": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Seconds between updates."
+        },
+        "clock_format": {
+          "enum": [
+            "12h",
+            "24h"
+          ],
+          "default": "24h",
+          "type": "string",
+          "description": "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time zones or log formats. Optional, so a broker that doesn't send it gets 24h."
+        },
+        "language": {
+          "enum": [
+            "en",
+            "nb"
+          ],
+          "default": "en",
+          "type": "string",
+          "description": "The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål). Optional, so a broker that doesn't send it gets en."
+        },
+        "timezone": {
+          "default": "Europe/London",
+          "type": "string",
+          "description": "The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. Optional, so a broker that doesn't send it gets Europe/London."
+        },
+        "style": {
+          "anyOf": [
+            {
+              "enum": [
+                "airy",
+                "hero",
+                "card"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How every panel is drawn (the departures, Spotify and the notice board, and any panel added later), so the screen has one look. airy has small-caps labels over a hairline, like the weather; hero has an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded card with a black title bar. A renderer that reads it ignores tfl.style, departures.style, spotify.style and notice_board.style, which a broker keeps sending for older renderers. Optional, so a broker that doesn't send it leaves the renderer on those."
+        },
+        "screen": {
+          "$ref": "#/$defs/Screen"
+        },
+        "weather": {
+          "$ref": "#/$defs/Weather"
+        },
+        "notice_board": {
+          "$ref": "#/$defs/NoticeBoard"
+        },
+        "tfl": {
+          "$ref": "#/$defs/Tfl"
+        },
+        "departures": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Departures"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Every stop whose departures the screen shows, from any source, in the owner's order. A renderer that reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it leaves the renderer on tfl."
+        },
+        "spotify": {
+          "$ref": "#/$defs/Spotify"
+        },
+        "glowmarkt": {
+          "$ref": "#/$defs/Glowmarkt"
+        },
+        "developer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Developer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that doesn't send it leaves the panel off."
+        },
+        "apple_music": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AppleMusic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker that doesn't send it leaves it off."
+        },
+        "pairing_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "device_id",
+        "interval",
+        "screen",
+        "weather",
+        "notice_board",
+        "tfl",
+        "spotify",
+        "glowmarkt",
+        "pairing_code"
+      ],
+      "title": "ConfigResponse",
+      "type": "object"
+    },
+    "DepartureStop": {
+      "properties": {
+        "source": {
+          "enum": [
+            "tfl",
+            "entur"
+          ],
+          "type": "string",
+          "description": "Who to ask for the stop's departures. tfl is Transport for London; entur is Norway's national journey planner (Ruter and every other Norwegian operator)."
+        },
+        "id": {
+          "type": "string",
+          "description": "The stop's id at its source. A NaPTAN id for tfl (490000077E, 940GZZLUOVL); an NSR StopPlace or Quay for entur (NSR:StopPlace:58381, NSR:Quay:7333)."
+        }
+      },
+      "required": [
+        "source",
+        "id"
+      ],
+      "title": "DepartureStop",
+      "type": "object"
+    },
+    "Departures": {
+      "properties": {
+        "stops": {
+          "items": {
+            "$ref": "#/$defs/DepartureStop"
+          },
+          "type": "array"
+        },
+        "style": {
+          "enum": [
+            "classic",
+            "hero",
+            "grouped",
+            "card"
+          ],
+          "default": "hero",
+          "type": "string",
+          "description": "How each stop's departures are drawn, the same for every source. Superseded by style; see tfl.style for the values."
+        }
+      },
+      "required": [
+        "stops"
+      ],
+      "title": "Departures",
+      "type": "object"
+    },
+    "AppleMusic": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the Spotify area shows Apple Music too. Its data comes from the store, in Spotify's shapes, written by the broker's music provider, which holds the Apple token, so no token is sent here. Apple Music has no now playing or queue, so that is what was played last and before it, and top tracks and artists the broker counts from the plays it has seen."
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "AppleMusic",
+      "type": "object"
+    },
+    "Developer": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer provider fills with the GitHub token it holds, so no token is sent here."
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "Developer",
+      "type": "object"
+    },
+    "Glowmarkt": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the screen shows the energy panel. Its data comes from the store, which the broker's Glowmarkt provider fills, so no credentials are sent here."
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "Glowmarkt",
+      "type": "object"
+    },
+    "NoticeBoard": {
+      "properties": {
+        "postcode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "country": {
+          "anyOf": [
+            {
+              "enum": [
+                "GB",
+                "NO"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional; without it a postcode is taken to be British."
+        },
+        "style": {
+          "enum": [
+            "airy",
+            "hero",
+            "card",
+            "boxed"
+          ],
+          "default": "hero",
+          "type": "string",
+          "description": "How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws boxed as card."
+        }
+      },
+      "required": [
+        "postcode"
+      ],
+      "title": "NoticeBoard",
+      "type": "object"
+    },
+    "Screen": {
+      "properties": {
+        "orientation": {
+          "enum": [
+            "horizontal",
+            "vertical"
+          ],
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "orientation",
+        "width",
+        "height"
+      ],
+      "title": "Screen",
+      "type": "object"
+    },
+    "Spotify": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "style": {
+          "enum": [
+            "classic",
+            "airy",
+            "hero",
+            "card"
+          ],
+          "default": "hero",
+          "type": "string",
+          "description": "How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps labels like the weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a rounded card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the original look, is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style."
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "Spotify",
+      "type": "object"
+    },
+    "Tfl": {
+      "properties": {
+        "stop_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "style": {
+          "enum": [
+            "classic",
+            "hero",
+            "grouped",
+            "card"
+          ],
+          "default": "hero",
+          "type": "string",
+          "description": "How each stop's departures are drawn. hero makes the next departure big; grouped gives each route one row with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a broker that doesn't send it gets hero. classic, the original row per departure under a black header, is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style, where grouped is called airy."
+        }
+      },
+      "required": [
+        "stop_ids"
+      ],
+      "title": "Tfl",
+      "type": "object"
+    },
+    "Weather": {
+      "properties": {
+        "location": {
+          "type": "string"
+        },
+        "key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The key the place's weather is kept under in the store, which the renderer reads as v1:weather:<key>, e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or the slug of location for one saved before places were picked (london). Optional; a renderer that gets null (a broker that predates it) reads the weather under location instead."
+        }
+      },
+      "required": [
+        "location"
+      ],
+      "title": "Weather",
+      "type": "object"
+    }
+  }
+}
