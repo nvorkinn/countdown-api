@@ -28,9 +28,6 @@ jobs:
           # generated commit. Set the REGENERATE_TOKEN secret (a PAT or app token with contents: write) to have it run.
           token: ${{ secrets.REGENERATE_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.14"
       - name: Install openapi-codegen
         run: uv sync --frozen --no-install-project
       - name: Regenerate src/countdown_api
