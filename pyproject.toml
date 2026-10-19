@@ -7,12 +7,6 @@ license = "MIT"
 requires-python = ">=3.14"
 dependencies = ["pydantic>=2.13"]
 
-# Deprecated, with the HTTP API they were for: nothing needs them any more. They go once auth-broker and pi-dashboard
-# both use the store contract; until then they stay, so neither side's install changes.
-[project.optional-dependencies]
-client = ["requests>=2.32"]
-server = ["flask>=3.1"]
-
 [build-system]
 requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
