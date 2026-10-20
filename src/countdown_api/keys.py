@@ -195,7 +195,9 @@ ENERGY_TTL_S = 86400
 def spotify(device_id: str) -> str:
     """Return the key `v1:spotify:{device_id}`.
 
-    What a device's Spotify and Apple Music are playing, and what's up next.
+    What a device's Spotify and Apple Music are playing, and what's up next. While Spotify plays, the music provider
+    rewrites it every few seconds (with `spotify_playback` fresh, and the queue only when it is due or the track
+    changed), asks for a faster refresh with `v1:pace:spotify:<device id>` and queues a render of the screen.
 
     A Redis string of models.StoredPlayer (json), with a TTL of 180 s.
 
@@ -286,8 +288,8 @@ def pace(source: str, item_id: str) -> str:
     A Redis string of models.Pace (text), with a TTL of 60 s: renewed each cycle the provider still wants it; so it
     lapses by itself when the provider stops, or dies.
 
-    Written by any provider whose data is bursty (pi-dashboard's provider runner, auth-broker's developer provider).
-    Read by auth-broker, which paces the screen's polls.
+    Written by any provider whose data is bursty (pi-dashboard's provider runner, auth-broker's developer and music
+    providers). Read by auth-broker, which paces the screen's polls.
     """
     return f"v1:pace:{source}:{item_id}"
 

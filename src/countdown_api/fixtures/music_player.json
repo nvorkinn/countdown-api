@@ -141,5 +141,11 @@
         }
       }
     ]
+  },
+  "spotify_playback": {
+    "fetched_at": "2026-10-17T12:00:20+00:00",
+    "is_playing": true,
+    "progress_ms": 61234,
+    "track_id": "tab01"
   }
 }

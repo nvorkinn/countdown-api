@@ -98,6 +98,10 @@ def test_music_player_and_top_are_the_services_answers_in_a_wrapper() -> None:
     player = check("StoredPlayer", fixtures.load("music_player.json"))
     assert player.spotify is not None
     assert player.apple_music is not None
+    # The progress is of the track the queue says is playing, and was fetched after the queue.
+    assert player.spotify_playback is not None
+    assert player.spotify_playback.track_id == player.spotify.get("currently_playing", {}).get("id")
+    assert player.spotify_playback.fetched_at >= player.fetched_at
     top = check("StoredTop", fixtures.load("music_top.json"))
     assert set(top.spotify or {}) == {"long_term", "short_term"}
 
