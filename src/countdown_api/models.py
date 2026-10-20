@@ -305,6 +305,21 @@ RenderScreens = dict[str, Annotated[str, Field(pattern="^[a-z0-9][a-z0-9_-]{1,31
 """v1:render:screens, device id to the screen's slug."""
 
 
+class SpotifyPlayback(BaseModel):
+    """Where Spotify's player was, from /me/player/currently-playing, as of `fetched_at`.
+
+    While `is_playing`, the position at a later time is `progress_ms` plus the time since `fetched_at`.
+    `track_id` is the id of the track it was in (null for one without an id, a local file), so a reader
+    can tell whether `spotify.currently_playing` is that track or an older one. Null or missing when
+    nothing plays or Spotify is off.
+    """
+
+    fetched_at: datetime
+    is_playing: bool
+    progress_ms: Annotated[int, Field(ge=0)]
+    track_id: str | None = None
+
+
 class StoredDeveloper(BaseModel):
     """The ``StoredDeveloper`` object.
 
@@ -361,11 +376,14 @@ class StoredPlayer(BaseModel):
     Each service's part is in Spotify's own shape (/me/player/queue: its currently_playing, null when
     nothing plays, and its queue; Apple Music's made to look like it, from the last played track and the
     ones before it), null when the service is off for the device or couldn't be fetched.
+    `spotify_playback` is how far into the track Spotify was, which is fetched far more often than the
+    queue while something plays (see the `pace` key), so it has a time of its own.
     """
 
     fetched_at: datetime
     spotify: MusicQueue | None = None
     apple_music: MusicQueue | None = None
+    spotify_playback: SpotifyPlayback | None = None
 
 
 class StoredTop(BaseModel):

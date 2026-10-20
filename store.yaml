@@ -161,7 +161,10 @@ keys:
     written_by: auth-broker's music provider
     read_by: pi-dashboard's Spotify area
     examples: [music_player.json]
-    description: What a device's Spotify and Apple Music are playing, and what's up next.
+    description: >-
+      What a device's Spotify and Apple Music are playing, and what's up next. While Spotify plays, the music provider
+      rewrites it every few seconds (with `spotify_playback` fresh, and the queue only when it is due or the track
+      changed), asks for a faster refresh with `v1:pace:spotify:<device id>` and queues a render of the screen.
   spotify_top:
     pattern: "v1:spotify-top:{device_id}"
     params:
@@ -214,7 +217,7 @@ keys:
     encoding: text
     ttl_s: 60
     ttl: renewed each cycle the provider still wants it; so it lapses by itself when the provider stops, or dies.
-    written_by: any provider whose data is bursty (pi-dashboard's provider runner, auth-broker's developer provider)
+    written_by: any provider whose data is bursty (pi-dashboard's provider runner, auth-broker's developer and music providers)
     read_by: auth-broker, which paces the screen's polls
     description: The seconds a provider wants the screen to poll at while what it fetched for `item_id` is bursty.
 
@@ -353,6 +356,8 @@ $defs:
       The value of v1:spotify:<device id>. Each service's part is in Spotify's own shape (/me/player/queue: its
       currently_playing, null when nothing plays, and its queue; Apple Music's made to look like it, from the last
       played track and the ones before it), null when the service is off for the device or couldn't be fetched.
+      `spotify_playback` is how far into the track Spotify was, which is fetched far more often than the queue while
+      something plays (see the `pace` key), so it has a time of its own.
     properties:
       fetched_at:
         type: string
@@ -365,8 +370,36 @@ $defs:
         anyOf:
         - $ref: '#/$defs/MusicQueue'
         - type: 'null'
+      spotify_playback:
+        anyOf:
+        - $ref: '#/$defs/SpotifyPlayback'
+        - type: 'null'
     required:
     - fetched_at
+    type: object
+  SpotifyPlayback:
+    description: >-
+      Where Spotify's player was, from /me/player/currently-playing, as of `fetched_at`. While `is_playing`, the
+      position at a later time is `progress_ms` plus the time since `fetched_at`. `track_id` is the id of the track it
+      was in (null for one without an id, a local file), so a reader can tell whether `spotify.currently_playing` is
+      that track or an older one. Null or missing when nothing plays or Spotify is off.
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      is_playing:
+        type: boolean
+      progress_ms:
+        type: integer
+        minimum: 0
+      track_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+    required:
+    - fetched_at
+    - is_playing
+    - progress_ms
     type: object
   MusicQueue:
     type: object
