@@ -107,12 +107,10 @@ class Screen(BaseModel):
     width: int
     height: int
     format: Literal["mono-1bpp-packed", "png"] = Field(
-        default="mono-1bpp-packed",
         description=(
             "The format the screen takes its frame in, as it reported at registration. mono-1bpp-packed is the "
             "e-paper's raw buffer, 800x480 at one bit a pixel, rows top to bottom, the leftmost pixel in a byte's high"
-            " bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame. Optional, so a broker "
-            "that doesn't send it gets mono-1bpp-packed."
+            " bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame."
         ),
     )
 
