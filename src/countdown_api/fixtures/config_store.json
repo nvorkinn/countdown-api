@@ -25,6 +25,7 @@
     "orientation": "vertical",
     "width": 480,
     "height": 800,
+    "format": "mono-1bpp-packed",
     "glowmarkt": {
       "username": "energy@example.com",
       "password": "not-a-real-password"
@@ -40,7 +41,8 @@
     "screen": {
       "orientation": "vertical",
       "width": 480,
-      "height": 800
+      "height": 800,
+      "format": "mono-1bpp-packed"
     },
     "weather": {
       "location": "London",

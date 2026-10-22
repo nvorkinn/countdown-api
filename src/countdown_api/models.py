@@ -106,6 +106,13 @@ class Screen(BaseModel):
     orientation: Literal["horizontal", "vertical"]
     width: int
     height: int
+    format: Literal["mono-1bpp-packed", "png"] = Field(
+        description=(
+            "The format the screen takes its frame in, as it reported at registration. mono-1bpp-packed is the "
+            "e-paper's raw buffer, 800x480 at one bit a pixel, rows top to bottom, the leftmost pixel in a byte's high"
+            " bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame."
+        ),
+    )
 
 
 class Spotify(BaseModel):
