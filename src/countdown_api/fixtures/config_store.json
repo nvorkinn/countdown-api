@@ -46,7 +46,8 @@
     },
     "weather": {
       "location": "London",
-      "key": "london-gb-2643743"
+      "key": "london-gb-2643743",
+      "design": "columns"
     },
     "notice_board": {
       "postcode": "SE17 3LL",
