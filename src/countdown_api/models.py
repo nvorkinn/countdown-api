@@ -100,6 +100,10 @@ class NoticeBoard(BaseModel):
     )
 
 
+Layout = Literal["classic", "masthead", "column", "lockscreen", "timeline", "board", "pages", "sidebar"]
+"""A layout a screen can be drawn in (Screen's layout says which sizes have which)."""
+
+
 class Screen(BaseModel):
     """The ``Screen`` object."""
 
@@ -111,6 +115,19 @@ class Screen(BaseModel):
             "The format the screen takes its frame in, as it reported at registration. mono-1bpp-packed is the "
             "e-paper's raw buffer, 800x480 at one bit a pixel, rows top to bottom, the leftmost pixel in a byte's high"
             " bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame."
+        ),
+    )
+    layout: Layout | None = Field(
+        default=None,
+        description=(
+            "Which layout the screen is drawn in. Each size of screen has its own layouts, the first its default. A "
+            "1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices),"
+            " masthead (the clock and the weather in a black band across the top), column (the weather down a column "
+            "beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed "
+            "by its minute along a line down the middle), board (each route once, with its next three times) and pages"
+            " (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock "
+            "and the weather in a black sidebar); the 7.5\" screens, classic. A layout the screen's size doesn't have "
+            "is drawn as its default. Optional, so a broker that doesn't send it gets each size's default."
         ),
     )
 

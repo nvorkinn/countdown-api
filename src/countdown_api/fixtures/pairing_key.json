@@ -37,7 +37,8 @@
       "orientation": "horizontal",
       "width": 800,
       "height": 480,
-      "format": "mono-1bpp-packed"
+      "format": "mono-1bpp-packed",
+      "layout": null
     },
     "weather": {
       "location": "Oslo",
