@@ -41,7 +41,8 @@
     },
     "weather": {
       "location": "Oslo",
-      "key": "oslo-no-3143244"
+      "key": "oslo-no-3143244",
+      "design": "overview"
     },
     "notice_board": {
       "postcode": "0150",
