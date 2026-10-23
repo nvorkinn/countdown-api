@@ -100,7 +100,9 @@ class NoticeBoard(BaseModel):
     )
 
 
-Layout = Literal["classic", "masthead", "column", "lockscreen", "timeline", "board", "pages", "sidebar"]
+Layout = Literal[
+    "classic", "masthead", "column", "lockscreen", "timeline", "board", "pages", "sidebar", "focus", "newspaper"
+]
 """A layout a screen can be drawn in (Screen's layout says which sizes have which)."""
 
 
@@ -126,8 +128,13 @@ class Screen(BaseModel):
             "beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed "
             "by its minute along a line down the middle), board (each route once, with its next three times) and pages"
             " (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock "
-            "and the weather in a black sidebar); the 7.5\" screens, classic. A layout the screen's size doesn't have "
-            "is drawn as its default. Optional, so a broker that doesn't send it gets each size's default."
+            "and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather "
+            "and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify "
+            "and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a "
+            "column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a "
+            "masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. A layout the "
+            "screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each "
+            "size's default."
         ),
     )
 
