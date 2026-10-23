@@ -42,7 +42,8 @@
       "orientation": "vertical",
       "width": 480,
       "height": 800,
-      "format": "mono-1bpp-packed"
+      "format": "mono-1bpp-packed",
+      "layout": null
     },
     "weather": {
       "location": "London",
