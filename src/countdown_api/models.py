@@ -160,6 +160,17 @@ class Weather(BaseModel):
             "predates it) reads the weather under location instead."
         ),
     )
+    design: Literal["columns", "timeline", "overview", "poster"] = Field(
+        default="columns",
+        description=(
+            "How the weather is drawn on an HD screen (1872x1404 hung portrait), where it spans the whole width and "
+            "has room for more than the 7.5\" screens' panel. columns puts the readings in tiles beside the conditions,"
+            " with the outlook under them; timeline has the coming twelve hours in a strip along the bottom; overview "
+            "shows now, tonight, tomorrow and the weekend side by side, with no tabs; poster sets the temperature very"
+            " big, with the readings in a black band. Other screens ignore it. Optional, so a broker that doesn't send"
+            " it gets columns."
+        ),
+    )
 
 
 class ConfigResponse(BaseModel):
