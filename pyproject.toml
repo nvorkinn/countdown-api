@@ -5,7 +5,7 @@ version = "0.0.0"
 description = "The countdown Redis store contract between auth-broker and pi-dashboard: the keys, the schemas of their values, the Lua scripts, canonical examples, and the code generated from them."
 license = "MIT"
 requires-python = ">=3.14"
-dependencies = ["pydantic>=2.13"]
+dependencies = ["pydantic"]
 
 [build-system]
 requires = ["uv_build>=0.12.0,<0.13.0"]
