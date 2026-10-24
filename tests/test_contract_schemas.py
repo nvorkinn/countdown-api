@@ -1,6 +1,7 @@
 """store.yaml holds together: valid schemas, every key's value a schema, every example used, and the code generated."""
 
 import json
+import re
 
 import pytest
 from contract_helpers import ROOT, contract
@@ -9,6 +10,7 @@ from countdown_api import fixtures, keys, models
 
 DEFS = contract()["$defs"]
 KEYS = contract()["keys"]
+SCRIPTS = contract()["scripts"]
 
 
 @pytest.mark.parametrize("name", sorted(DEFS))
@@ -31,6 +33,16 @@ def test_each_keys_value_is_a_schema_and_its_examples_exist(name: str) -> None:
     assert key["encoding"] in {"json", "text", "bytes"}
     for example in key.get("examples", []):
         assert fixtures.path(example).is_file()
+
+
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
+def test_each_scripts_keys_and_args_are_what_its_lua_uses(name: str) -> None:
+    script = SCRIPTS[name]
+    assert set(script["keys"]) <= set(KEYS)
+    source = (ROOT / script["file"]).read_text(encoding="utf-8")
+    for table, declared in (("KEYS", script["keys"]), ("ARGV", script["args"])):
+        used = {int(index) for index in re.findall(rf"\b{table}\[(\d+)\]", source)}
+        assert used == set(range(1, len(declared) + 1)), f"{name}: {table} in the Lua vs the contract"
 
 
 def test_every_example_is_some_keys() -> None:
