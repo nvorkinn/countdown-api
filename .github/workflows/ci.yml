@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       # openapi-codegen comes from a release of its repository, whose hash uv.lock records; the dev group also has
       # ruff (which generate.py formats with), pytest and jsonschema.
       - name: Install the dev tools and the package
