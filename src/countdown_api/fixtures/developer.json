@@ -8,7 +8,7 @@
     "failing": ["auth-broker"],
     "releases": [
       {
-        "repo": "pi-dashboard",
+        "repo": "countdown",
         "title": "v0.4.3",
         "state": "running",
         "started": "2026-10-17T11:57:00+00:00",
