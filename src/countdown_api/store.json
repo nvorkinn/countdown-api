@@ -2,7 +2,7 @@
   "info": {
     "title": "countdown store contract",
     "version": "0.0.0-dev",
-    "description": "What auth-broker (the config site) and pi-dashboard (the providers and the render pool) keep in the Redis they share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and who reads it, the scripts both sides run, and canonical examples (countdown_api/fixtures) that both sides' tests and this repository's check against."
+    "description": "What auth-broker (the config site) and countdown (the providers and the render pool) keep in the Redis they share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and who reads it, the scripts both sides run, and canonical examples (countdown_api/fixtures) that both sides' tests and this repository's check against."
   },
   "prefix": "v1",
   "sources": {
@@ -24,7 +24,7 @@
       "value": "Subscription",
       "encoding": "text",
       "written_by": "auth-broker, on every config save, rebuilt whole from its database in one transaction",
-      "read_by": "pi-dashboard's providers, each its own source's",
+      "read_by": "countdown's providers, each its own source's",
       "examples": [
         "subscriptions.json",
         "weather_keys.json"
@@ -52,7 +52,7 @@
       "value": "ConfigResponse",
       "encoding": "json",
       "written_by": "auth-broker, from its database on every config save, as it starts and every minute",
-      "read_by": "pi-dashboard's render pool",
+      "read_by": "countdown's render pool",
       "examples": [
         "config_store.json"
       ],
@@ -69,7 +69,7 @@
       "ttl_s": 600,
       "ttl": "the code's own expiry, ten minutes from when it was issued (set with PXAT to the millisecond). The broker deletes it sooner when the code is used, or the device paired, unpaired or forgotten.",
       "written_by": "auth-broker, whenever it issues a pairing code",
-      "read_by": "pi-dashboard's render pool, for the pairing screen",
+      "read_by": "countdown's render pool, for the pairing screen",
       "examples": [
         "pairing_key.json"
       ],
@@ -81,7 +81,7 @@
       "value": "RenderScreens",
       "encoding": "text",
       "written_by": "auth-broker, whole, wherever it differs, whenever it writes the configs",
-      "read_by": "pi-dashboard's render pool (the ticker, and the claim script's HGET, which drops a job for any other)",
+      "read_by": "countdown's render pool (the ticker, and the claim script's HGET, which drops a job for any other)",
       "examples": [
         "render_screens.json"
       ],
@@ -92,8 +92,8 @@
       "redis": "list",
       "value": "RenderJobs",
       "encoding": "text",
-      "written_by": "the enqueue script, run by auth-broker and pi-dashboard alike",
-      "read_by": "pi-dashboard's render workers, with BRPOP",
+      "written_by": "the enqueue script, run by auth-broker and countdown alike",
+      "read_by": "countdown's render workers, with BRPOP",
       "examples": [
         "render_queue.json"
       ],
@@ -110,7 +110,7 @@
       "ttl_ms": 60000,
       "ttl": "the ticker's minute, so a worker that dies between the pop and the claim keeps the screen out of the queue for no longer than that.",
       "written_by": "the enqueue script",
-      "read_by": "pi-dashboard's claim script, which deletes it",
+      "read_by": "countdown's claim script, which deletes it",
       "examples": [
         "render_queue.json"
       ],
@@ -126,7 +126,7 @@
       "encoding": "bytes",
       "ttl_s": 86400,
       "ttl": "a day from the last change: a render whose frame is the record's (its etag) writes nothing and doesn't renew it.",
-      "written_by": "pi-dashboard's render pool, whole in one transaction, when the picture changes",
+      "written_by": "countdown's render pool, whole in one transaction, when the picture changes",
       "read_by": "auth-broker, which serves it to the screen",
       "examples": [
         "frame_record.json",
@@ -144,7 +144,7 @@
       "encoding": "json",
       "ttl_s": 86400,
       "written_by": "auth-broker's glow provider",
-      "read_by": "pi-dashboard's energy panel",
+      "read_by": "countdown's energy panel",
       "examples": [
         "glow_energy.json"
       ],
@@ -160,7 +160,7 @@
       "encoding": "json",
       "ttl_s": 180,
       "written_by": "auth-broker's music provider",
-      "read_by": "pi-dashboard's Spotify area",
+      "read_by": "countdown's Spotify area",
       "examples": [
         "music_player.json"
       ],
@@ -176,7 +176,7 @@
       "encoding": "json",
       "ttl_s": 7200,
       "written_by": "auth-broker's music provider",
-      "read_by": "pi-dashboard's Spotify area",
+      "read_by": "countdown's Spotify area",
       "examples": [
         "music_top.json"
       ],
@@ -196,7 +196,7 @@
       "ttl_s": 300,
       "ttl": "renewed every minute a spotify key still shows it.",
       "written_by": "auth-broker's music provider",
-      "read_by": "pi-dashboard's Spotify area",
+      "read_by": "countdown's Spotify area",
       "examples": [
         "music_art.json",
         "music_art.jpg"
@@ -213,7 +213,7 @@
       "encoding": "json",
       "ttl_s": 900,
       "written_by": "auth-broker's developer provider",
-      "read_by": "pi-dashboard's developer panel",
+      "read_by": "countdown's developer panel",
       "examples": [
         "developer.json"
       ],
@@ -230,7 +230,7 @@
       "encoding": "text",
       "ttl_s": 60,
       "ttl": "renewed each cycle the provider still wants it; so it lapses by itself when the provider stops, or dies.",
-      "written_by": "any provider whose data is bursty (pi-dashboard's provider runner, auth-broker's developer and music providers)",
+      "written_by": "any provider whose data is bursty (countdown's provider runner, auth-broker's developer and music providers)",
       "read_by": "auth-broker, which paces the screen's polls",
       "description": "The seconds a provider wants the screen to poll at while what it fetched for `item_id` is bursty."
     }

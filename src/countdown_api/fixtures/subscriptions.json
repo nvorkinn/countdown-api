@@ -1,5 +1,5 @@
 {
-  "about": "The subscription sets auth-broker writes for the two devices of config_store.json and pairing_key.json, whose `settings` are their rows in its database (a device's settings subscribe it whether it's paired or not; only config_store.json's has a Glowmarkt password), and the nudge it publishes after them: v1:sub:<source> for every source, each a set (the members' order means nothing), replaced whole in one transaction, a source nothing wants being no key at all; then an empty message on v1:sub:changed. pi-dashboard's providers each read their own source's set.",
+  "about": "The subscription sets auth-broker writes for the two devices of config_store.json and pairing_key.json, whose `settings` are their rows in its database (a device's settings subscribe it whether it's paired or not; only config_store.json's has a Glowmarkt password), and the nudge it publishes after them: v1:sub:<source> for every source, each a set (the members' order means nothing), replaced whole in one transaction, a source nothing wants being no key at all; then an empty message on v1:sub:changed. countdown's providers each read their own source's set.",
   "devices": ["config_store.json", "pairing_key.json"],
   "sets": {
     "v1:sub:tfl": ["490000077E", "940GZZLUOVL"],
