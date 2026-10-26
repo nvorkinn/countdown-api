@@ -1,7 +1,7 @@
 # countdown-api: the countdown store contract
 
 [auth-broker](https://github.com/nvorkinn/auth-broker) (the config site) and
-[pi-dashboard](https://github.com/nvorkinn/pi-dashboard) (the providers and the render pool) don't talk to each other
+[countdown](https://github.com/nvorkinn/countdown) (the providers and the render pool) don't talk to each other
 over HTTP. They share a Redis, and that is all they share. This repository is the contract for it: every key and
 channel that crosses between them, what each holds, its TTL, who writes it and who reads it, the Lua script both run,
 and the canonical examples both sides' tests check against. It is one file, [`store.yaml`](store.yaml), and the
@@ -12,7 +12,7 @@ is gone.)
 
 | key | Redis type | value (schema) | TTL | written by | read by |
 | --- | --- | --- | --- | --- | --- |
-| `v1:sub:<source>` | set | `Subscription` | none | auth-broker, on every config save | pi-dashboard's providers |
+| `v1:sub:<source>` | set | `Subscription` | none | auth-broker, on every config save | countdown's providers |
 | `v1:sub:changed` | channel | `SubChanged` (empty) | | auth-broker, after the sets | every provider |
 | `v1:config:<device id>` | string, JSON | `ConfigResponse` | none | auth-broker | the render pool |
 | `v1:pairing:<device id>` | string, JSON | `PairingConfig` | 600 s, the code's own | auth-broker | the render pool |
@@ -31,7 +31,7 @@ is gone.)
 `$defs`) are JSON Schema 2020-12. The values that are the upstream service's own answer (Glowmarkt's readings,
 Spotify's queue and top lists, the GitHub summary) are pinned as their wrapper, with the answer itself left open: the
 renderer reads those with its own models of the service's answers. Keys only one side uses (the providers' data for
-the renderers, the render lease) are pi-dashboard's own, in its `countdown_core/store/keys.py`.
+the renderers, the render lease) are countdown's own, in its `countdown_core/store/keys.py`.
 
 The enqueue script, [`lua/enqueue.lua`](lua/enqueue.lua), is the one way anything queues a render: `SET` the queued
 flag `NX` with its TTL, and only if that set it, `LPUSH` the device id. Both sides run it from here, byte for byte, so
@@ -63,15 +63,15 @@ enqueue(keys=[keys.render_queued(device_id), keys.RENDER_JOBS], args=[device_id,
 
 `src/countdown_api/fixtures` is the one copy of the examples both repositories test against (each key's `examples` in
 `store.yaml` names its own). auth-broker checks that what it writes is what they show and that it reads what they show,
-pi-dashboard the same for its side, and this repository's tests (`tests/`) that each is what the schemas allow, under
+countdown the same for its side, and this repository's tests (`tests/`) that each is what the schemas allow, under
 its key and TTL. So a change to the stored shape is a PR here first: change the example and the schema together, and
 the two sides' tests then say what has to follow. Nothing in them is real: no real device, code, token or password.
 
 ## Using it
 
-Both sides use the repository as a git submodule: pi-dashboard at `countdown/api`, building against this repository's
+Both sides use the repository as a git submodule: countdown at `api`, building against this repository's
 main (its CI runs `git submodule update --init --remote`), and auth-broker at `vendor/countdown-api`, pinned to a
-commit. Because pi-dashboard builds against main, **change the contract additively**: a new key, schema, field with a
+commit. Because countdown builds against main, **change the contract additively**: a new key, schema, field with a
 default or example is safe; removing or tightening one needs both sides to have stopped using it first, which means a
 later PR here.
 

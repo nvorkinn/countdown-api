@@ -95,7 +95,7 @@ def _as_components(node: Any) -> Any:  # noqa: ANN401 -- any JSON
 def render_init(contract: dict[str, Any]) -> str:
     """Return __init__.py: the package's docstring."""
     return f'''{HEADER}
-"""The {contract["info"]["title"]}: what auth-broker and pi-dashboard keep in the Redis they share.
+"""The {contract["info"]["title"]}: what auth-broker and countdown keep in the Redis they share.
 
 - countdown_api.keys: every key and channel, its TTL, and the subscription sources;
 - countdown_api.models: a Pydantic model of every value;

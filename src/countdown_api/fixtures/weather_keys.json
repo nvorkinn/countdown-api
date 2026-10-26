@@ -1,5 +1,5 @@
 {
-  "about": "Weather location keys: the members of v1:sub:weather and the <key> of v1:weather:<key>. auth-broker's weather_place.weather_key() makes each from a screen's config; pi-dashboard's weather provider finds the place by place_id when it has one, else geocodes the key by name. The store contract's canonical example (countdown-api's countdown_api/fixtures), which both repositories' tests read: change it there.",
+  "about": "Weather location keys: the members of v1:sub:weather and the <key> of v1:weather:<key>. auth-broker's weather_place.weather_key() makes each from a screen's config; countdown's weather provider finds the place by place_id when it has one, else geocodes the key by name. The store contract's canonical example (countdown-api's countdown_api/fixtures), which both repositories' tests read: change it there.",
   "keys": [
     {
       "config": {"weather_location": "London", "weather_place_id": 2643743, "weather_place_name": "London", "weather_country_code": "GB"},
