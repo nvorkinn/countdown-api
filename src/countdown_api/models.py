@@ -101,7 +101,19 @@ class NoticeBoard(BaseModel):
 
 
 Layout = Literal[
-    "classic", "masthead", "column", "lockscreen", "timeline", "board", "pages", "sidebar", "focus", "newspaper"
+    "classic",
+    "masthead",
+    "column",
+    "lockscreen",
+    "timeline",
+    "board",
+    "pages",
+    "sidebar",
+    "focus",
+    "newspaper",
+    "track",
+    "ledger",
+    "queue",
 ]
 """A layout a screen can be drawn in (Screen's layout says which sizes have which)."""
 
@@ -132,7 +144,10 @@ class Screen(BaseModel):
             "and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify "
             "and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a "
             "column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a "
-            "masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. A layout the "
+            "masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. Hung portrait,"
+            " both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each "
+            "route with its departures along a line of the next half hour), ledger (each route once, with the times "
+            "after the next under where it's going) and queue (every departure on a row of its own). A layout the "
             "screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each "
             "size's default."
         ),
