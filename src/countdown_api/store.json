@@ -838,7 +838,10 @@
         "pages",
         "sidebar",
         "focus",
-        "newspaper"
+        "newspaper",
+        "track",
+        "ledger",
+        "queue"
       ],
       "type": "string",
       "description": "A layout a screen can be drawn in (Screen's layout says which sizes have which)."
@@ -876,7 +879,7 @@
             }
           ],
           "default": null,
-          "description": "Which layout the screen is drawn in. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. A layout the screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each size's default."
+          "description": "Which layout the screen is drawn in. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each size's default."
         }
       },
       "required": [
