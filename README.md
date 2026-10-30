@@ -25,6 +25,8 @@ is gone.)
 | `v1:spotify-top:<device id>` | string, JSON | `StoredTop` | 7,200 s | auth-broker's music provider | the Spotify area |
 | `v1:art:<sha1 of the URL>` | string, bytes | `AlbumArt` | 300 s | auth-broker's music provider | the Spotify area |
 | `v1:developer:<device id>` | string, JSON | `StoredDeveloper` | 900 s | auth-broker's developer provider | the developer panel |
+| `v1:parcels:<device id>` | string, JSON | `ParcelList` | 43,200 s | the parcel provider | the parcels panel and notices |
+| `v1:parcels-status:<device id>` | string | `ParcelsLinkStatus` | 86,400 s | the parcel provider | auth-broker |
 | `v1:pace:<source>:<id>` | string | `Pace` (seconds) | 60 s | any bursty provider | auth-broker |
 
 `store.yaml` says more about each (its `keys`), and about the subscription sources (`sources`). The schemas (its

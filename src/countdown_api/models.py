@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -96,6 +96,17 @@ class NoticeBoard(BaseModel):
             "boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send"
             " it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws "
             "boxed as card."
+        ),
+    )
+
+
+class Parcels(BaseModel):
+    """The ``Parcels`` object."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the screen shows the parcels panel and parcel notices. Their data comes from the store, which the"
+            " parcel provider fills with the Parcel API key it holds, so no key is sent here."
         ),
     )
 
@@ -281,6 +292,10 @@ class ConfigResponse(BaseModel):
             "send it leaves it off."
         ),
     )
+    parcels: Parcels | None = Field(
+        default=None,
+        description="The parcels panel and parcel notices. Optional, so a broker that doesn't send it leaves them off.",
+    )
     pairing_code: str | None
 
 
@@ -348,6 +363,54 @@ class PairingConfig(ConfigResponse):
     pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] = Field(
         description="The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L.",
     )
+
+
+ParcelStatus = Literal["ordered", "in_transit", "out_for_delivery", "delivered", "exception", "unknown"]
+"""Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees
+those codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the
+owner's attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping
+for.
+"""
+
+
+class Parcel(BaseModel):
+    """One active delivery in the owner's Parcel account."""
+
+    description: str = Field(description="What the owner called the delivery in Parcel (or what Parcel made of it).")
+    carrier: str = Field(description="The carrier's name, as Parcel gives it (Royal Mail, DHL, Amazon).")
+    tracking_number: str
+    status: ParcelStatus = Field(
+        description=(
+            "Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees those"
+            " codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the owner's "
+            "attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping for."
+        ),
+    )
+    expected_date: date | None = Field(
+        default=None,
+        description=(
+            "The day the carrier expects to deliver, in the owner's time zone, null when it hasn't said. Optional, so "
+            "a provider that doesn't know it can leave it out."
+        ),
+    )
+    updated_at: datetime = Field(description="When Parcel last saw the delivery change.")
+
+
+class ParcelList(BaseModel):
+    """The ``ParcelList`` object.
+
+    The value of v1:parcels:<device id>: the owner's active deliveries and when they were fetched.
+    Ordered by expected date, soonest first, those with none last; the panel does not have to sort them.
+    """
+
+    fetched_at: datetime
+    parcels: list[Parcel]
+
+
+ParcelsLinkStatus = Literal["ok", "invalid_key", "rate_limited"]
+"""Whether Parcel took the device's API key at the last poll; the value of v1:parcels-status:<device
+id>.
+"""
 
 
 RenderJobs = list[DeviceId]

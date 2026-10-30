@@ -17,6 +17,7 @@
     "spotify_enabled": true,
     "apple_music_enabled": false,
     "developer_enabled": true,
+    "parcels_enabled": true,
     "tfl_stop_ids": [
       "490000077E",
       "940GZZLUOVL",
@@ -87,6 +88,9 @@
       "enabled": true
     },
     "developer": {
+      "enabled": true
+    },
+    "parcels": {
       "enabled": true
     },
     "apple_music": {
