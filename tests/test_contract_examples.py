@@ -122,6 +122,27 @@ def test_developer_is_the_panels_data_in_a_wrapper() -> None:
     assert developer.plans
 
 
+def test_parcels_are_the_owners_deliveries_and_a_link_status() -> None:
+    example = fixtures.load("parcels.json")
+    assert example["key"] == keys.parcels(example["device_id"])
+    assert example["status_key"] == keys.parcels_status(example["device_id"])
+    assert (example["ttl_s"], example["status_ttl_s"]) == (keys.PARCELS_TTL_S, keys.PARCELS_STATUS_TTL_S)
+    stored = check("ParcelList", example["value"])
+    # Ordered by expected date, soonest first, those with none last.
+    dates = [parcel.expected_date for parcel in stored.parcels if parcel.expected_date is not None]
+    assert dates == sorted(dates)
+    undated = [parcel.expected_date is None for parcel in stored.parcels]
+    assert undated == sorted(undated)
+    # The example shows the statuses a panel and its notices tell apart, only ever in the normalised set.
+    shown = {parcel.status for parcel in stored.parcels}
+    assert {"in_transit", "out_for_delivery", "delivered", "exception"} <= shown
+    assert shown <= set(contract()["$defs"]["ParcelStatus"]["enum"])
+    for status in example["statuses"]:
+        check("ParcelsLinkStatus", status)
+    assert example["status"] in example["statuses"]
+    check_schema("DeviceId", example["device_id"])
+
+
 def test_weather_keys_are_weather_keys() -> None:
     example = fixtures.load("weather_keys.json")
     for case in example["keys"]:
@@ -146,5 +167,5 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
         assert value["notice_board"]["postcode"] in sets[keys.subscription(keys.POSTCODE)]
         for stop in value["departures"]["stops"]:
             assert stop["id"] in sets[keys.subscription(stop["source"])]
-        for source, section in ((keys.SPOTIFY, "spotify"), (keys.DEVELOPER, "developer")):
+        for source, section in ((keys.SPOTIFY, "spotify"), (keys.DEVELOPER, "developer"), (keys.PARCEL, "parcels")):
             assert (value["device_id"] in sets[keys.subscription(source)]) == value[section]["enabled"]

@@ -12,6 +12,7 @@
     "glow": "Device ids with a Glowmarkt account the broker's glow provider signs in with.",
     "spotify": "Device ids with Spotify (or Apple Music) switched on.",
     "developer": "Device ids with the developer panel switched on.",
+    "parcel": "Device ids with the parcels panel switched on, so a Parcel API key saved.",
     "postcode": "The notice board's place: every screen's postcode in the broker's canonical form (\"SW1A 1AA\", or \"0150\" for a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads). Never logged."
   },
   "keys": {
@@ -218,6 +219,40 @@
         "developer.json"
       ],
       "description": "A device's developer panel data (GitHub summary and AI plans)."
+    },
+    "parcels": {
+      "pattern": "v1:parcels:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "ParcelList",
+      "encoding": "json",
+      "ttl_s": 43200,
+      "ttl": "twelve hours, so the last answer outlasts the night, when the provider doesn't poll; a screen then shows a parcel's last known state rather than nothing, and `fetched_at` says how old it is. Rewritten (and so renewed) on every poll that gets an answer.",
+      "written_by": "the parcel provider",
+      "read_by": "countdown's parcels panel and its parcel notices",
+      "examples": [
+        "parcels.json"
+      ],
+      "description": "A device's active deliveries from the Parcel app, in the owner's own Parcel account, normalised to ParcelList. Parcels the provider has seen delivered stay in it for a few hours (it drops them after that), so the screen can show that they arrived. A missing key means no answer yet, or the key lapsed: the panel shows its standard data-not-available state."
+    },
+    "parcels_status": {
+      "pattern": "v1:parcels-status:{device_id}",
+      "params": {
+        "device_id": "the device's id (DeviceId)."
+      },
+      "redis": "string",
+      "value": "ParcelsLinkStatus",
+      "encoding": "text",
+      "ttl_s": 86400,
+      "ttl": "a day, renewed on every poll that reaches Parcel. `invalid_key` isn't renewed, as the provider stops polling the key until its config is saved again, so it lapses to a missing key a day later.",
+      "written_by": "the parcel provider",
+      "read_by": "auth-broker, for the link status on the config page",
+      "examples": [
+        "parcels.json"
+      ],
+      "description": "Whether the device's Parcel API key works: `ok`, `invalid_key` (Parcel answered 401) or `rate_limited`. A missing key means the provider hasn't tried it yet."
     },
     "pace": {
       "pattern": "v1:pace:{source}:{item_id}",
@@ -549,6 +584,92 @@
       ],
       "type": "object"
     },
+    "ParcelStatus": {
+      "enum": [
+        "ordered",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "exception",
+        "unknown"
+      ],
+      "type": "string",
+      "description": "Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees those codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the owner's attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping for."
+    },
+    "Parcel": {
+      "description": "One active delivery in the owner's Parcel account.",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "What the owner called the delivery in Parcel (or what Parcel made of it)."
+        },
+        "carrier": {
+          "type": "string",
+          "description": "The carrier's name, as Parcel gives it (Royal Mail, DHL, Amazon)."
+        },
+        "tracking_number": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ParcelStatus"
+        },
+        "expected_date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The day the carrier expects to deliver, in the owner's time zone, null when it hasn't said. Optional, so a provider that doesn't know it can leave it out."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When Parcel last saw the delivery change."
+        }
+      },
+      "required": [
+        "description",
+        "carrier",
+        "tracking_number",
+        "status",
+        "updated_at"
+      ],
+      "type": "object"
+    },
+    "ParcelList": {
+      "description": "The value of v1:parcels:<device id>: the owner's active deliveries and when they were fetched. Ordered by expected date, soonest first, those with none last; the panel does not have to sort them.",
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "parcels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Parcel"
+          }
+        }
+      },
+      "required": [
+        "fetched_at",
+        "parcels"
+      ],
+      "type": "object"
+    },
+    "ParcelsLinkStatus": {
+      "enum": [
+        "ok",
+        "invalid_key",
+        "rate_limited"
+      ],
+      "type": "string",
+      "description": "Whether Parcel took the device's API key at the last poll; the value of v1:parcels-status:<device id>."
+    },
     "AlbumArt": {
       "type": "string",
       "format": "binary",
@@ -669,6 +790,18 @@
           "default": null,
           "description": "Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker that doesn't send it leaves it off."
         },
+        "parcels": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Parcels"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The parcels panel and parcel notices. Optional, so a broker that doesn't send it leaves them off."
+        },
         "pairing_code": {
           "anyOf": [
             {
@@ -766,6 +899,19 @@
         "enabled"
       ],
       "title": "Developer",
+      "type": "object"
+    },
+    "Parcels": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the screen shows the parcels panel and parcel notices. Their data comes from the store, which the parcel provider fills with the Parcel API key it holds, so no key is sent here."
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "Parcels",
       "type": "object"
     },
     "Glowmarkt": {

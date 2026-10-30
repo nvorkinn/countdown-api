@@ -18,6 +18,7 @@
     "spotify_enabled": false,
     "apple_music_enabled": false,
     "developer_enabled": false,
+    "parcels_enabled": false,
     "tfl_stop_ids": [
       "NSR:StopPlace:58381"
     ],
@@ -71,6 +72,9 @@
       "enabled": false
     },
     "developer": {
+      "enabled": false
+    },
+    "parcels": {
       "enabled": false
     },
     "apple_music": {

@@ -1,0 +1,58 @@
+{
+  "about": "A device's parcels in the store: v1:parcels:<device id>, the owner's active Parcel deliveries as the contract's ParcelList, ordered by expected date, and v1:parcels-status:<device id>, whether Parcel took the owner's API key. `statuses` has the other values the status key holds. Nothing here is real: no real tracking number, carrier account or API key.",
+  "device_id": "a1b2c3d4e5f6",
+  "key": "v1:parcels:a1b2c3d4e5f6",
+  "ttl_s": 43200,
+  "status_key": "v1:parcels-status:a1b2c3d4e5f6",
+  "status_ttl_s": 86400,
+  "status": "ok",
+  "statuses": [
+    "ok",
+    "invalid_key",
+    "rate_limited"
+  ],
+  "value": {
+    "fetched_at": "2026-10-17T12:00:00+00:00",
+    "parcels": [
+      {
+        "description": "Running shoes",
+        "carrier": "DHL",
+        "tracking_number": "JD0000000000000001",
+        "status": "out_for_delivery",
+        "expected_date": "2026-10-17",
+        "updated_at": "2026-10-17T08:41:00+00:00"
+      },
+      {
+        "description": "Book",
+        "carrier": "Evri",
+        "tracking_number": "H00000000000000002",
+        "status": "delivered",
+        "expected_date": "2026-10-17",
+        "updated_at": "2026-10-17T10:12:00+00:00"
+      },
+      {
+        "description": "Desk lamp",
+        "carrier": "Royal Mail",
+        "tracking_number": "AB000000001GB",
+        "status": "in_transit",
+        "expected_date": "2026-10-19",
+        "updated_at": "2026-10-16T17:05:00+00:00"
+      },
+      {
+        "description": "Phone case",
+        "carrier": "Amazon",
+        "tracking_number": "TBA000000000001",
+        "status": "exception",
+        "expected_date": null,
+        "updated_at": "2026-10-16T09:30:00+00:00"
+      },
+      {
+        "description": "Gift",
+        "carrier": "Parcelforce",
+        "tracking_number": "PF000000001",
+        "status": "ordered",
+        "updated_at": "2026-10-17T07:00:00+00:00"
+      }
+    ]
+  }
+}

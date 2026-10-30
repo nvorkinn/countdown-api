@@ -81,13 +81,16 @@ def test_the_keys_are_what_they_were() -> None:
     assert keys.spotify(device) == "v1:spotify:a1b2c3d4e5f6"
     assert keys.spotify_top(device) == "v1:spotify-top:a1b2c3d4e5f6"
     assert keys.developer(device) == "v1:developer:a1b2c3d4e5f6"
+    assert keys.parcels(device) == "v1:parcels:a1b2c3d4e5f6"
+    assert keys.parcels_status(device) == "v1:parcels-status:a1b2c3d4e5f6"
     assert keys.pace(keys.DEVELOPER, device) == "v1:pace:developer:a1b2c3d4e5f6"
     assert keys.album_art("https://i.scdn.co/image/ab01300") == "v1:art:f0c75b31e316838c7115ebf3205ef753eb4a0353"
-    assert keys.SOURCES == ("tfl", "entur", "weather", "glow", "spotify", "developer", "postcode")
+    assert keys.SOURCES == ("tfl", "entur", "weather", "glow", "spotify", "developer", "parcel", "postcode")
     assert keys.CONFIG_PREFIX == "v1:config:"
     assert (keys.PAIRING_TTL_S, keys.FRAME_TTL_S, keys.RENDER_QUEUED_TTL_MS) == (600, 86_400, 60_000)
     assert (keys.ENERGY_TTL_S, keys.SPOTIFY_TTL_S, keys.SPOTIFY_TOP_TTL_S) == (86_400, 180, 7_200)
     assert (keys.ALBUM_ART_TTL_S, keys.DEVELOPER_TTL_S, keys.PACE_TTL_S) == (300, 900, 60)
+    assert (keys.PARCELS_TTL_S, keys.PARCELS_STATUS_TTL_S) == (43_200, 86_400)
 
 
 def test_store_json_is_store_yaml() -> None:

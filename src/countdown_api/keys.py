@@ -25,11 +25,13 @@ GLOW = "glow"
 SPOTIFY = "spotify"
 # developer: Device ids with the developer panel switched on.
 DEVELOPER = "developer"
+# parcel: Device ids with the parcels panel switched on, so a Parcel API key saved.
+PARCEL = "parcel"
 # postcode: The notice board's place: every screen's postcode in the broker's canonical form ("SW1A 1AA", or "0150" for
 # a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads).
 # Never logged.
 POSTCODE = "postcode"
-SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, POSTCODE)
+SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE)
 
 
 def subscription(source: str) -> str:
@@ -276,6 +278,58 @@ DEVELOPER_PREFIX = "v1:developer:"
 
 # The TTL of `v1:developer:{device_id}`, in seconds.
 DEVELOPER_TTL_S = 900
+
+
+def parcels(device_id: str) -> str:
+    """Return the key `v1:parcels:{device_id}`.
+
+    A device's active deliveries from the Parcel app, in the owner's own Parcel account, normalised to ParcelList.
+    Parcels the provider has seen delivered stay in it for a few hours (it drops them after that), so the screen can
+    show that they arrived. A missing key means no answer yet, or the key lapsed: the panel shows its standard
+    data-not-available state.
+
+    A Redis string of models.ParcelList (json), with a TTL of 43200 s: twelve hours, so the last answer outlasts the
+    night, when the provider doesn't poll; a screen then shows a parcel's last known state rather than nothing, and
+    `fetched_at` says how old it is. Rewritten (and so renewed) on every poll that gets an answer.
+
+    Written by the parcel provider. Read by countdown's parcels panel and its parcel notices.
+
+    Example: countdown_api.fixtures, parcels.json.
+    """
+    return f"v1:parcels:{device_id}"
+
+
+# What every `v1:parcels:{device_id}` key starts with, for SCAN and removeprefix().
+PARCELS_PREFIX = "v1:parcels:"
+
+
+# The TTL of `v1:parcels:{device_id}`, in seconds.
+PARCELS_TTL_S = 43200
+
+
+def parcels_status(device_id: str) -> str:
+    """Return the key `v1:parcels-status:{device_id}`.
+
+    Whether the device's Parcel API key works: `ok`, `invalid_key` (Parcel answered 401) or `rate_limited`. A missing
+    key means the provider hasn't tried it yet.
+
+    A Redis string of models.ParcelsLinkStatus (text), with a TTL of 86400 s: a day, renewed on every poll that reaches
+    Parcel. `invalid_key` isn't renewed, as the provider stops polling the key until its config is saved again, so it
+    lapses to a missing key a day later.
+
+    Written by the parcel provider. Read by auth-broker, for the link status on the config page.
+
+    Example: countdown_api.fixtures, parcels.json.
+    """
+    return f"v1:parcels-status:{device_id}"
+
+
+# What every `v1:parcels-status:{device_id}` key starts with, for SCAN and removeprefix().
+PARCELS_STATUS_PREFIX = "v1:parcels-status:"
+
+
+# The TTL of `v1:parcels-status:{device_id}`, in seconds.
+PARCELS_STATUS_TTL_S = 86400
 
 
 def pace(source: str, item_id: str) -> str:
