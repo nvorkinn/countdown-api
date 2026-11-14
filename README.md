@@ -57,9 +57,7 @@ name, and as `components["schemas"][name]`:
 import type { ConfigResponse, FrameRecord } from "<this repository>/src/countdown_api/store";
 ```
 
-Each release publishes it too, beside `store.yaml`.
-
-The wheel also carries the contract itself as `countdown_api/store.json`. It needs only pydantic.
+The package also carries the contract itself as `countdown_api/store.json`. It needs only pydantic.
 
 Running the enqueue script with redis-py:
 
@@ -111,5 +109,5 @@ CI checks it's up to date (`python generate.py --check`), type-checks `store.d.t
 `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`), runs [Biome](https://biomejs.dev/) on the TypeScript and
 JSON (`biome.json`; lint and format, the fixtures included), runs ruff (`select = ["ALL"]`, generated code included) and
 the tests (`uv run --frozen pytest`), and builds the wheel. A PR that changes `store.yaml` gets the regenerated code
-pushed to it. To publish, push a tag `v<version>` on main: the release workflow stamps the version into the contract
-and the wheel, builds them and makes that the latest release.
+pushed to it. There is no release: the project isn't released on its own, and a consumer builds what it needs from
+its submodule.
