@@ -1,8 +1,8 @@
 """The store contract's canonical examples: one or more for each key in store.yaml (its `examples`).
 
-They are the single copy both repositories test against: auth-broker that what it writes is what they show and that it
-reads what they show, countdown the same for its side, and this repository's tests that each is what the contract's
-schemas allow. Change one here, in a PR of this repository, and the two sides' tests then say what has to follow.
+They are the single copy every consumer tests against: a writer that what it writes is what they show, a reader that
+it reads what they show, and this repository's tests that each is what the contract's schemas allow. Change one here,
+in a PR of this repository, and the consumers' tests then say what has to follow.
 
     from countdown_api import fixtures
 

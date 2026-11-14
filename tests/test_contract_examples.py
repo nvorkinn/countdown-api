@@ -1,6 +1,6 @@
 """Each canonical example (countdown_api.fixtures) is what the contract says: its keys, its TTLs, and its values.
 
-Both repositories test their own writers and readers against these files; these tests are what makes them the
+Every consumer tests its own writers and readers against these files; these tests are what makes them the
 contract's, so a change to one that the schemas don't allow fails here, before either side sees it.
 """
 
