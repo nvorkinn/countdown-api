@@ -169,7 +169,8 @@ def typescript(document: dict[str, Any]) -> str:
             check=True,
             cwd=ROOT,
         ).stdout
-    return f"// {HEADER.removeprefix('# ')}\n{types}"
+    # Nothing here uses the exported types (the consumers do), which a JetBrains IDE would otherwise flag one by one.
+    return f"// noinspection JSUnusedGlobalSymbols\n// {HEADER.removeprefix('# ')}\n{types}"
 
 
 def _as_components(node: Any) -> Any:  # noqa: ANN401 -- any JSON
