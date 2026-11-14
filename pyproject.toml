@@ -40,7 +40,6 @@ ignore = ["D203", "D213", "COM812", "ISC001", "CPY001"]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/make_site.py" = ["E501", "INP001"] # long HTML template lines; a script, not a package
 "generate.py" = ["T201"] # a command-line script: printing is its output
 "tests/**" = [
     "S101",    # pytest is built on assert

@@ -1,0 +1,30 @@
+<!doctype html>
+<!--
+  The GitHub Pages site: a Scalar (https://scalar.com) reference of openapi.json, which the Pages workflow writes
+  beside this page with `generate.py --openapi` from main's store.yaml. Scalar is pinned, so the page is the same
+  until that changes. The document has no paths (it is the keys, the sources, the scripts and the schemas), so
+  there is no client to offer.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>countdown store contract</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.78.1"></script>
+    <script>
+      Scalar.createApiReference("#app", {
+        url: "openapi.json",
+        hideClientButton: true,
+        hideTestRequestButton: true,
+        hiddenClients: true,
+        showDeveloperTools: "never",
+        agent: { disabled: true },
+        defaultOpenAllTags: true,
+        expandAllModelSections: true,
+      });
+    </script>
+  </body>
+</html>

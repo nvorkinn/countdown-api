@@ -85,17 +85,10 @@ repository's main. Because of the latter, **change the contract additively**: a 
 or example is safe; removing or tightening one needs every consumer to have stopped using it first, which means a
 later PR here.
 
-The package isn't on PyPI. The latest release is also published to https://nvorkinn.github.io/countdown-api/, a flat
-package index that lists the latest release's wheel (`[[tool.uv.index]] url = "https://nvorkinn.github.io/countdown-api/"
-format = "flat" explicit = true`, then `uv lock --upgrade-package countdown-api`), with `requirements.txt` (the wheel's
-URL), `constraints.txt` (pins only countdown-api to the latest release), `latest.json`, `store.yaml` and `SHA256SUMS`.
-The Pages workflow publishes the site on every push to main, and only then, so it lists a new release after the next
-push to main. It needs Settings > Pages > Source set to "GitHub Actions", and the `github-pages` environment to allow
-the branch `main`.
-
-The same site has the schema reference, https://nvorkinn.github.io/countdown-api/schema/: the keys, the sources, the
-scripts and every schema, shown with [Scalar](https://scalar.com). It is main's contract, which can be ahead of the
-latest release.
+The schema reference is at https://nvorkinn.github.io/countdown-api/: the keys, the sources, the scripts and every
+schema, shown with [Scalar](https://scalar.com). The Pages workflow publishes it on every push to main, so it is
+main's contract. It needs Settings > Pages > Source set to "GitHub Actions", and the `github-pages` environment to
+allow the branch `main`.
 
 ## Changing it
 

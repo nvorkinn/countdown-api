@@ -8,10 +8,6 @@ name: Release
 # examples too) as a GitHub release, and makes it the latest one. The version is stamped into the contract and the
 # wheel from the tag (GITHUB_REF_NAME). The TypeScript types, store.d.ts, are published beside them.
 #
-# This doesn't publish the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/: the Pages workflow
-# (pages.yml) does, on every push to main, from the latest release's files. So the site (a flat package index that
-# uv finds the latest wheel through) lists a new release only after the next push to main.
-#
 # A tag push is the only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab
 # (same tag); if the release was already created, the files are added to it.
 
