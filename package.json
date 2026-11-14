@@ -1,0 +1,10 @@
+{
+  "name": "countdown-api-codegen",
+  "private": true,
+  "description": "The Node tools generate.py runs: openapi-typescript writes src/countdown_api/store.d.ts from the contract's schemas.",
+  "license": "MIT",
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -50,6 +50,16 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `countdown_api.scripts` | the Lua scripts: `scripts.ENQUEUE.source`, `.sha1`, and what its `keys` and `args` are |
 | `countdown_api.fixtures` | the canonical examples: `fixtures.load("config_store.json")`, `fixtures.read_bytes("frame_record.bin")`, `fixtures.DIRECTORY` |
 
+There are TypeScript types of the schemas too, `src/countdown_api/store.d.ts`, written by
+[openapi-typescript](https://openapi-ts.dev/) from the same schemas as the models. Each schema is exported by its own
+name, and as `components["schemas"][name]`:
+
+```ts
+import type { ConfigResponse, FrameRecord } from "./api/src/countdown_api/store";
+```
+
+Each release publishes it too, beside `store.yaml`.
+
 The wheel also carries the contract itself as `countdown_api/store.json`. It needs only pydantic.
 
 Running the enqueue script with redis-py:
@@ -88,16 +98,19 @@ It needs Settings > Pages > Source set to "GitHub Actions" and a `v*` tag rule o
 Edit `store.yaml` (and `lua/`), then regenerate the committed `src/countdown_api`:
 
     uv sync --frozen
+    npm ci
     uv run --frozen python generate.py
 
 [`generate.py`](generate.py) writes `models.py` with
 [openapi-codegen](https://github.com/nvorkinn/openapi-codegen) (a release of it, whose hash `uv.lock` records), handed
 the contract's schemas as an OpenAPI document's components: JSON Schema 2020-12 is what OpenAPI 3.1's schemas are, so
-the models are the same classes they were when the contract was an HTTP API. It writes `keys.py`, `scripts.py`,
-`store.json` and `__init__.py` itself, from the same file, and runs `ruff check --fix` and `ruff format` on all of it.
+the models are the same classes they were when the contract was an HTTP API. `store.d.ts` comes from
+openapi-typescript (pinned in `package.json`/`package-lock.json`), from the same OpenAPI document. It writes `keys.py`,
+`scripts.py`, `store.json` and `__init__.py` itself, from the same file, and runs `ruff check --fix` and `ruff format`
+on the Python.
 The models check the schemas' `pattern`s too, and the tests check every example against the schemas with jsonschema.
 
-CI checks it's up to date (`python generate.py --check`), runs ruff (`select = ["ALL"]`, generated code included) and
+CI checks it's up to date (`python generate.py --check`), type-checks `store.d.ts` with `tsc --strict`, runs ruff (`select = ["ALL"]`, generated code included) and
 the tests (`uv run --frozen pytest`), and builds the wheel. A PR that changes `store.yaml` gets the regenerated code
 pushed to it. To publish, push a tag `v<version>` on main: the release workflow stamps the version into the contract
 and the wheel, builds them and makes that the latest release.
