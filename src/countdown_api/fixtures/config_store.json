@@ -18,11 +18,7 @@
     "apple_music_enabled": false,
     "developer_enabled": true,
     "parcels_enabled": true,
-    "tfl_stop_ids": [
-      "490000077E",
-      "940GZZLUOVL",
-      "NSR:StopPlace:58381"
-    ],
+    "tfl_stop_ids": ["490000077E", "940GZZLUOVL", "NSR:StopPlace:58381"],
     "orientation": "vertical",
     "width": 480,
     "height": 800,
@@ -57,10 +53,7 @@
       "style": "hero"
     },
     "tfl": {
-      "stop_ids": [
-        "490000077E",
-        "940GZZLUOVL"
-      ],
+      "stop_ids": ["490000077E", "940GZZLUOVL"],
       "style": "hero"
     },
     "departures": {

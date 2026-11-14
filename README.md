@@ -107,10 +107,12 @@ the contract's schemas as an OpenAPI document's components: JSON Schema 2020-12 
 the models are the same classes they were when the contract was an HTTP API. `store.d.ts` comes from
 openapi-typescript (pinned in `package.json`/`package-lock.json`), from the same OpenAPI document. It writes `keys.py`,
 `scripts.py`, `store.json` and `__init__.py` itself, from the same file, and runs `ruff check --fix` and `ruff format`
-on the Python.
+on the Python and `biome check --write` on `store.d.ts` and `store.json`.
 The models check the schemas' `pattern`s too, and the tests check every example against the schemas with jsonschema.
 
-CI checks it's up to date (`python generate.py --check`), type-checks `store.d.ts` with `tsc --strict`, runs ruff (`select = ["ALL"]`, generated code included) and
+CI checks it's up to date (`python generate.py --check`), type-checks `store.d.ts` with `tsc` (`tsconfig.json`: strict,
+`noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`), runs [Biome](https://biomejs.dev/) on the TypeScript and
+JSON (`biome.json`; lint and format, the fixtures included), runs ruff (`select = ["ALL"]`, generated code included) and
 the tests (`uv run --frozen pytest`), and builds the wheel. A PR that changes `store.yaml` gets the regenerated code
 pushed to it. To publish, push a tag `v<version>` on main: the release workflow stamps the version into the contract
 and the wheel, builds them and makes that the latest release.
