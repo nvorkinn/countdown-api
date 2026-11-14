@@ -5,7 +5,7 @@
   "type": "hash",
   "ttl_s": 86400,
   "fields": {
-    "frame": {"file": "frame_record.bin", "length": 48000},
+    "frame": { "file": "frame_record.bin", "length": 48000 },
     "etag": "e8d4291f8ec7c9ac",
     "rendered_at": "2026-10-18T12:00:00.000+00:00"
   },

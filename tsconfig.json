@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noEmit": true,
+    "skipLibCheck": false,
+    "target": "es2022",
+    "module": "nodenext"
+  },
+  "files": ["src/countdown_api/store.d.ts"]
+}

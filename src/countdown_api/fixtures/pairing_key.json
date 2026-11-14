@@ -19,9 +19,7 @@
     "apple_music_enabled": false,
     "developer_enabled": false,
     "parcels_enabled": false,
-    "tfl_stop_ids": [
-      "NSR:StopPlace:58381"
-    ],
+    "tfl_stop_ids": ["NSR:StopPlace:58381"],
     "orientation": "horizontal",
     "width": 800,
     "height": 480,

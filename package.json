@@ -1,0 +1,11 @@
+{
+  "name": "countdown-api-codegen",
+  "private": true,
+  "description": "The Node tools: openapi-typescript writes src/countdown_api/store.d.ts from the contract's schemas, TypeScript checks it (tsconfig.json) and Biome lints and formats the TypeScript and JSON (biome.json).",
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "2.6.7",
+    "openapi-typescript": "7.13.0",
+    "typescript": "^5.9.3"
+  }
+}

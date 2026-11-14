@@ -6,11 +6,7 @@
   "status_key": "v1:parcels-status:a1b2c3d4e5f6",
   "status_ttl_s": 86400,
   "status": "ok",
-  "statuses": [
-    "ok",
-    "invalid_key",
-    "rate_limited"
-  ],
+  "statuses": ["ok", "invalid_key", "rate_limited"],
   "value": {
     "fetched_at": "2026-10-17T12:00:00+00:00",
     "parcels": [
