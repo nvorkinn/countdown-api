@@ -42,7 +42,7 @@ def subscription(source: str) -> str:
 
     A Redis set of models.Subscription (text), with no TTL.
 
-    Written by auth-broker, on every config save, rebuilt whole from its database in one transaction. Read by
+    Written by countdown-server, on every config save, rebuilt whole from its database in one transaction. Read by
     countdown's providers, each its own source's.
 
     Example: countdown_api.fixtures, subscriptions.json, weather_keys.json.
@@ -56,8 +56,8 @@ SUBSCRIPTION_PREFIX = "v1:sub:"
 
 # `v1:sub:changed`: A pub/sub channel, not a key; the message is empty.
 # A pub/sub channel of models.SubChanged (text).
-# Written by auth-broker, after replacing the subscriptions. Read by every provider, so it needn't wait for its next
-# tick.
+# Written by countdown-server, after replacing the subscriptions. Read by every provider, so it needn't wait for its
+# next tick.
 # Example: countdown_api.fixtures, subscriptions.json.
 SUB_CHANGED = "v1:sub:changed"
 
@@ -70,8 +70,8 @@ def config(device_id: str) -> str:
 
     A Redis string of models.ConfigResponse (json), with no TTL.
 
-    Written by auth-broker, from its database on every config save, as it starts and every minute. Read by countdown's
-    render pool.
+    Written by countdown-server, from its database on every config save, as it starts and every minute. Read by
+    countdown's render pool.
 
     Example: countdown_api.fixtures, config_store.json.
     """
@@ -92,7 +92,8 @@ def pairing(device_id: str) -> str:
     was issued (set with PXAT to the millisecond). The broker deletes it sooner when the code is used, or the device
     paired, unpaired or forgotten.
 
-    Written by auth-broker, whenever it issues a pairing code. Read by countdown's render pool, for the pairing screen.
+    Written by countdown-server, whenever it issues a pairing code. Read by countdown's render pool, for the pairing
+    screen.
 
     Example: countdown_api.fixtures, pairing_key.json.
     """
@@ -110,15 +111,16 @@ PAIRING_TTL_S = 600
 # `v1:render:screens`: The screens the render pool draws: device id to slug, the slug naming the screen in the pool's
 # metrics (their `device` label).
 # A Redis hash of models.RenderScreens (text), with no TTL.
-# Written by auth-broker, whole, wherever it differs, whenever it writes the configs. Read by countdown's render pool
-# (the ticker, and the claim script's HGET, which drops a job for any other).
+# Written by countdown-server, whole, wherever it differs, whenever it writes the configs. Read by countdown's render
+# pool (the ticker, and the claim script's HGET, which drops a job for any other).
 # Example: countdown_api.fixtures, render_screens.json.
 RENDER_SCREENS = "v1:render:screens"
 
 
 # `v1:render:jobs`: The render pool's job queue, of device ids; a screen is in it at most once (render_queued).
 # A Redis list of models.RenderJobs (text), with no TTL.
-# Written by the enqueue script, run by auth-broker and countdown alike. Read by countdown's render workers, with BRPOP.
+# Written by the enqueue script, run by countdown-server and countdown alike. Read by countdown's render workers, with
+# BRPOP.
 # Example: countdown_api.fixtures, render_queue.json.
 RENDER_JOBS = "v1:render:jobs"
 
@@ -154,8 +156,8 @@ def frame(device_id: str) -> str:
     A Redis hash of models.FrameRecord (bytes), with a TTL of 86400 s: a day from the last change: a render whose frame
     is the record's (its etag) writes nothing and doesn't renew it.
 
-    Written by countdown's render pool, whole in one transaction, when the picture changes. Read by auth-broker, which
-    serves it to the screen.
+    Written by countdown's render pool, whole in one transaction, when the picture changes. Read by countdown-server,
+    which serves it to the screen.
 
     Example: countdown_api.fixtures, frame_record.json, frame_record.bin.
     """
@@ -177,7 +179,7 @@ def energy(device_id: str) -> str:
 
     A Redis string of models.StoredEnergy (json), with a TTL of 86400 s.
 
-    Written by auth-broker's glow provider. Read by countdown's energy panel.
+    Written by countdown-server's glow provider. Read by countdown's energy panel.
 
     Example: countdown_api.fixtures, glow_energy.json.
     """
@@ -201,7 +203,7 @@ def spotify(device_id: str) -> str:
 
     A Redis string of models.StoredPlayer (json), with a TTL of 180 s.
 
-    Written by auth-broker's music provider. Read by countdown's Spotify area.
+    Written by countdown-server's music provider. Read by countdown's Spotify area.
 
     Example: countdown_api.fixtures, music_player.json.
     """
@@ -224,7 +226,7 @@ def spotify_top(device_id: str) -> str:
 
     A Redis string of models.StoredTop (json), with a TTL of 7200 s.
 
-    Written by auth-broker's music provider. Read by countdown's Spotify area.
+    Written by countdown-server's music provider. Read by countdown's Spotify area.
 
     Example: countdown_api.fixtures, music_top.json.
     """
@@ -247,7 +249,7 @@ def album_art(url: str) -> str:
 
     A Redis string of models.AlbumArt (bytes), with a TTL of 300 s: renewed every minute a spotify key still shows it.
 
-    Written by auth-broker's music provider. Read by countdown's Spotify area.
+    Written by countdown-server's music provider. Read by countdown's Spotify area.
 
     Example: countdown_api.fixtures, music_art.json, music_art.jpg.
     """
@@ -265,7 +267,7 @@ def developer(device_id: str) -> str:
 
     A Redis string of models.StoredDeveloper (json), with a TTL of 900 s.
 
-    Written by auth-broker's developer provider. Read by countdown's developer panel.
+    Written by countdown-server's developer provider. Read by countdown's developer panel.
 
     Example: countdown_api.fixtures, developer.json.
     """
@@ -317,7 +319,7 @@ def parcels_status(device_id: str) -> str:
     Parcel. `invalid_key` isn't renewed, as the provider stops polling the key until its config is saved again, so it
     lapses to a missing key a day later.
 
-    Written by the parcel provider. Read by auth-broker, for the link status on the config page.
+    Written by the parcel provider. Read by countdown-server, for the link status on the config page.
 
     Example: countdown_api.fixtures, parcels.json.
     """
@@ -340,8 +342,8 @@ def pace(source: str, item_id: str) -> str:
     A Redis string of models.Pace (text), with a TTL of 60 s: renewed each cycle the provider still wants it; so it
     lapses by itself when the provider stops, or dies.
 
-    Written by any provider whose data is bursty (countdown's provider runner, auth-broker's developer and music
-    providers). Read by auth-broker, which paces the screen's polls.
+    Written by any provider whose data is bursty (countdown's provider runner, countdown-server's developer and music
+    providers). Read by countdown-server, which paces the screen's polls.
     """
     return f"v1:pace:{source}:{item_id}"
 

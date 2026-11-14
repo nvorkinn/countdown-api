@@ -1,12 +1,12 @@
-# The countdown store contract: every Redis key, value and script that crosses the boundary between auth-broker and
-# countdown. Edit this file (and lua/), then run `python generate.py`; see the README.
+# The countdown store contract: every Redis key, value and script that crosses the boundary between countdown-server
+# and countdown. Edit this file (and lua/), then run `python generate.py`; see the README.
 # `info.version` is a placeholder: the release workflow stamps it from the tag.
 info:
   title: countdown store contract
   version: 0.0.0-dev
   description: >-
-    What auth-broker (the config site) and countdown (the providers and the render pool) keep in the Redis they
-    share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and
+    What countdown-server (the config site, "the broker" below) and countdown (the providers and the render pool) keep
+    in the Redis they share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and
     who reads it, the scripts both sides run, and canonical examples (countdown_api/fixtures) that both sides' tests
     and this repository's check against.
 
@@ -44,7 +44,7 @@ keys:
     redis: set
     value: Subscription
     encoding: text
-    written_by: auth-broker, on every config save, rebuilt whole from its database in one transaction
+    written_by: countdown-server, on every config save, rebuilt whole from its database in one transaction
     read_by: countdown's providers, each its own source's
     examples: [subscriptions.json, weather_keys.json]
     description: >-
@@ -55,7 +55,7 @@ keys:
     redis: channel
     value: SubChanged
     encoding: text
-    written_by: auth-broker, after replacing the subscriptions
+    written_by: countdown-server, after replacing the subscriptions
     read_by: every provider, so it needn't wait for its next tick
     examples: [subscriptions.json]
     description: A pub/sub channel, not a key; the message is empty.
@@ -66,7 +66,7 @@ keys:
     redis: string
     value: ConfigResponse
     encoding: json
-    written_by: auth-broker, from its database on every config save, as it starts and every minute
+    written_by: countdown-server, from its database on every config save, as it starts and every minute
     read_by: countdown's render pool
     examples: [config_store.json]
     description: >-
@@ -83,7 +83,7 @@ keys:
     ttl: >-
       the code's own expiry, ten minutes from when it was issued (set with PXAT to the millisecond). The broker
       deletes it sooner when the code is used, or the device paired, unpaired or forgotten.
-    written_by: auth-broker, whenever it issues a pairing code
+    written_by: countdown-server, whenever it issues a pairing code
     read_by: countdown's render pool, for the pairing screen
     examples: [pairing_key.json]
     description: >-
@@ -94,7 +94,7 @@ keys:
     redis: hash
     value: RenderScreens
     encoding: text
-    written_by: auth-broker, whole, wherever it differs, whenever it writes the configs
+    written_by: countdown-server, whole, wherever it differs, whenever it writes the configs
     read_by: countdown's render pool (the ticker, and the claim script's HGET, which drops a job for any other)
     examples: [render_screens.json]
     description: >-
@@ -105,7 +105,7 @@ keys:
     redis: list
     value: RenderJobs
     encoding: text
-    written_by: the enqueue script, run by auth-broker and countdown alike
+    written_by: the enqueue script, run by countdown-server and countdown alike
     read_by: countdown's render workers, with BRPOP
     examples: [render_queue.json]
     description: The render pool's job queue, of device ids; a screen is in it at most once (render_queued).
@@ -136,7 +136,7 @@ keys:
       a day from the last change: a render whose frame is the record's (its etag) writes nothing and doesn't renew
       it.
     written_by: countdown's render pool, whole in one transaction, when the picture changes
-    read_by: auth-broker, which serves it to the screen
+    read_by: countdown-server, which serves it to the screen
     examples: [frame_record.json, frame_record.bin]
     description: A screen's latest frame, its ETag and when it was first drawn.
   energy:
@@ -147,7 +147,7 @@ keys:
     value: StoredEnergy
     encoding: json
     ttl_s: 86400
-    written_by: auth-broker's glow provider
+    written_by: countdown-server's glow provider
     read_by: countdown's energy panel
     examples: [glow_energy.json]
     description: A Glow device's electricity use, as Glowmarkt gave it.
@@ -159,7 +159,7 @@ keys:
     value: StoredPlayer
     encoding: json
     ttl_s: 180
-    written_by: auth-broker's music provider
+    written_by: countdown-server's music provider
     read_by: countdown's Spotify area
     examples: [music_player.json]
     description: >-
@@ -174,7 +174,7 @@ keys:
     value: StoredTop
     encoding: json
     ttl_s: 7200
-    written_by: auth-broker's music provider
+    written_by: countdown-server's music provider
     read_by: countdown's Spotify area
     examples: [music_top.json]
     description: >-
@@ -190,7 +190,7 @@ keys:
     encoding: bytes
     ttl_s: 300
     ttl: renewed every minute a spotify key still shows it.
-    written_by: auth-broker's music provider
+    written_by: countdown-server's music provider
     read_by: countdown's Spotify area
     examples: [music_art.json, music_art.jpg]
     description: >-
@@ -204,7 +204,7 @@ keys:
     value: StoredDeveloper
     encoding: json
     ttl_s: 900
-    written_by: auth-broker's developer provider
+    written_by: countdown-server's developer provider
     read_by: countdown's developer panel
     examples: [developer.json]
     description: A device's developer panel data (GitHub summary and AI plans).
@@ -240,7 +240,7 @@ keys:
       a day, renewed on every poll that reaches Parcel. `invalid_key` isn't renewed, as the provider stops polling the
       key until its config is saved again, so it lapses to a missing key a day later.
     written_by: the parcel provider
-    read_by: auth-broker, for the link status on the config page
+    read_by: countdown-server, for the link status on the config page
     examples: [parcels.json]
     description: >-
       Whether the device's Parcel API key works: `ok`, `invalid_key` (Parcel answered 401) or `rate_limited`. A missing
@@ -255,8 +255,8 @@ keys:
     encoding: text
     ttl_s: 60
     ttl: renewed each cycle the provider still wants it; so it lapses by itself when the provider stops, or dies.
-    written_by: any provider whose data is bursty (countdown's provider runner, auth-broker's developer and music providers)
-    read_by: auth-broker, which paces the screen's polls
+    written_by: any provider whose data is bursty (countdown's provider runner, countdown-server's developer and music providers)
+    read_by: countdown-server, which paces the screen's polls
     description: The seconds a provider wants the screen to poll at while what it fetched for `item_id` is bursty.
 
 # The Lua scripts both sides run. Each becomes a countdown_api.scripts.Script of the same name (upper case), carrying

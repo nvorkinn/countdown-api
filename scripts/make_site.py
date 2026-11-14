@@ -67,13 +67,13 @@ def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>countdown API</title>
+<title>countdown store contract</title>
 <style>body{{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem}}
 th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 </head>
 <body>
-<h1>countdown API</h1>
-<p>The contract between the countdown renderer and the auth-broker. Both generate their side from the file below on every build.</p>
+<h1>countdown store contract</h1>
+<p>The Redis store contract between countdown-server and countdown: store.yaml below, and the countdown_api wheel generated from it.</p>
 <table>{rows}</table>
 <ul>
 {listing}
