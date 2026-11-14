@@ -14,14 +14,14 @@
         "started": "2026-10-17T11:57:00+00:00",
         "finished": null,
         "jobs": [
-          {"key": "build", "name": "Build", "state": "done", "needs": []},
-          {"key": "deploy", "name": "Deploy", "state": "running", "needs": ["build"], "done": 1, "total": 2}
+          { "key": "build", "name": "Build", "state": "done", "needs": [] },
+          { "key": "deploy", "name": "Deploy", "state": "running", "needs": ["build"], "done": 1, "total": 2 }
         ]
       }
     ]
   },
   "plans": [
-    {"name": "Copilot", "plan": "Pro", "renews": "2026-11-01", "used": 280, "limit": 300},
-    {"name": "Claude", "plan": "Max", "renews": "2026-10-18", "used": null, "limit": null}
+    { "name": "Copilot", "plan": "Pro", "renews": "2026-11-01", "used": 280, "limit": 300 },
+    { "name": "Claude", "plan": "Max", "renews": "2026-10-18", "used": null, "limit": null }
   ]
 }

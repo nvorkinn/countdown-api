@@ -5,3 +5,11 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+  # Biome lints and formats the TypeScript and JSON. It runs the version package-lock.json pins, so `npm ci` first.
+  - repo: local
+    hooks:
+      - id: biome-check
+        name: biome check
+        entry: npx --no-install biome check --write --files-ignore-unknown=true --no-errors-on-unmatched
+        language: system
+        types_or: [javascript, jsx, ts, tsx, json]

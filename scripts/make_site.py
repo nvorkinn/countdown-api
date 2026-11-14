@@ -73,7 +73,7 @@ th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 </head>
 <body>
 <h1>countdown store contract</h1>
-<p>The Redis store contract between countdown-server and countdown: store.yaml below, and the countdown_api wheel generated from it.</p>
+<p>A shared contract: the countdown Redis store contract (store.yaml below), with the Python models (the countdown_api wheel) and TypeScript types generated from it.</p>
 <table>{rows}</table>
 <ul>
 {listing}

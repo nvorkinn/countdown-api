@@ -16,14 +16,27 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
       # openapi-codegen comes from a release of its repository, whose hash uv.lock records; the dev group also has
       # ruff (which generate.py formats with), pytest and jsonschema.
       - name: Install the dev tools and the package
         run: uv sync --frozen
+      # openapi-typescript, TypeScript (to check what it writes) and Biome, pinned by package-lock.json.
+      - name: Install openapi-typescript, TypeScript and Biome
+        run: npm ci
       # src/countdown_api is committed, so it has to be what generate.py writes from store.yaml (and lua/):
       # `python generate.py` brings it up to date.
       - name: Check src/countdown_api is up to date with store.yaml
         run: uv run --frozen python generate.py --check
+      # tsconfig.json: strict, noUncheckedIndexedAccess and exactOptionalPropertyTypes.
+      - name: Type-check the TypeScript types
+        run: npx --no-install tsc -p .
+      # Lint and format check of the TypeScript and JSON (biome.json), the generated files and the fixtures included.
+      - name: Biome
+        run: npx --no-install biome ci --reporter=github .
       - name: Ruff
         run: |
           uv run --frozen ruff check --output-format=github .

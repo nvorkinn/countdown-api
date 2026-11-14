@@ -2,7 +2,7 @@
   "info": {
     "title": "countdown store contract",
     "version": "0.0.0-dev",
-    "description": "What countdown-server (the config site, \"the broker\" below) and countdown (the providers and the render pool) keep in the Redis they share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and who reads it, the scripts both sides run, and canonical examples (countdown_api/fixtures) that both sides' tests and this repository's check against."
+    "description": "What the broker (the config site) and the renderers (the providers and the render pool) keep in the Redis they share, which is all they say to each other: the keys and channels, what each holds, its TTL, who writes it and who reads it, the scripts both sides run, and canonical examples (countdown_api/fixtures) that both sides' tests and this repository's check against."
   },
   "prefix": "v1",
   "sources": {
@@ -24,12 +24,9 @@
       "redis": "set",
       "value": "Subscription",
       "encoding": "text",
-      "written_by": "countdown-server, on every config save, rebuilt whole from its database in one transaction",
-      "read_by": "countdown's providers, each its own source's",
-      "examples": [
-        "subscriptions.json",
-        "weather_keys.json"
-      ],
+      "written_by": "the broker, on every config save, rebuilt whole from its database in one transaction",
+      "read_by": "the providers, each its own source's",
+      "examples": ["subscriptions.json", "weather_keys.json"],
       "description": "The ids some screen wants from `source`, replaced atomically (DEL then SADD in one transaction) whenever a config is saved, then a nudge on sub_changed. A missing key is an empty set."
     },
     "sub_changed": {
@@ -37,11 +34,9 @@
       "redis": "channel",
       "value": "SubChanged",
       "encoding": "text",
-      "written_by": "countdown-server, after replacing the subscriptions",
+      "written_by": "the broker, after replacing the subscriptions",
       "read_by": "every provider, so it needn't wait for its next tick",
-      "examples": [
-        "subscriptions.json"
-      ],
+      "examples": ["subscriptions.json"],
       "description": "A pub/sub channel, not a key; the message is empty."
     },
     "config": {
@@ -52,11 +47,9 @@
       "redis": "string",
       "value": "ConfigResponse",
       "encoding": "json",
-      "written_by": "countdown-server, from its database on every config save, as it starts and every minute",
-      "read_by": "countdown's render pool",
-      "examples": [
-        "config_store.json"
-      ],
+      "written_by": "the broker, from its database on every config save, as it starts and every minute",
+      "read_by": "the render pool",
+      "examples": ["config_store.json"],
       "description": "A paired screen's config, with no pairing code (null) and no secret of any kind. A missing key means there's nothing to render: a device not paired, or with a pairing code to show (pairing)."
     },
     "pairing": {
@@ -69,11 +62,9 @@
       "encoding": "json",
       "ttl_s": 600,
       "ttl": "the code's own expiry, ten minutes from when it was issued (set with PXAT to the millisecond). The broker deletes it sooner when the code is used, or the device paired, unpaired or forgotten.",
-      "written_by": "countdown-server, whenever it issues a pairing code",
-      "read_by": "countdown's render pool, for the pairing screen",
-      "examples": [
-        "pairing_key.json"
-      ],
+      "written_by": "the broker, whenever it issues a pairing code",
+      "read_by": "the render pool, for the pairing screen",
+      "examples": ["pairing_key.json"],
       "description": "While a device has a pairing code to show: its config with `pairing_code` set (there's no config key then). Plaintext by decision: any Redis reader on the host can see a live code. Never logged."
     },
     "render_screens": {
@@ -81,11 +72,9 @@
       "redis": "hash",
       "value": "RenderScreens",
       "encoding": "text",
-      "written_by": "countdown-server, whole, wherever it differs, whenever it writes the configs",
-      "read_by": "countdown's render pool (the ticker, and the claim script's HGET, which drops a job for any other)",
-      "examples": [
-        "render_screens.json"
-      ],
+      "written_by": "the broker, whole, wherever it differs, whenever it writes the configs",
+      "read_by": "the render pool (the ticker, and the claim script's HGET, which drops a job for any other)",
+      "examples": ["render_screens.json"],
       "description": "The screens the render pool draws: device id to slug, the slug naming the screen in the pool's metrics (their `device` label)."
     },
     "render_jobs": {
@@ -93,11 +82,9 @@
       "redis": "list",
       "value": "RenderJobs",
       "encoding": "text",
-      "written_by": "the enqueue script, run by countdown-server and countdown alike",
-      "read_by": "countdown's render workers, with BRPOP",
-      "examples": [
-        "render_queue.json"
-      ],
+      "written_by": "the enqueue script, run by the broker and the render pool alike",
+      "read_by": "the render workers, with BRPOP",
+      "examples": ["render_queue.json"],
       "description": "The render pool's job queue, of device ids; a screen is in it at most once (render_queued)."
     },
     "render_queued": {
@@ -111,10 +98,8 @@
       "ttl_ms": 60000,
       "ttl": "the ticker's minute, so a worker that dies between the pop and the claim keeps the screen out of the queue for no longer than that.",
       "written_by": "the enqueue script",
-      "read_by": "countdown's claim script, which deletes it",
-      "examples": [
-        "render_queue.json"
-      ],
+      "read_by": "the claim script, which deletes it",
+      "examples": ["render_queue.json"],
       "description": "That a job for the screen is in the queue, holding when it was queued (Redis's clock)."
     },
     "frame": {
@@ -127,12 +112,9 @@
       "encoding": "bytes",
       "ttl_s": 86400,
       "ttl": "a day from the last change: a render whose frame is the record's (its etag) writes nothing and doesn't renew it.",
-      "written_by": "countdown's render pool, whole in one transaction, when the picture changes",
-      "read_by": "countdown-server, which serves it to the screen",
-      "examples": [
-        "frame_record.json",
-        "frame_record.bin"
-      ],
+      "written_by": "the render pool, whole in one transaction, when the picture changes",
+      "read_by": "the broker, which serves it to the screen",
+      "examples": ["frame_record.json", "frame_record.bin"],
       "description": "A screen's latest frame, its ETag and when it was first drawn."
     },
     "energy": {
@@ -144,11 +126,9 @@
       "value": "StoredEnergy",
       "encoding": "json",
       "ttl_s": 86400,
-      "written_by": "countdown-server's glow provider",
-      "read_by": "countdown's energy panel",
-      "examples": [
-        "glow_energy.json"
-      ],
+      "written_by": "the broker's glow provider",
+      "read_by": "the energy panel",
+      "examples": ["glow_energy.json"],
       "description": "A Glow device's electricity use, as Glowmarkt gave it."
     },
     "spotify": {
@@ -160,11 +140,9 @@
       "value": "StoredPlayer",
       "encoding": "json",
       "ttl_s": 180,
-      "written_by": "countdown-server's music provider",
-      "read_by": "countdown's Spotify area",
-      "examples": [
-        "music_player.json"
-      ],
+      "written_by": "the broker's music provider",
+      "read_by": "the Spotify area",
+      "examples": ["music_player.json"],
       "description": "What a device's Spotify and Apple Music are playing, and what's up next. While Spotify plays, the music provider rewrites it every few seconds (with `spotify_playback` fresh, and the queue only when it is due or the track changed), asks for a faster refresh with `v1:pace:spotify:<device id>` and queues a render of the screen."
     },
     "spotify_top": {
@@ -176,11 +154,9 @@
       "value": "StoredTop",
       "encoding": "json",
       "ttl_s": 7200,
-      "written_by": "countdown-server's music provider",
-      "read_by": "countdown's Spotify area",
-      "examples": [
-        "music_top.json"
-      ],
+      "written_by": "the broker's music provider",
+      "read_by": "the Spotify area",
+      "examples": ["music_top.json"],
       "description": "A device's Spotify and Apple Music top tracks and artists. Apart from the player's key because it's fetched far less often (every half hour) and kept far longer."
     },
     "album_art": {
@@ -196,12 +172,9 @@
       "encoding": "bytes",
       "ttl_s": 300,
       "ttl": "renewed every minute a spotify key still shows it.",
-      "written_by": "countdown-server's music provider",
-      "read_by": "countdown's Spotify area",
-      "examples": [
-        "music_art.json",
-        "music_art.jpg"
-      ],
+      "written_by": "the broker's music provider",
+      "read_by": "the Spotify area",
+      "examples": ["music_art.json", "music_art.jpg"],
       "description": "An album's cover, by its URL, so every screen showing the same album reads one copy: the image file's own bytes, as the service serves it (the smallest of its sizes at least 120 px tall, else the tallest)."
     },
     "developer": {
@@ -213,11 +186,9 @@
       "value": "StoredDeveloper",
       "encoding": "json",
       "ttl_s": 900,
-      "written_by": "countdown-server's developer provider",
-      "read_by": "countdown's developer panel",
-      "examples": [
-        "developer.json"
-      ],
+      "written_by": "the broker's developer provider",
+      "read_by": "the developer panel",
+      "examples": ["developer.json"],
       "description": "A device's developer panel data (GitHub summary and AI plans)."
     },
     "parcels": {
@@ -231,10 +202,8 @@
       "ttl_s": 43200,
       "ttl": "twelve hours, so the last answer outlasts the night, when the provider doesn't poll; a screen then shows a parcel's last known state rather than nothing, and `fetched_at` says how old it is. Rewritten (and so renewed) on every poll that gets an answer.",
       "written_by": "the parcel provider",
-      "read_by": "countdown's parcels panel and its parcel notices",
-      "examples": [
-        "parcels.json"
-      ],
+      "read_by": "the parcels panel and its parcel notices",
+      "examples": ["parcels.json"],
       "description": "A device's active deliveries from the Parcel app, in the owner's own Parcel account, normalised to ParcelList. Parcels the provider has seen delivered stay in it for a few hours (it drops them after that), so the screen can show that they arrived. A missing key means no answer yet, or the key lapsed: the panel shows its standard data-not-available state."
     },
     "parcels_status": {
@@ -248,10 +217,8 @@
       "ttl_s": 86400,
       "ttl": "a day, renewed on every poll that reaches Parcel. `invalid_key` isn't renewed, as the provider stops polling the key until its config is saved again, so it lapses to a missing key a day later.",
       "written_by": "the parcel provider",
-      "read_by": "countdown-server, for the link status on the config page",
-      "examples": [
-        "parcels.json"
-      ],
+      "read_by": "the broker, for the link status on the config page",
+      "examples": ["parcels.json"],
       "description": "Whether the device's Parcel API key works: `ok`, `invalid_key` (Parcel answered 401) or `rate_limited`. A missing key means the provider hasn't tried it yet."
     },
     "pace": {
@@ -265,26 +232,18 @@
       "encoding": "text",
       "ttl_s": 60,
       "ttl": "renewed each cycle the provider still wants it; so it lapses by itself when the provider stops, or dies.",
-      "written_by": "any provider whose data is bursty (countdown's provider runner, countdown-server's developer and music providers)",
-      "read_by": "countdown-server, which paces the screen's polls",
+      "written_by": "any provider whose data is bursty (the provider runner, the broker's developer and music providers)",
+      "read_by": "the broker, which paces the screen's polls",
       "description": "The seconds a provider wants the screen to poll at while what it fetched for `item_id` is bursty."
     }
   },
   "scripts": {
     "enqueue": {
       "file": "lua/enqueue.lua",
-      "keys": [
-        "render_queued",
-        "render_jobs"
-      ],
-      "args": [
-        "the device id",
-        "the queued flag's TTL in ms (RENDER_QUEUED_TTL_MS)"
-      ],
+      "keys": ["render_queued", "render_jobs"],
+      "args": ["the device id", "the queued flag's TTL in ms (RENDER_QUEUED_TTL_MS)"],
       "returns": "1 if it queued the screen, 0 if it was queued already.",
-      "examples": [
-        "render_queue.json"
-      ],
+      "examples": ["render_queue.json"],
       "description": "Queue a render of a screen unless one is queued already: SET the queued flag NX with its TTL (to Redis's clock, in Unix ms), and only if that set it, LPUSH the device id onto the jobs. So a screen is in the queue at most once however many ask."
     }
   },
@@ -321,9 +280,7 @@
           "description": "The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L."
         }
       },
-      "required": [
-        "pairing_code"
-      ],
+      "required": ["pairing_code"],
       "type": "object"
     },
     "RenderScreens": {
@@ -368,11 +325,7 @@
           "description": "When this picture was first written, ISO 8601 in UTC to the millisecond, e.g. 2026-10-18T12:00:00.000+00:00. It doesn't move while the picture stays the same."
         }
       },
-      "required": [
-        "frame",
-        "etag",
-        "rendered_at"
-      ],
+      "required": ["frame", "etag", "rendered_at"],
       "additionalProperties": false,
       "type": "object"
     },
@@ -405,15 +358,7 @@
           "$ref": "#/$defs/GlowmarktReadings"
         }
       },
-      "required": [
-        "fetched_at",
-        "device_id",
-        "offset",
-        "resource_id",
-        "hourly",
-        "daily",
-        "monthly"
-      ],
+      "required": ["fetched_at", "device_id", "offset", "resource_id", "hourly", "daily", "monthly"],
       "type": "object"
     },
     "GlowmarktReadings": {
@@ -458,9 +403,7 @@
           ]
         }
       },
-      "required": [
-        "fetched_at"
-      ],
+      "required": ["fetched_at"],
       "type": "object"
     },
     "SpotifyPlayback": {
@@ -488,11 +431,7 @@
           ]
         }
       },
-      "required": [
-        "fetched_at",
-        "is_playing",
-        "progress_ms"
-      ],
+      "required": ["fetched_at", "is_playing", "progress_ms"],
       "type": "object"
     },
     "MusicQueue": {
@@ -527,9 +466,7 @@
           ]
         }
       },
-      "required": [
-        "fetched_at"
-      ],
+      "required": ["fetched_at"],
       "type": "object"
     },
     "MusicTopLists": {
@@ -549,10 +486,7 @@
           "type": "object"
         }
       },
-      "required": [
-        "tracks",
-        "artists"
-      ],
+      "required": ["tracks", "artists"],
       "type": "object"
     },
     "StoredDeveloper": {
@@ -579,20 +513,11 @@
           }
         }
       },
-      "required": [
-        "fetched_at"
-      ],
+      "required": ["fetched_at"],
       "type": "object"
     },
     "ParcelStatus": {
-      "enum": [
-        "ordered",
-        "in_transit",
-        "out_for_delivery",
-        "delivered",
-        "exception",
-        "unknown"
-      ],
+      "enum": ["ordered", "in_transit", "out_for_delivery", "delivered", "exception", "unknown"],
       "type": "string",
       "description": "Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees those codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the owner's attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping for."
     },
@@ -632,13 +557,7 @@
           "description": "When Parcel last saw the delivery change."
         }
       },
-      "required": [
-        "description",
-        "carrier",
-        "tracking_number",
-        "status",
-        "updated_at"
-      ],
+      "required": ["description", "carrier", "tracking_number", "status", "updated_at"],
       "type": "object"
     },
     "ParcelList": {
@@ -655,18 +574,11 @@
           }
         }
       },
-      "required": [
-        "fetched_at",
-        "parcels"
-      ],
+      "required": ["fetched_at", "parcels"],
       "type": "object"
     },
     "ParcelsLinkStatus": {
-      "enum": [
-        "ok",
-        "invalid_key",
-        "rate_limited"
-      ],
+      "enum": ["ok", "invalid_key", "rate_limited"],
       "type": "string",
       "description": "Whether Parcel took the device's API key at the last poll; the value of v1:parcels-status:<device id>."
     },
@@ -697,19 +609,13 @@
           "description": "Seconds between updates."
         },
         "clock_format": {
-          "enum": [
-            "12h",
-            "24h"
-          ],
+          "enum": ["12h", "24h"],
           "default": "24h",
           "type": "string",
           "description": "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time zones or log formats. Optional, so a broker that doesn't send it gets 24h."
         },
         "language": {
-          "enum": [
-            "en",
-            "nb"
-          ],
+          "enum": ["en", "nb"],
           "default": "en",
           "type": "string",
           "description": "The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål). Optional, so a broker that doesn't send it gets en."
@@ -722,11 +628,7 @@
         "style": {
           "anyOf": [
             {
-              "enum": [
-                "airy",
-                "hero",
-                "card"
-              ],
+              "enum": ["airy", "hero", "card"],
               "type": "string"
             },
             {
@@ -830,10 +732,7 @@
     "DepartureStop": {
       "properties": {
         "source": {
-          "enum": [
-            "tfl",
-            "entur"
-          ],
+          "enum": ["tfl", "entur"],
           "type": "string",
           "description": "Who to ask for the stop's departures. tfl is Transport for London; entur is Norway's national journey planner (Ruter and every other Norwegian operator)."
         },
@@ -842,10 +741,7 @@
           "description": "The stop's id at its source. A NaPTAN id for tfl (490000077E, 940GZZLUOVL); an NSR StopPlace or Quay for entur (NSR:StopPlace:58381, NSR:Quay:7333)."
         }
       },
-      "required": [
-        "source",
-        "id"
-      ],
+      "required": ["source", "id"],
       "title": "DepartureStop",
       "type": "object"
     },
@@ -858,20 +754,13 @@
           "type": "array"
         },
         "style": {
-          "enum": [
-            "classic",
-            "hero",
-            "grouped",
-            "card"
-          ],
+          "enum": ["classic", "hero", "grouped", "card"],
           "default": "hero",
           "type": "string",
           "description": "How each stop's departures are drawn, the same for every source. Superseded by style; see tfl.style for the values."
         }
       },
-      "required": [
-        "stops"
-      ],
+      "required": ["stops"],
       "title": "Departures",
       "type": "object"
     },
@@ -882,9 +771,7 @@
           "description": "Whether the Spotify area shows Apple Music too. Its data comes from the store, in Spotify's shapes, written by the broker's music provider, which holds the Apple token, so no token is sent here. Apple Music has no now playing or queue, so that is what was played last and before it, and top tracks and artists the broker counts from the plays it has seen."
         }
       },
-      "required": [
-        "enabled"
-      ],
+      "required": ["enabled"],
       "title": "AppleMusic",
       "type": "object"
     },
@@ -895,9 +782,7 @@
           "description": "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer provider fills with the GitHub token it holds, so no token is sent here."
         }
       },
-      "required": [
-        "enabled"
-      ],
+      "required": ["enabled"],
       "title": "Developer",
       "type": "object"
     },
@@ -908,9 +793,7 @@
           "description": "Whether the screen shows the parcels panel and parcel notices. Their data comes from the store, which the parcel provider fills with the Parcel API key it holds, so no key is sent here."
         }
       },
-      "required": [
-        "enabled"
-      ],
+      "required": ["enabled"],
       "title": "Parcels",
       "type": "object"
     },
@@ -921,9 +804,7 @@
           "description": "Whether the screen shows the energy panel. Its data comes from the store, which the broker's Glowmarkt provider fills, so no credentials are sent here."
         }
       },
-      "required": [
-        "enabled"
-      ],
+      "required": ["enabled"],
       "title": "Glowmarkt",
       "type": "object"
     },
@@ -942,10 +823,7 @@
         "country": {
           "anyOf": [
             {
-              "enum": [
-                "GB",
-                "NO"
-              ],
+              "enum": ["GB", "NO"],
               "type": "string"
             },
             {
@@ -956,20 +834,13 @@
           "description": "The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional; without it a postcode is taken to be British."
         },
         "style": {
-          "enum": [
-            "airy",
-            "hero",
-            "card",
-            "boxed"
-          ],
+          "enum": ["airy", "hero", "card", "boxed"],
           "default": "hero",
           "type": "string",
           "description": "How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws boxed as card."
         }
       },
-      "required": [
-        "postcode"
-      ],
+      "required": ["postcode"],
       "title": "NoticeBoard",
       "type": "object"
     },
@@ -995,10 +866,7 @@
     "Screen": {
       "properties": {
         "orientation": {
-          "enum": [
-            "horizontal",
-            "vertical"
-          ],
+          "enum": ["horizontal", "vertical"],
           "type": "string"
         },
         "width": {
@@ -1008,10 +876,7 @@
           "type": "integer"
         },
         "format": {
-          "enum": [
-            "mono-1bpp-packed",
-            "png"
-          ],
+          "enum": ["mono-1bpp-packed", "png"],
           "type": "string",
           "description": "The format the screen takes its frame in, as it reported at registration. mono-1bpp-packed is the e-paper's raw buffer, 800x480 at one bit a pixel, rows top to bottom, the leftmost pixel in a byte's high bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame."
         },
@@ -1028,12 +893,7 @@
           "description": "Which layout the screen is drawn in. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each size's default."
         }
       },
-      "required": [
-        "orientation",
-        "width",
-        "height",
-        "format"
-      ],
+      "required": ["orientation", "width", "height", "format"],
       "title": "Screen",
       "type": "object"
     },
@@ -1043,20 +903,13 @@
           "type": "boolean"
         },
         "style": {
-          "enum": [
-            "classic",
-            "airy",
-            "hero",
-            "card"
-          ],
+          "enum": ["classic", "airy", "hero", "card"],
           "default": "hero",
           "type": "string",
           "description": "How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps labels like the weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a rounded card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the original look, is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style."
         }
       },
-      "required": [
-        "enabled"
-      ],
+      "required": ["enabled"],
       "title": "Spotify",
       "type": "object"
     },
@@ -1069,20 +922,13 @@
           "type": "array"
         },
         "style": {
-          "enum": [
-            "classic",
-            "hero",
-            "grouped",
-            "card"
-          ],
+          "enum": ["classic", "hero", "grouped", "card"],
           "default": "hero",
           "type": "string",
           "description": "How each stop's departures are drawn. hero makes the next departure big; grouped gives each route one row with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a broker that doesn't send it gets hero. classic, the original row per departure under a black header, is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style, where grouped is called airy."
         }
       },
-      "required": [
-        "stop_ids"
-      ],
+      "required": ["stop_ids"],
       "title": "Tfl",
       "type": "object"
     },
@@ -1104,20 +950,13 @@
           "description": "The key the place's weather is kept under in the store, which the renderer reads as v1:weather:<key>, e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or the slug of location for one saved before places were picked (london). Optional; a renderer that gets null (a broker that predates it) reads the weather under location instead."
         },
         "design": {
-          "enum": [
-            "columns",
-            "timeline",
-            "overview",
-            "poster"
-          ],
+          "enum": ["columns", "timeline", "overview", "poster"],
           "default": "columns",
           "type": "string",
           "description": "How the weather is drawn on an HD screen (1872x1404 hung portrait), where it spans the whole width and has room for more than the 7.5\" screens' panel. columns puts the readings in tiles beside the conditions, with the outlook under them; timeline has the coming twelve hours in a strip along the bottom; overview shows now, tonight, tomorrow and the weekend side by side, with no tabs; poster sets the temperature very big, with the readings in a black band. Other screens ignore it. Optional, so a broker that doesn't send it gets columns."
         }
       },
-      "required": [
-        "location"
-      ],
+      "required": ["location"],
       "title": "Weather",
       "type": "object"
     }

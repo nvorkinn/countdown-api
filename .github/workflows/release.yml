@@ -6,7 +6,7 @@ name: Release
 # Pushing a tag v<version> (from main) publishes the store contract, store.yaml, and the wheel generate.py builds
 # from it (countdown_api-<version>-py3-none-any.whl, which carries the contract as store.json, the Lua and the
 # examples too) as a GitHub release, and makes it the latest one. The version is stamped into the contract and the
-# wheel from the tag (GITHUB_REF_NAME).
+# wheel from the tag (GITHUB_REF_NAME). The TypeScript types, store.d.ts, are published beside them.
 #
 # The release is also published to the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/. It is
 # a flat package index listing the latest wheel, so a consumer that depends on countdown-api and points uv at it
@@ -59,6 +59,10 @@ jobs:
         with:
           ref: ${{ env.TAG }}
       - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
       - name: Stamp version
         run: |
           case "$TAG" in
@@ -69,8 +73,10 @@ jobs:
           sed -i "s/^  version: 0.0.0-dev\$/  version: ${TAG#v}/" store.yaml
           grep -q "^  version: ${TAG#v}\$" store.yaml || { echo "::error::No placeholder version to stamp."; exit 1; }
           cp store.yaml dist/
-      - name: Install openapi-codegen and ruff
-        run: uv sync --frozen --no-install-project
+      - name: Install openapi-codegen, ruff and openapi-typescript
+        run: |
+          uv sync --frozen --no-install-project
+          npm ci
       # generate.py run on the stamped contract, then built into the wheel: what is built here is what gets
       # published. The wheel carries the contract too, and takes its version from the tag.
       - name: Build the wheel from the contract
@@ -78,9 +84,10 @@ jobs:
           uv run --frozen --no-sync python generate.py
           uv version --frozen "${TAG#v}"
           uv build --wheel --out-dir dist
+          cp src/countdown_api/store.d.ts dist/
       - name: Checksums
         working-directory: dist
-        run: sha256sum -- store.yaml *.whl | tee SHA256SUMS
+        run: sha256sum -- store.yaml store.d.ts *.whl | tee SHA256SUMS
       - uses: actions/upload-artifact@v7
         with:
           name: dist
