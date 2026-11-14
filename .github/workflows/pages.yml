@@ -1,19 +1,17 @@
 name: Pages
 
-# Publishes the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/, on every push to main and
-# after every release (the Release workflow calls this). A Pages deployment replaces the whole site, so both build
-# all of it:
+# Publishes the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/, on every push to main, and
+# only then: a release's files reach the site with the next push to main after it. A Pages deployment replaces the
+# whole site, so each run builds all of it:
 #
 # - the latest release's files at fixed addresses, as a flat package index (scripts/make_site.py), and
 # - schema/, the reference: main's store.yaml as an OpenAPI document (`generate.py --openapi`), shown with Scalar.
 #
-# Settings > Pages > Source must be "GitHub Actions", and the github-pages environment must allow both the branch
-# `main` and tags `v*` to deploy (Settings > Environments).
+# Settings > Pages > Source must be "GitHub Actions", and the github-pages environment must allow the branch `main`
+# to deploy (Settings > Environments).
 on:
   push:
     branches: [main]
-  workflow_call:
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,10 +34,9 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      # main, whatever started the run (a release's tag is on main), with the tags, for the release's commit.
+      # With the tags, for the latest release's commit.
       - uses: actions/checkout@v7
         with:
-          ref: main
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v7
       - name: Install openapi-codegen
