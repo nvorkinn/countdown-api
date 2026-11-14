@@ -1,0 +1,46 @@
+name: Pages
+
+# Publishes the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/, on every push to main. The
+# site is one page, the reference: main's store.yaml as an OpenAPI document (`generate.py --openapi`), shown with
+# Scalar (scripts/reference.html).
+#
+# Settings > Pages > Source must be "GitHub Actions", and the github-pages environment must allow the branch `main`
+# to deploy (Settings > Environments).
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One deployment at a time, and never a cancelled one: the newest queued run is what ends up published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Install openapi-codegen
+        run: uv sync --frozen --no-install-project
+      - name: Build the site
+        run: |
+          mkdir site
+          cp scripts/reference.html site/index.html
+          uv run --frozen --no-sync python generate.py \
+            --openapi site/openapi.json --version "main@$(git rev-parse --short HEAD)"
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5

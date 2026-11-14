@@ -1,6 +1,6 @@
 # The countdown store contract: every Redis key, value and script that crosses the boundary between the broker
 # and the renderers. Edit this file (and lua/), then run `python generate.py`; see the README.
-# `info.version` is a placeholder: the release workflow stamps it from the tag.
+# `info.version` is a placeholder: this project isn't released on its own.
 info:
   title: countdown store contract
   version: 0.0.0-dev
