@@ -8,6 +8,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # openapi-typescript's peer dependency is typescript ^5, so a newer major breaks `npm ci`. Drop this once it
+    # allows one.
+    ignore:
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
