@@ -28,7 +28,7 @@ jobs:
           # generated commit. Set the REGENERATE_TOKEN secret (a PAT or app token with contents: write) to have it run.
           token: ${{ secrets.REGENERATE_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
