@@ -4,6 +4,7 @@
     npm ci
     uv run --frozen python generate.py            # write it
     uv run --frozen python generate.py --check    # write nothing; exit 1 if src/countdown_api is out of date
+    uv run --frozen python generate.py --openapi openapi.json    # only the document the Pages site's reference shows
 
 store.yaml is the one source. From it this writes:
 
@@ -52,8 +53,16 @@ def main(argv: list[str] | None = None) -> int:
     """Write the package, or with --check say what is out of date."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="write nothing; exit 1 if anything is out of date")
+    parser.add_argument("--openapi", type=Path, metavar="PATH", help="write only the reference's OpenAPI document")
+    parser.add_argument("--version", help="the version the --openapi document carries, instead of the contract's")
     args = parser.parse_args(argv)
 
+    if args.openapi:
+        document = reference_document(load(CONTRACT), args.version)
+        args.openapi.parent.mkdir(parents=True, exist_ok=True)
+        args.openapi.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"Wrote {args.openapi}")
+        return 0
     files = package_files(load(CONTRACT))
     if args.check:
         stale = stale_files(files, OUT)
@@ -87,6 +96,45 @@ def openapi_document(contract: dict[str, Any]) -> dict[str, Any]:
         "paths": {},
         "components": {"schemas": _as_components(contract["$defs"])},
     }
+
+
+def reference_document(contract: dict[str, Any], version: str | None = None) -> dict[str, Any]:
+    """Return the OpenAPI document the Pages site's reference (Scalar) shows.
+
+    It is the models' document, with what a schema alone doesn't say as its description, in Markdown: the keys (what
+    each holds, its TTL, who writes it and who reads it), the subscription sources and the scripts.
+    """
+    document = openapi_document(contract)
+    document["info"]["version"] = version or contract["info"]["version"]
+    parts = [contract["info"]["description"], "## Keys"]
+    for key in contract["keys"].values():
+        ttl = f"{key['ttl_s']:,} s" if "ttl_s" in key else f"{key['ttl_ms']:,} ms" if "ttl_ms" in key else "none"
+        if key.get("ttl"):
+            ttl += f": {key['ttl']}"
+        facts = {
+            "Value": f"`{key['value']}`, a Redis {key['redis']} ({key['encoding']})",
+            "TTL": None if key["redis"] == "channel" else ttl,
+            "Written by": key["written_by"],
+            "Read by": key["read_by"],
+            "Examples": ", ".join(f"`{name}`" for name in key.get("examples", [])),
+        }
+        parts += [f"### `{_PARAM.sub(r'<\1>', key['pattern'])}`", key["description"], _facts(facts)]
+    parts += ["## Subscription sources", _facts({f"`{name}`": about for name, about in contract["sources"].items()})]
+    parts.append("## Scripts")
+    for script in contract["scripts"].values():
+        facts = {
+            "KEYS": ", ".join(f"`{key}`" for key in script["keys"]),
+            "ARGV": "; ".join(script["args"]),
+            "Returns": script["returns"],
+        }
+        parts += [f"### `{script['file']}`", script["description"], _facts(facts)]
+    document["info"]["description"] = "\n\n".join(parts)
+    return document
+
+
+def _facts(facts: dict[str, str | None]) -> str:
+    """Return a Markdown list of the facts that have a value, each as `- **name**: value`."""
+    return "\n".join(f"- **{name}**: {' '.join(value.split())}" for name, value in facts.items() if value)
 
 
 def biome(text: str, name: str) -> str:

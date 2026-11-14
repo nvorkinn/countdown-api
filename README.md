@@ -89,7 +89,12 @@ The package isn't on PyPI. Each release is also published to https://nvorkinn.gi
 index that lists the latest release's wheel (`[[tool.uv.index]] url = "https://nvorkinn.github.io/countdown-api/"
 format = "flat" explicit = true`, then `uv lock --upgrade-package countdown-api`), with `requirements.txt` (the wheel's
 URL), `constraints.txt` (pins only countdown-api to the latest release), `latest.json`, `store.yaml` and `SHA256SUMS`.
-It needs Settings > Pages > Source set to "GitHub Actions" and a `v*` tag rule on the `github-pages` environment.
+It needs Settings > Pages > Source set to "GitHub Actions", and the `github-pages` environment to allow the branch
+`main` and tags `v*`.
+
+The same site has the schema reference, https://nvorkinn.github.io/countdown-api/schema/: the keys, the sources, the
+scripts and every schema, shown with [Scalar](https://scalar.com). Every push to main republishes it (the Pages
+workflow), so it is main's contract, which can be ahead of the latest release.
 
 ## Changing it
 

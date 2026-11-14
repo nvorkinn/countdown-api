@@ -8,10 +8,11 @@ name: Release
 # examples too) as a GitHub release, and makes it the latest one. The version is stamped into the contract and the
 # wheel from the tag (GITHUB_REF_NAME). The TypeScript types, store.d.ts, are published beside them.
 #
-# The release is also published to the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/. It is
-# a flat package index listing the latest wheel, so a consumer that depends on countdown-api and points uv at it
-# finds the latest version there (`uv lock --upgrade-package countdown-api`) and records it, with its hash, in its
-# own lockfile. The links point at the release's own files, which stay when the next release replaces the page.
+# The release is also published to the project's GitHub Pages site, https://nvorkinn.github.io/countdown-api/, by the
+# Pages workflow (pages.yml), which this calls once the release is made. It is a flat package index listing the
+# latest wheel, so a consumer that depends on countdown-api and points uv at it finds the latest version there
+# (`uv lock --upgrade-package countdown-api`) and records it, with its hash, in its own lockfile. The links point at
+# the release's own files, which stay when the next release replaces the page.
 #
 # A tag push is the only way in: there is no manual trigger. If a run fails part-way, re-run it from the Actions tab
 # (same tag); if the release was already created, the files are added to it.
@@ -117,32 +118,11 @@ jobs:
       - name: Upload the contract, the code built from it and the checksums
         run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
 
-  # The website: the same files at fixed addresses, always the latest release's. Settings > Pages > Source must be
-  # "GitHub Actions", and the github-pages environment must allow tag `v*` to deploy (Settings > Environments).
+  # The website: the latest release's files at fixed addresses, and the schema reference. See pages.yml.
   pages:
     needs: release
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.TAG }}
-      - uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist
-      - name: Build the site
-        run: python3 scripts/make_site.py dist site "$TAG" "$GITHUB_REPOSITORY" "$GITHUB_SHA"
-      - name: Publish the release's version as a uv constraints file
-        run: echo "countdown-api==${TAG#v}" > site/constraints.txt
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@v5
+    uses: ./.github/workflows/pages.yml

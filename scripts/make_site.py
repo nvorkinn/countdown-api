@@ -1,10 +1,10 @@
-"""Builds the GitHub Pages site for a release from the files the release publishes.
+"""Builds the GitHub Pages site from the files the latest release published.
 
     python scripts/make_site.py <dist dir> <site dir> <tag> <repository> <commit>
 
 The site is the same at the same address whatever version of any repo reads it, and always the latest release's:
 every file of it, SHA256SUMS and latest.json (the version, each file's checksum and where the release is). The
-release workflow adds constraints.txt, which pins only countdown-api, for `uv sync --constraints URL` or
+Pages workflow adds constraints.txt, which pins only countdown-api, for `uv sync --constraints URL` or
 `UV_CONSTRAINT=URL` (the dependency stays ranged in pyproject.toml).
 requirements.txt, written here, is just the URL of the wheel, for `pip install -r URL`.
 
@@ -13,6 +13,9 @@ wheel, with its hash, so `[[tool.uv.index]] url = "https://nvorkinn.github.io/co
 project depend on countdown-api and find the latest version here. The wheel is linked at its address on the release,
 not on this site, because that address stays valid after the next release replaces the site, and a lockfile records
 it.
+
+schema/ is the reference: a Scalar (https://scalar.com) page of schema/openapi.json, which the Pages workflow writes
+there with `generate.py --openapi` from main's store.yaml. So the reference is main's, and can be ahead of the release.
 """
 
 from __future__ import annotations
@@ -35,9 +38,40 @@ def link(name: str, digest: str, repository: str, tag: str) -> str:
     return name
 
 
+# Pinned, so the page is the same until this changes. With no paths in the document, the reference is its
+# description (the keys, the sources, the scripts) and its models, so there is no client to offer.
+SCALAR = "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.78.1"
+REFERENCE = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>countdown store contract: the schema</title>
+</head>
+<body>
+<div id="app"></div>
+<script src="{SCALAR}"></script>
+<script>
+Scalar.createApiReference("#app", {{
+  url: "openapi.json",
+  hideClientButton: true,
+  hideTestRequestButton: true,
+  hiddenClients: true,
+  showDeveloperTools: "never",
+  agent: {{ disabled: true }},
+  defaultOpenAllTags: true,
+  expandAllModelSections: true,
+}});
+</script>
+</body>
+</html>
+"""
+
+
 def main(dist: Path, site: Path, tag: str, repository: str, commit: str) -> None:
     """Write the site for the release `tag` of `repository` into `site`."""
-    site.mkdir(parents=True, exist_ok=True)
+    (site / "schema").mkdir(parents=True, exist_ok=True)
+    (site / "schema" / "index.html").write_text(REFERENCE)
     release_url = f"https://github.com/{repository}/releases/tag/{tag}"
     files = {}
     for path in sorted(dist.iterdir()):
@@ -74,6 +108,7 @@ th{{text-align:left;padding-right:1rem}}code{{word-break:break-all}}</style>
 <body>
 <h1>countdown store contract</h1>
 <p>A shared contract: the countdown Redis store contract (store.yaml below), with the Python models (the countdown_api wheel) and TypeScript types generated from it.</p>
+<p><a href="schema/">The schema reference</a>: the keys and every schema, as they are on main.</p>
 <table>{rows}</table>
 <ul>
 {listing}
