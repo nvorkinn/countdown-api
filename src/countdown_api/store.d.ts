@@ -5,7 +5,68 @@
  * Do not make direct changes to the file.
  */
 
-export type paths = Record<string, never>;
+export interface paths {
+  "/api/tablets/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Give a tablet its identity.
+     * @description The secret the tablet generated and keeps becomes a device at once (201); only its hash is stored, and identifies the device. A repeat, e.g. on every start, is a 200 and changes nothing. Throttled per IP, as anyone can call it (429 with Retry-After).
+     */
+    post: operations["registerTablet"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/tablet": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The tablet's settings, and its pairing code until it's paired.
+     * @description What the tablet polls, with its secret (Authorization: Bearer <secret>): its settings (the defaults until anything was saved) and, while no one has paired it, the code and link to pair it with, which the broker issues afresh as each expires. Once paired, its owner can change the settings on the settings site too, so the tablet takes the settings from here over its own.
+     */
+    get: operations["getTablet"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/tablet/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Save the tablet's settings.
+     * @description All of them at once, as the tablet's settings panel has them after a change; answered with what was saved. A tablet saves whether or not it's paired, so nothing chosen before pairing is lost.
+     */
+    put: operations["putTabletSettings"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+}
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
@@ -326,6 +387,58 @@ export interface components {
        */
       design: "columns" | "timeline" | "overview" | "poster";
     };
+    /** @description A tablet's settings, as its settings panel shows them, each set (to its default if unchosen). */
+    TabletSettings: {
+      /**
+       * @description The tablet's skin. auto follows the sun at the tablet's location (day from sunrise to sunset), so a tablet that doesn't know its location shows day.
+       * @default day
+       * @enum {string}
+       */
+      theme: "day" | "auto" | "night";
+      /**
+       * @description The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any.
+       * @default forest
+       * @enum {string}
+       */
+      theme_colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "dynamic";
+      /**
+       * @description Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only the Raspberry Pi kiosk sleeps its screen: a tablet in a browser keeps the setting but ignores it.
+       * @default 5
+       * @enum {integer}
+       */
+      screen_sleep_minutes: 0 | 2 | 5 | 15 | 30;
+    };
+    /** @description How to pair an unpaired tablet, which shows the code and the link (as a QR code) to its owner. */
+    TabletPairing: {
+      /** @description The live code, as a screen's (PairingConfig): six of A-Z and 2-9, less 0, O, 1, I and L. */
+      pairing_code: string;
+      /**
+       * Format: uri
+       * @description The settings site's page that pairs this tablet with whoever opens it, signed in.
+       */
+      pairing_url: string;
+      /**
+       * Format: date-time
+       * @description When the code stops working; the tablet's next poll after that gets a new one.
+       */
+      expires_at: string;
+    };
+    /** @description What GET /api/tablet answers. */
+    TabletState: {
+      device_id: components["schemas"]["DeviceId"];
+      settings: components["schemas"]["TabletSettings"];
+      /** @description Null once the tablet is paired. */
+      pairing: components["schemas"]["TabletPairing"] | null;
+    };
+    /** @description What POST /api/tablets/register takes. */
+    TabletRegistration: {
+      /** @description A random string the tablet generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash. */
+      secret: string;
+    };
+    /** @description What POST /api/tablets/register answers. */
+    TabletRegistered: {
+      device_id: components["schemas"]["DeviceId"];
+    };
   };
   responses: never;
   parameters: never;
@@ -370,8 +483,140 @@ export type Screen = components["schemas"]["Screen"];
 export type Spotify = components["schemas"]["Spotify"];
 export type Tfl = components["schemas"]["Tfl"];
 export type Weather = components["schemas"]["Weather"];
+export type TabletSettings = components["schemas"]["TabletSettings"];
+export type TabletPairing = components["schemas"]["TabletPairing"];
+export type TabletState = components["schemas"]["TabletState"];
+export type TabletRegistration = components["schemas"]["TabletRegistration"];
+export type TabletRegistered = components["schemas"]["TabletRegistered"];
 export type $defs = Record<string, never>;
+export interface operations {
+  registerTablet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TabletRegistration"];
+      };
+    };
+    responses: {
+      /** @description A tablet already registered with that secret. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TabletRegistered"];
+        };
+      };
+      /** @description A new tablet. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TabletRegistered"];
+        };
+      };
+      /** @description No secret, or one shorter than 16 characters. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too many registrations from this IP; try again after Retry-After. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getTablet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The tablet's state. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TabletState"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A secret for a device that isn't a tablet (a screen's). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  putTabletSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TabletSettings"];
+      };
+    };
+    responses: {
+      /** @description The settings as saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TabletSettings"];
+        };
+      };
+      /** @description Settings the schema doesn't allow. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A secret for a device that isn't a tablet (a screen's). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+}
 type WithRequired<T, K extends keyof T> = T & {
   [P in K]-?: T[P];
 };
-export type operations = Record<string, never>;

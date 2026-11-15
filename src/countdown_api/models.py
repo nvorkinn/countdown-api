@@ -527,6 +527,90 @@ Subscription = list[Annotated[str, Field(min_length=1)]]
 """A subscription set's members, in no order. See `sources` for each source's."""
 
 
+class TabletPairing(BaseModel):
+    """The ``TabletPairing`` object.
+
+    How to pair an unpaired tablet, which shows the code and the link (as a QR code) to its owner.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] = Field(
+        description="The live code, as a screen's (PairingConfig): six of A-Z and 2-9, less 0, O, 1, I and L.",
+    )
+    pairing_url: str = Field(
+        description="The settings site's page that pairs this tablet with whoever opens it, signed in.",
+    )
+    expires_at: datetime = Field(
+        description="When the code stops working; the tablet's next poll after that gets a new one.",
+    )
+
+
+class TabletRegistered(BaseModel):
+    """What POST /api/tablets/register answers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: DeviceId = Field(
+        description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
+    )
+
+
+class TabletRegistration(BaseModel):
+    """What POST /api/tablets/register takes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    secret: Annotated[str, Field(min_length=16)] = Field(
+        description=(
+            "A random string the tablet generated and keeps, sent from then on as Authorization: Bearer <secret>. "
+            "Never logged; the broker keeps only its hash."
+        ),
+    )
+
+
+class TabletSettings(BaseModel):
+    """The ``TabletSettings`` object.
+
+    A tablet's settings, as its settings panel shows them, each set (to its default if unchosen).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    theme: Literal["day", "auto", "night"] = Field(
+        description=(
+            "The tablet's skin. auto follows the sun at the tablet's location (day from sunrise to sunset), so a "
+            "tablet that doesn't know its location shows day."
+        ),
+    )
+    theme_colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
+        description=(
+            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
+            " looks like forest without any."
+        ),
+    )
+    screen_sleep_minutes: Literal[0, 2, 5, 15, 30] = Field(
+        description=(
+            "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only the Raspberry Pi kiosk"
+            " sleeps its screen: a tablet in a browser keeps the setting but ignores it."
+        ),
+    )
+
+
+class TabletState(BaseModel):
+    """What GET /api/tablet answers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: DeviceId = Field(
+        description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
+    )
+    settings: TabletSettings = Field(
+        description="A tablet's settings, as its settings panel shows them, each set (to its default if unchosen).",
+    )
+    pairing: TabletPairing | None = Field(description="Null once the tablet is paired.")
+
+
 WeatherKey = Annotated[str, Field(pattern="^[^\\s:]+$")]
 """A weather key. For a place picked on the settings page it is the slug of its name, its country (xx
 for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a

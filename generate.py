@@ -14,7 +14,8 @@ store.yaml is the one source. From it this writes:
 - keys.py: a builder (or, with no parameter, a constant) per key and channel, the subscription sources, and each TTL.
 - scripts.py: each Lua script in lua/, byte for byte, with its SHA1.
 - store.d.ts: a TypeScript type per schema, written by openapi-typescript (package.json pins it) from the same
-  OpenAPI document as the models: `import type { ConfigResponse } from ".../countdown_api/store"`.
+  OpenAPI document as the models: `import type { ConfigResponse } from ".../countdown_api/store"`; and the HTTP
+  routes' `paths` and `operations`.
 - store.json: store.yaml as JSON, for anything that reads the contract without PyYAML.
 - __init__.py.
 
@@ -89,12 +90,18 @@ def package_files(contract: dict[str, Any]) -> dict[str, str]:
 
 
 def openapi_document(contract: dict[str, Any]) -> dict[str, Any]:
-    """Return the OpenAPI document openapi-codegen writes the models from: no paths, the contract's schemas."""
+    """Return the OpenAPI document the models and types are written from: the contract's routes and schemas.
+
+    The routes (`paths`, the tablet's) give store.d.ts its `paths` and `operations`; the models are the schemas' alone.
+    """
     return {
         "openapi": "3.1.0",
         "info": {"title": contract["info"]["title"], "version": contract["info"]["version"]},
-        "paths": {},
-        "components": {"schemas": _as_components(contract["$defs"])},
+        "paths": _as_components(contract.get("paths", {})),
+        "components": {
+            "schemas": _as_components(contract["$defs"]),
+            "securitySchemes": contract.get("securitySchemes", {}),
+        },
     }
 
 
@@ -189,6 +196,8 @@ def render_init(contract: dict[str, Any]) -> str:
     """Return __init__.py: the package's docstring."""
     return f'''{HEADER}
 """The {contract["info"]["title"]}: what the broker and the renderers keep in the Redis they share.
+
+It also has the broker's HTTP routes for THE MAX MIX's tablet, whose models are in countdown_api.models with the rest.
 
 - countdown_api.keys: every key and channel, its TTL, and the subscription sources;
 - countdown_api.models: a Pydantic model of every value;

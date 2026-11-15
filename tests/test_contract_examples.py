@@ -169,3 +169,33 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
             assert stop["id"] in sets[keys.subscription(stop["source"])]
         for source, section in ((keys.SPOTIFY, "spotify"), (keys.DEVELOPER, "developer"), (keys.PARCEL, "parcels")):
             assert (value["device_id"] in sets[keys.subscription(source)]) == value[section]["enabled"]
+
+
+def test_tablet_is_a_registration_and_its_state_before_and_after_pairing() -> None:
+    example = fixtures.load("tablet.json")
+    device_id = example["device_id"]
+    check_schema("DeviceId", device_id)
+    check("TabletRegistration", example["registration"])
+    assert check("TabletRegistered", example["registered"]).device_id == device_id
+    unpaired = check("TabletState", example["unpaired"])
+    assert unpaired.device_id == device_id
+    assert unpaired.pairing is not None
+    assert unpaired.pairing.pairing_code == "ABC234"
+    # Before anything is saved, a tablet's settings are the defaults.
+    defaults = {name: field["default"] for name, field in contract()["$defs"]["TabletSettings"]["properties"].items()}
+    assert example["unpaired"]["settings"] == defaults
+    # What PUT /api/tablet/settings takes and answers, and then what GET /api/tablet answers, paired.
+    saved = check("TabletSettings", example["settings"])
+    paired = check("TabletState", example["paired"])
+    assert paired.pairing is None
+    assert paired.settings == saved
+
+
+def test_tablet_settings_take_only_the_panels_choices() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    settings = fixtures.load("tablet.json")["settings"]
+    for wrong in ({**settings, "screen_sleep_minutes": 10}, {**settings, "theme": "dusk"}, {**settings, "extra": 1}):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("TabletSettings", wrong)
+    with pytest.raises(jsonschema.ValidationError):
+        check_schema("TabletRegistration", {"secret": "too-short"})

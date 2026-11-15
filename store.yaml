@@ -1,5 +1,6 @@
 # The countdown store contract: every Redis key, value and script that crosses the boundary between the broker
-# and the renderers. Edit this file (and lua/), then run `python generate.py`; see the README.
+# and the renderers, and the broker's HTTP routes for THE MAX MIX's tablet. Edit this file (and lua/), then run
+# `python generate.py`; see the README.
 # `info.version` is a placeholder: this project isn't released on its own.
 info:
   title: countdown store contract
@@ -276,6 +277,104 @@ scripts:
       however many ask.
 
 # The schemas, JSON Schema 2020-12. openapi-codegen turns them into the Pydantic models of countdown_api.models.
+# The broker's HTTP routes for a device that isn't a screen: THE MAX MIX's tablet (nvorkinn/the-max-mix), which keeps
+# the settings it shows in its own settings panel here, pairs like a screen does, and reads them back on any tablet
+# that is that device. An OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the schemas, so
+# store.d.ts types each route (`paths`, `operations`), and to the reference. A `$ref` is to these `$defs`. Each
+# operation's `x-examples` names its files in src/countdown_api/fixtures, as a key's `examples` do.
+paths:
+  /api/tablets/register:
+    post:
+      operationId: registerTablet
+      summary: Give a tablet its identity.
+      description: >-
+        The secret the tablet generated and keeps becomes a device at once (201); only its hash is stored, and
+        identifies the device. A repeat, e.g. on every start, is a 200 and changes nothing. Throttled per IP, as
+        anyone can call it (429 with Retry-After).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/$defs/TabletRegistration'
+      responses:
+        '200':
+          description: A tablet already registered with that secret.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/TabletRegistered'
+        '201':
+          description: A new tablet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/TabletRegistered'
+        '400':
+          description: No secret, or one shorter than 16 characters.
+        '429':
+          description: Too many registrations from this IP; try again after Retry-After.
+      x-examples: [tablet.json]
+  /api/tablet:
+    get:
+      operationId: getTablet
+      summary: The tablet's settings, and its pairing code until it's paired.
+      description: >-
+        What the tablet polls, with its secret (Authorization: Bearer <secret>): its settings (the defaults until
+        anything was saved) and, while no one has paired it, the code and link to pair it with, which the broker
+        issues afresh as each expires. Once paired, its owner can change the settings on the settings site too, so
+        the tablet takes the settings from here over its own.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The tablet's state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/TabletState'
+        '401':
+          description: A missing or unknown secret.
+        '403':
+          description: A secret for a device that isn't a tablet (a screen's).
+      x-examples: [tablet.json]
+  /api/tablet/settings:
+    put:
+      operationId: putTabletSettings
+      summary: Save the tablet's settings.
+      description: >-
+        All of them at once, as the tablet's settings panel has them after a change; answered with what was saved.
+        A tablet saves whether or not it's paired, so nothing chosen before pairing is lost.
+      security:
+      - deviceSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/$defs/TabletSettings'
+      responses:
+        '200':
+          description: The settings as saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/TabletSettings'
+        '400':
+          description: Settings the schema doesn't allow.
+        '401':
+          description: A missing or unknown secret.
+        '403':
+          description: A secret for a device that isn't a tablet (a screen's).
+      x-examples: [tablet.json]
+
+# How a device proves which it is on the routes above: the secret it registered with, as a bearer token.
+securitySchemes:
+  deviceSecret:
+    type: http
+    scheme: bearer
+    description: 'The secret the device registered with (TabletRegistration), as Authorization: Bearer <secret>.'
+
 $defs:
   DeviceId:
     type: string
@@ -935,3 +1034,112 @@ $defs:
     - location
     title: Weather
     type: object
+  TabletSettings:
+    description: A tablet's settings, as its settings panel shows them, each set (to its default if unchosen).
+    type: object
+    additionalProperties: false
+    properties:
+      theme:
+        enum:
+        - day
+        - auto
+        - night
+        default: day
+        type: string
+        description: >-
+          The tablet's skin. auto follows the sun at the tablet's location (day from sunrise to sunset), so a tablet
+          that doesn't know its location shows day.
+      theme_colour:
+        enum:
+        - forest
+        - navy
+        - teal
+        - plum
+        - terracotta
+        - pink
+        - yellow
+        - black
+        - dynamic
+        default: forest
+        type: string
+        description: >-
+          The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing,
+          and looks like forest without any.
+      screen_sleep_minutes:
+        enum:
+        - 0
+        - 2
+        - 5
+        - 15
+        - 30
+        default: 5
+        type: integer
+        description: >-
+          Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only the Raspberry Pi kiosk
+          sleeps its screen: a tablet in a browser keeps the setting but ignores it.
+    required:
+    - theme
+    - theme_colour
+    - screen_sleep_minutes
+  TabletPairing:
+    description: How to pair an unpaired tablet, which shows the code and the link (as a QR code) to its owner.
+    type: object
+    additionalProperties: false
+    properties:
+      pairing_code:
+        type: string
+        pattern: ^[A-HJKMNP-Z2-9]{6}$
+        description: >-
+          The live code, as a screen's (PairingConfig): six of A-Z and 2-9, less 0, O, 1, I and L.
+      pairing_url:
+        type: string
+        format: uri
+        description: The settings site's page that pairs this tablet with whoever opens it, signed in.
+      expires_at:
+        type: string
+        format: date-time
+        description: When the code stops working; the tablet's next poll after that gets a new one.
+    required:
+    - pairing_code
+    - pairing_url
+    - expires_at
+  TabletState:
+    description: What GET /api/tablet answers.
+    type: object
+    additionalProperties: false
+    properties:
+      device_id:
+        $ref: '#/$defs/DeviceId'
+      settings:
+        $ref: '#/$defs/TabletSettings'
+      pairing:
+        anyOf:
+        - $ref: '#/$defs/TabletPairing'
+        - type: 'null'
+        description: Null once the tablet is paired.
+    required:
+    - device_id
+    - settings
+    - pairing
+  TabletRegistration:
+    description: What POST /api/tablets/register takes.
+    type: object
+    additionalProperties: false
+    properties:
+      secret:
+        type: string
+        minLength: 16
+        description: >-
+          A random string the tablet generated and keeps, sent from then on as Authorization: Bearer <secret>.
+          Never logged; the broker keeps only its hash.
+    required:
+    - secret
+  TabletRegistered:
+    description: What POST /api/tablets/register answers.
+    type: object
+    additionalProperties: false
+    properties:
+      device_id:
+        $ref: '#/$defs/DeviceId'
+    required:
+    - device_id

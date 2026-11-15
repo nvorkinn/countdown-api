@@ -5,7 +5,11 @@ pool) don't talk to each other over HTTP: they share a Redis, and that is all th
 contract for it: every key and channel that crosses between them, what each holds, its TTL, who writes it and who reads
 it, the Lua script they run, and the canonical examples every consumer's tests check against. It is one file,
 [`store.yaml`](store.yaml), and the model code generated from it for Python (the `countdown_api` package, Pydantic
-models) and TypeScript (`store.d.ts`). (The repository keeps its old name; the HTTP API it was named for is gone.)
+models) and TypeScript (`store.d.ts`).
+
+It also has the broker's three HTTP routes for one device that isn't a screen:
+[THE MAX MIX](https://github.com/nvorkinn/the-max-mix)'s tablet, which keeps its settings in the broker (see
+[The tablet's routes](#the-tablets-routes)). The screens' own HTTP API, which the repository was named for, is gone.
 
 ## What's in the contract
 
@@ -37,6 +41,19 @@ the renderers, the render lease) aren't here: they are that side's own.
 The enqueue script, [`lua/enqueue.lua`](lua/enqueue.lua), is the one way anything queues a render: `SET` the queued
 flag `NX` with its TTL, and only if that set it, `LPUSH` the device id. Every consumer runs it from here, byte for byte, so
 its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
+
+### The tablet's routes
+
+| route | takes | answers | what it is |
+| --- | --- | --- | --- |
+| `POST /api/tablets/register` | `TabletRegistration` | `TabletRegistered` (201 new, 200 again) | the tablet's identity, from a secret it keeps |
+| `GET /api/tablet` | | `TabletState` | its settings, and its pairing code and link until it's paired |
+| `PUT /api/tablet/settings` | `TabletSettings` | `TabletSettings` | its settings panel's choices, all at once |
+
+The last two take the tablet's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`). They're an
+OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as its schemas
+(`paths["/api/tablet"]["get"]`, `operations["getTablet"]`), and the reference lists them. `tablet.json` is their
+example.
 
 ## The package
 

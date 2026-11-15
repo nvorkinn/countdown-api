@@ -11,6 +11,8 @@ from countdown_api import fixtures, keys, models
 DEFS = contract()["$defs"]
 KEYS = contract()["keys"]
 SCRIPTS = contract()["scripts"]
+PATHS = contract()["paths"]
+OPERATIONS = {(path, method): operation for path, item in PATHS.items() for method, operation in item.items()}
 
 
 @pytest.mark.parametrize("name", sorted(DEFS))
@@ -45,9 +47,42 @@ def test_each_scripts_keys_and_args_are_what_its_lua_uses(name: str) -> None:
         assert used == set(range(1, len(declared) + 1)), f"{name}: {table} in the Lua vs the contract"
 
 
-def test_every_example_is_some_keys() -> None:
+def _refs(node: object) -> list[str]:
+    """Return every `$ref` in `node`, however deep."""
+    if isinstance(node, dict):
+        return [node["$ref"]] if "$ref" in node else [ref for value in node.values() for ref in _refs(value)]
+    if isinstance(node, list):
+        return [ref for item in node for ref in _refs(item)]
+    return []
+
+
+@pytest.mark.parametrize(("path", "method"), sorted(OPERATIONS))
+def test_each_routes_schemas_security_and_examples_exist(path: str, method: str) -> None:
+    operation = OPERATIONS[path, method]
+    assert method in {"get", "post", "put", "delete"}
+    assert path.startswith("/api/")
+    refs = _refs(operation)
+    assert refs
+    assert all(ref.removeprefix("#/$defs/") in DEFS for ref in refs), refs
+    for requirement in operation.get("security", []):
+        assert set(requirement) <= set(contract()["securitySchemes"])
+    for example in operation.get("x-examples", []):
+        assert fixtures.path(example).is_file()
+
+
+def test_every_example_is_some_keys_or_routes() -> None:
     used = {example for key in KEYS.values() for example in key.get("examples", [])}
+    used |= {example for operation in OPERATIONS.values() for example in operation.get("x-examples", [])}
     assert set(fixtures.names()) == used
+
+
+def test_the_routes_are_what_they_were() -> None:
+    # The routes the tablet runs on today: a change to any of these is a new route, not an edit.
+    assert sorted(OPERATIONS) == [
+        ("/api/tablet", "get"),
+        ("/api/tablet/settings", "put"),
+        ("/api/tablets/register", "post"),
+    ]
 
 
 def test_every_key_is_in_keys_py_with_its_ttl() -> None:
