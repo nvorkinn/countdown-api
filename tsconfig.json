@@ -6,7 +6,8 @@
     "noEmit": true,
     "skipLibCheck": false,
     "target": "es2022",
-    "module": "nodenext"
+    "module": "nodenext",
+    "lib": ["es2022", "dom"]
   },
-  "files": ["src/countdown_api/store.d.ts"]
+  "files": ["src/countdown_api/store.d.ts", "src/countdown_api/client.ts"]
 }

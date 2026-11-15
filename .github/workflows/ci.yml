@@ -32,8 +32,11 @@ jobs:
       - name: Check src/countdown_api is up to date with store.yaml
         run: uv run --frozen python generate.py --check
       # tsconfig.json: strict, noUncheckedIndexedAccess and exactOptionalPropertyTypes.
-      - name: Type-check the TypeScript types
+      - name: Type-check the TypeScript types and client
         run: npx --no-install tsc -p .
+      # client.ts against a fake fetch: what each route sends and answers (Node strips the types).
+      - name: Test the TypeScript client
+        run: node --test tests/*.test.ts
       # Lint and format check of the TypeScript and JSON (biome.json), the generated files and the fixtures included.
       - name: Biome
         run: npx --no-install biome ci --reporter=github .
