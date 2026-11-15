@@ -5,6 +5,7 @@ import re
 
 import pytest
 from contract_helpers import ROOT, contract
+from pydantic import TypeAdapter
 
 from countdown_api import fixtures, keys, models
 
@@ -151,3 +152,14 @@ def test_each_tagged_union_is_a_pydantic_discriminated_union(name: str) -> None:
     # openapi-codegen would write a plain union; generate.py writes these itself, picked by their tag.
     metadata = getattr(models, name).__metadata__
     assert [field.discriminator for field in metadata] == [DEFS[name]["discriminator"]["propertyName"]]
+
+
+def test_a_config_with_fields_a_newer_server_adds_still_validates() -> None:
+    # A render pool that predates a field must not throw the screen's config away, so a config's sections ignore it.
+    config = fixtures.load("config_store.json")["value"]
+    newer = config | {"brightness": 7, "weather": config["weather"] | {"units": "metric"}}
+    newer["style"] = config["style"] | {"contrast": "high"}
+
+    parsed = TypeAdapter(models.ConfigResponse).validate_python(newer)
+
+    assert parsed == TypeAdapter(models.ConfigResponse).validate_python(config)

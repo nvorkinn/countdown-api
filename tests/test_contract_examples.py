@@ -212,7 +212,6 @@ def test_a_config_takes_only_its_types_style() -> None:
         {**epaper, "type": "kiosk"},
         {**touchscreen, "display": {"sleep_minutes": 10}},
         {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
-        {**epaper, "weather": {**epaper["weather"], "design": "columns"}},
     )
     for config in wrong:
         with pytest.raises(jsonschema.ValidationError):
