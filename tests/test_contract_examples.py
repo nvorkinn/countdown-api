@@ -238,7 +238,7 @@ def test_a_config_takes_only_its_types_style() -> None:
         {key: value for key, value in touchscreen.items() if key != "display"},
         {**epaper, "type": "kiosk"},
         {**touchscreen, "display": {"sleep_minutes": 10}},
-        {**touchscreen, "style": {**touchscreen["style"], "theme": "auto"}},
+        {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
         {key: value for key, value in epaper.items() if key != "language"},
         {key: value for key, value in epaper.items() if key != "pairing_code"},
     )

@@ -76,7 +76,7 @@ rest, so a new route gets its function in the same PR.
   or what the device said at registration), then `clock_format`;
 - every type's sections: `arrivals`, `weather` and `notice_board`;
 - `style`, on every type, but its type's own schema: an e-paper screen's (`EpaperStyle`: orientation, drawing style,
-  weather design, layout) or a touchscreen's (`TouchscreenStyle`: theme and colour);
+  weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour);
 - an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval`, `language` and `timezone`,
   and the sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
 - a touchscreen's own: `display` (when its screen sleeps). That is all of it: a touchscreen is English only, keeps its
