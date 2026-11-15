@@ -371,8 +371,8 @@ export interface components {
     Weather: {
       /** @description The place as the owner named it. */
       location: string;
-      /** @description The key its weather is kept under in the store, v1:weather:<key>. */
-      key: components["schemas"]["WeatherKey"];
+      /** @description The key its weather is kept under in the store, v1:weather:<key>; null while no place is set. */
+      key: components["schemas"]["WeatherKey"] | null;
     };
     /** @description The notice board, of notices about the device's place. */
     NoticeBoard: {

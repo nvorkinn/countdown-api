@@ -132,12 +132,8 @@ class Weather(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     location: str = Field(description="The place as the owner named it.")
-    key: WeatherKey = Field(
-        description=(
-            "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for "
-            "none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed "
-            "location, that text's slug. weather_keys.json has examples."
-        ),
+    key: WeatherKey | None = Field(
+        description="The key its weather is kept under in the store, v1:weather:<key>; null while no place is set.",
     )
 
 

@@ -1084,8 +1084,10 @@ $defs:
         type: string
         description: The place as the owner named it.
       key:
-        $ref: '#/$defs/WeatherKey'
-        description: The key its weather is kept under in the store, v1:weather:<key>.
+        anyOf:
+        - $ref: '#/$defs/WeatherKey'
+        - type: 'null'
+        description: The key its weather is kept under in the store, v1:weather:<key>; null while no place is set.
     required:
     - location
     - key
