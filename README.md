@@ -9,7 +9,7 @@ models) and TypeScript (`store.d.ts`).
 
 It also has the broker's three HTTP routes for its devices' config (see [The devices' routes](#the-devices-routes)):
 registering a device, and reading and saving a touchscreen's config. A device is an e-paper screen (`epaper`) or a
-touchscreen (`touchscreen`, [THE MAX MIX](https://github.com/nvorkinn/the-max-mix)), its config's `type`; a
+touchscreen (`touchscreen`), its config's `type`; a
 touchscreen's own settings are its config's `touchscreen` block, which only a touchscreen has.
 
 ## What's in the contract

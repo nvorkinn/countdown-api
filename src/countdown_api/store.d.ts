@@ -399,7 +399,7 @@ export interface components {
       design: "columns" | "timeline" | "overview" | "poster";
     };
     /**
-     * @description What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen (THE MAX MIX), which draws itself from its config.
+     * @description What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen, which draws itself from its config.
      * @enum {string}
      */
     DeviceType: "epaper" | "touchscreen";

@@ -276,12 +276,11 @@ scripts:
       in Unix ms), and only if that set it, LPUSH the device id onto the jobs. So a screen is in the queue at most once
       however many ask.
 
-# The schemas, JSON Schema 2020-12. openapi-codegen turns them into the Pydantic models of countdown_api.models.
-# The broker's HTTP routes for its devices: registering one, and a touchscreen's config (THE MAX MIX,
-# nvorkinn/the-max-mix), which reads its config and saves its own settings panel's. An e-paper screen registers here
-# too, then only polls for its frame. An OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the
-# schemas, so store.d.ts types each route (`paths`, `operations`), and to the reference. A `$ref` is to these `$defs`.
-# Each operation's `x-examples` names its files in src/countdown_api/fixtures, as a key's `examples` do.
+# The broker's HTTP routes for its devices: registering one, and a touchscreen's config, which a touchscreen reads
+# and saves its own settings panel's to. An e-paper screen registers here too, then only polls for its frame. An
+# OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the schemas, so store.d.ts types each route
+# (`paths`, `operations`), and to the reference. A `$ref` is to the `$defs` below. Each operation's `x-examples` names
+# its files in src/countdown_api/fixtures, as a key's `examples` do.
 paths:
   /api/devices/register:
     post:
@@ -376,6 +375,7 @@ securitySchemes:
     scheme: bearer
     description: 'The secret the device registered with (DeviceRegistration), as Authorization: Bearer <secret>.'
 
+# The schemas, JSON Schema 2020-12. openapi-codegen turns them into the Pydantic models of countdown_api.models.
 $defs:
   DeviceId:
     type: string
@@ -1074,7 +1074,7 @@ $defs:
     type: string
     description: >-
       What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a
-      touchscreen (THE MAX MIX), which draws itself from its config.
+      touchscreen, which draws itself from its config.
   Touchscreen:
     description: >-
       A touchscreen's own settings, as its settings panel shows them, each set (to its default if unchosen). The

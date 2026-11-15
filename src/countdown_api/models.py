@@ -357,7 +357,7 @@ class DeviceRegistered(BaseModel):
 
 DeviceType = Literal["epaper", "touchscreen"]
 """What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool
-draws, or a touchscreen (THE MAX MIX), which draws itself from its config.
+draws, or a touchscreen, which draws itself from its config.
 """
 
 
@@ -378,7 +378,7 @@ class DeviceRegistration(BaseModel):
         default=None,
         description=(
             "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, "
-            "or a touchscreen (THE MAX MIX), which draws itself from its config."
+            "or a touchscreen, which draws itself from its config."
         ),
     )
     width: Annotated[int, Field(gt=0)] | None = Field(default=None, description="An e-paper screen's width, in pixels.")
