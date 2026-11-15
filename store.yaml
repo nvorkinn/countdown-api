@@ -276,8 +276,9 @@ scripts:
       in Unix ms), and only if that set it, LPUSH the device id onto the jobs. So a screen is in the queue at most once
       however many ask.
 
-# The broker's HTTP routes for its devices: registering one, an e-paper screen or a touchscreen. A device's config,
-# its touchscreen block included, is saved whole and read on the routes it is today, so isn't here. An
+# The broker's HTTP routes for its devices: registering one, an e-paper screen or a touchscreen, and reading a
+# device's config, which a touchscreen polls. A config, its touchscreen block included, is saved whole on the settings
+# site, as today, so there's no route here to save one. An
 # OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the schemas, so store.d.ts types each route
 # (`paths`, `operations`), and to the reference. A `$ref` is to the `$defs` below. Each operation's `x-examples` names
 # its files in src/countdown_api/fixtures, as a key's `examples` do.
@@ -317,6 +318,34 @@ paths:
         '503':
           description: Too many devices waiting to be paired; try again after Retry-After.
       x-examples: [touchscreen.json]
+  /api/config:
+    get:
+      operationId: getConfig
+      summary: The device's config.
+      description: >-
+        What a touchscreen polls: its config, as v1:config:<device id> holds it, with its touchscreen block. While no
+        one has paired it, it's the pairing value instead (PairingConfig: the config with the code to show, which the
+        broker issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The
+        config is changed only on the settings site, and saved whole.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The config, with `pairing_code` set while the device is to show one.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/ConfigResponse'
+        '401':
+          description: A missing or unknown secret.
+      x-examples: [touchscreen.json]
+
+# How a device proves which it is on the routes above: the secret it registered with, as a bearer token.
+securitySchemes:
+  deviceSecret:
+    type: http
+    scheme: bearer
+    description: 'The secret the device registered with (DeviceRegistration), as Authorization: Bearer <secret>.'
 
 # The schemas, JSON Schema 2020-12. openapi-codegen turns them into the Pydantic models of countdown_api.models.
 $defs:
@@ -627,7 +656,7 @@ $defs:
   ConfigResponse:
     description: >-
       A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code
-      set, of v1:pairing:<device id> (PairingConfig). A touchscreen (type
+      set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type
       touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
     if:
       properties:

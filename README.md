@@ -7,9 +7,9 @@ it, the Lua script they run, and the canonical examples every consumer's tests c
 [`store.yaml`](store.yaml), and the model code generated from it for Python (the `countdown_api` package, Pydantic
 models) and TypeScript (`store.d.ts`).
 
-It also has the broker's HTTP route for registering a device (see [The devices' routes](#the-devices-routes)). A device is an e-paper screen (`epaper`) or a
-touchscreen (`touchscreen`), its config's `type`; a
-touchscreen's own settings are its config's `touchscreen` block, which only a touchscreen has.
+It also has the broker's HTTP routes for its devices (see [The devices' routes](#the-devices-routes)): registering a
+device, and reading a device's config. A device is an e-paper screen (`epaper`) or a touchscreen (`touchscreen`), its
+config's `type`; a touchscreen's own settings are its config's `touchscreen` block, which only a touchscreen has.
 
 ## What's in the contract
 
@@ -47,11 +47,13 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
+| `GET /api/config` | | `ConfigResponse` | the device's config: the pairing value (`pairing_code` set) until it's paired |
 
-A device's config, its touchscreen block included, is saved whole and read on the routes it is today. The route is an
-OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types it as well as its schemas
-(`paths["/api/devices/register"]["post"]`, `operations["registerDevice"]`), and the reference lists it.
-`touchscreen.json` is its example.
+`GET /api/config` takes the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`). A
+config, its touchscreen block included, is saved whole on the settings site, as today, so no route saves one. The
+routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as its
+schemas (`paths["/api/config"]["get"]`, `operations["getConfig"]`), and the reference lists them. `touchscreen.json`
+is their example.
 
 ## The package
 

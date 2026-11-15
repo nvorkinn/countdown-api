@@ -257,8 +257,8 @@ class ConfigResponse(BaseModel):
     """A device's config.
 
     It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of
-    v1:pairing:<device id> (PairingConfig). A touchscreen (type touchscreen) has its own settings in
-    `touchscreen`, and only a touchscreen has them.
+    v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type
+    touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
     """
 
     device_id: str

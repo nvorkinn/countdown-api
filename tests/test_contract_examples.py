@@ -175,7 +175,7 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
 TOUCHSCREEN = fixtures.load("touchscreen.json")
 
 
-def test_touchscreen_registers_on_the_screens_route_and_has_a_config() -> None:
+def test_touchscreen_registers_on_the_screens_route_and_reads_its_config() -> None:
     device_id = TOUCHSCREEN["device_id"]
     check_schema("DeviceId", device_id)
     assert check("DeviceRegistration", TOUCHSCREEN["registration"]).type == "touchscreen"
@@ -188,7 +188,7 @@ def test_touchscreen_registers_on_the_screens_route_and_has_a_config() -> None:
     assert pairing.pairing_code == "ABC234"
     defaults = {name: field["default"] for name, field in DEFS_TOUCHSCREEN["properties"].items()}
     assert TOUCHSCREEN["pairing"]["touchscreen"] == defaults
-    # Paired, its config, saved whole, as an e-paper screen's is, with its touchscreen block.
+    # What GET /api/config answers once it's paired: its config, saved whole on the settings site, with its block.
     config = check("ConfigResponse", TOUCHSCREEN["config"])
     assert config.device_id == device_id
     assert config.pairing_code is None
