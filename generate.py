@@ -92,7 +92,7 @@ def package_files(contract: dict[str, Any]) -> dict[str, str]:
 def openapi_document(contract: dict[str, Any]) -> dict[str, Any]:
     """Return the OpenAPI document the models and types are written from: the contract's routes and schemas.
 
-    The routes (`paths`, the tablet's) give store.d.ts its `paths` and `operations`; the models are the schemas' alone.
+    The routes (`paths`) give store.d.ts its `paths` and `operations`; the models are the schemas' alone.
     """
     return {
         "openapi": "3.1.0",
@@ -197,7 +197,7 @@ def render_init(contract: dict[str, Any]) -> str:
     return f'''{HEADER}
 """The {contract["info"]["title"]}: what the broker and the renderers keep in the Redis they share.
 
-It also has the broker's HTTP routes for THE MAX MIX's tablet, whose models are in countdown_api.models with the rest.
+It also has the broker's HTTP routes for its devices' config, whose models are in countdown_api.models with the rest.
 
 - countdown_api.keys: every key and channel, its TTL, and the subscription sources;
 - countdown_api.models: a Pydantic model of every value;

@@ -6,7 +6,7 @@
  */
 
 export interface paths {
-  "/api/tablets/register": {
+  "/api/devices/register": {
     parameters: {
       query?: never;
       header?: never;
@@ -16,17 +16,17 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Give a tablet its identity.
-     * @description The secret the tablet generated and keeps becomes a device at once (201); only its hash is stored, and identifies the device. A repeat, e.g. on every start, is a 200 and changes nothing. Throttled per IP, as anyone can call it (429 with Retry-After).
+     * Give a device its identity.
+     * @description The secret the device generated and keeps becomes a device of its type at once (201); only its hash is stored, and identifies the device. A repeat, e.g. on every boot, is a 200 and changes nothing. Throttled per IP, as anyone can call it (429 with Retry-After), and refused (503 with Retry-After) while too many devices wait to be paired.
      */
-    post: operations["registerTablet"];
+    post: operations["registerDevice"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/tablet": {
+  "/api/config": {
     parameters: {
       query?: never;
       header?: never;
@@ -34,10 +34,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The tablet's settings, and its pairing code until it's paired.
-     * @description What the tablet polls, with its secret (Authorization: Bearer <secret>): its settings (the defaults until anything was saved) and, while no one has paired it, the code and link to pair it with, which the broker issues afresh as each expires. Once paired, its owner can change the settings on the settings site too, so the tablet takes the settings from here over its own.
+     * The device's config.
+     * @description What a touchscreen polls: its config, as v1:config:<device id> holds it, with its touchscreen block. While no one has paired it, it's the pairing value instead (PairingConfig: the config with the code to show, which the broker issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen.
      */
-    get: operations["getTablet"];
+    get: operations["getConfig"];
     put?: never;
     post?: never;
     delete?: never;
@@ -46,7 +46,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/tablet/settings": {
+  "/api/config/touchscreen": {
     parameters: {
       query?: never;
       header?: never;
@@ -55,10 +55,10 @@ export interface paths {
     };
     get?: never;
     /**
-     * Save the tablet's settings.
-     * @description All of them at once, as the tablet's settings panel has them after a change; answered with what was saved. A tablet saves whether or not it's paired, so nothing chosen before pairing is lost.
+     * Save a touchscreen's own settings.
+     * @description Its touchscreen block, all of it, as the touchscreen's settings panel has it after a change; answered with what was saved. A touchscreen saves whether or not it's paired, so nothing chosen before pairing is lost. The rest of its config is changed on the settings site, as an e-paper screen's is.
      */
-    put: operations["putTabletSettings"];
+    put: operations["putTouchscreenConfig"];
     post?: never;
     delete?: never;
     options?: never;
@@ -206,10 +206,21 @@ export interface components {
     WeatherKey: string;
     /**
      * ConfigResponse
-     * @description A screen's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig).
+     * @description A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
      */
     ConfigResponse: {
       device_id: string;
+      /**
+       * @description What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The render pool draws only e-paper screens' frames (v1:render:screens lists no touchscreen).
+       * @default epaper
+       * @enum {string}
+       */
+      type: "epaper" | "touchscreen";
+      /**
+       * @description A touchscreen's own settings, set for every touchscreen and for nothing else.
+       * @default null
+       */
+      touchscreen: components["schemas"]["Touchscreen"] | null;
       /** @description Seconds between updates. */
       interval: number;
       /**
@@ -387,10 +398,15 @@ export interface components {
        */
       design: "columns" | "timeline" | "overview" | "poster";
     };
-    /** @description A tablet's settings, as its settings panel shows them, each set (to its default if unchosen). */
-    TabletSettings: {
+    /**
+     * @description What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen (THE MAX MIX), which draws itself from its config.
+     * @enum {string}
+     */
+    DeviceType: "epaper" | "touchscreen";
+    /** @description A touchscreen's own settings, as its settings panel shows them, each set (to its default if unchosen). The settings it shares with an e-paper screen (clock_format, language, timezone) are the config's own. */
+    Touchscreen: {
       /**
-       * @description The tablet's skin. auto follows the sun at the tablet's location (day from sunrise to sunset), so a tablet that doesn't know its location shows day.
+       * @description The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a touchscreen that doesn't know its location shows day.
        * @default day
        * @enum {string}
        */
@@ -402,41 +418,30 @@ export interface components {
        */
       theme_colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "dynamic";
       /**
-       * @description Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only the Raspberry Pi kiosk sleeps its screen: a tablet in a browser keeps the setting but ignores it.
+       * @description Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it.
        * @default 5
        * @enum {integer}
        */
       screen_sleep_minutes: 0 | 2 | 5 | 15 | 30;
     };
-    /** @description How to pair an unpaired tablet, which shows the code and the link (as a QR code) to its owner. */
-    TabletPairing: {
-      /** @description The live code, as a screen's (PairingConfig): six of A-Z and 2-9, less 0, O, 1, I and L. */
-      pairing_code: string;
-      /**
-       * Format: uri
-       * @description The settings site's page that pairs this tablet with whoever opens it, signed in.
-       */
-      pairing_url: string;
-      /**
-       * Format: date-time
-       * @description When the code stops working; the tablet's next poll after that gets a new one.
-       */
-      expires_at: string;
-    };
-    /** @description What GET /api/tablet answers. */
-    TabletState: {
-      device_id: components["schemas"]["DeviceId"];
-      settings: components["schemas"]["TabletSettings"];
-      /** @description Null once the tablet is paired. */
-      pairing: components["schemas"]["TabletPairing"] | null;
-    };
-    /** @description What POST /api/tablets/register takes. */
-    TabletRegistration: {
-      /** @description A random string the tablet generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash. */
+    /** @description What POST /api/devices/register takes. An e-paper screen also says its size and the format it takes its frame in (its config's screen); a touchscreen draws itself, so says neither. */
+    DeviceRegistration: {
+      /** @description A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash. */
       secret: string;
+      /** @description Optional, so a screen that doesn't send it registers as epaper. */
+      type?: components["schemas"]["DeviceType"];
+      /** @description An e-paper screen's width, in pixels. */
+      width?: number;
+      /** @description An e-paper screen's height, in pixels. */
+      height?: number;
+      /**
+       * @description The format an e-paper screen takes its frame in, as its config's screen.format.
+       * @enum {string}
+       */
+      format?: "mono-1bpp-packed" | "png";
     };
-    /** @description What POST /api/tablets/register answers. */
-    TabletRegistered: {
+    /** @description What POST /api/devices/register answers. */
+    DeviceRegistered: {
       device_id: components["schemas"]["DeviceId"];
     };
   };
@@ -483,14 +488,13 @@ export type Screen = components["schemas"]["Screen"];
 export type Spotify = components["schemas"]["Spotify"];
 export type Tfl = components["schemas"]["Tfl"];
 export type Weather = components["schemas"]["Weather"];
-export type TabletSettings = components["schemas"]["TabletSettings"];
-export type TabletPairing = components["schemas"]["TabletPairing"];
-export type TabletState = components["schemas"]["TabletState"];
-export type TabletRegistration = components["schemas"]["TabletRegistration"];
-export type TabletRegistered = components["schemas"]["TabletRegistered"];
+export type DeviceType = components["schemas"]["DeviceType"];
+export type Touchscreen = components["schemas"]["Touchscreen"];
+export type DeviceRegistration = components["schemas"]["DeviceRegistration"];
+export type DeviceRegistered = components["schemas"]["DeviceRegistered"];
 export type $defs = Record<string, never>;
 export interface operations {
-  registerTablet: {
+  registerDevice: {
     parameters: {
       query?: never;
       header?: never;
@@ -499,29 +503,29 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["TabletRegistration"];
+        "application/json": components["schemas"]["DeviceRegistration"];
       };
     };
     responses: {
-      /** @description A tablet already registered with that secret. */
+      /** @description A device already registered with that secret. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TabletRegistered"];
+          "application/json": components["schemas"]["DeviceRegistered"];
         };
       };
-      /** @description A new tablet. */
+      /** @description A new device. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TabletRegistered"];
+          "application/json": components["schemas"]["DeviceRegistered"];
         };
       };
-      /** @description No secret, or one shorter than 16 characters. */
+      /** @description A registration the schema doesn't allow. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -535,9 +539,16 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Too many devices waiting to be paired; try again after Retry-After. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
-  getTablet: {
+  getConfig: {
     parameters: {
       query?: never;
       header?: never;
@@ -546,13 +557,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The tablet's state. */
+      /** @description The config, with `pairing_code` set while the device is to show one. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TabletState"];
+          "application/json": components["schemas"]["ConfigResponse"];
         };
       };
       /** @description A missing or unknown secret. */
@@ -562,16 +573,9 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description A secret for a device that isn't a tablet (a screen's). */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
   };
-  putTabletSettings: {
+  putTouchscreenConfig: {
     parameters: {
       query?: never;
       header?: never;
@@ -580,17 +584,17 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["TabletSettings"];
+        "application/json": components["schemas"]["Touchscreen"];
       };
     };
     responses: {
-      /** @description The settings as saved. */
+      /** @description The touchscreen block as saved. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TabletSettings"];
+          "application/json": components["schemas"]["Touchscreen"];
         };
       };
       /** @description Settings the schema doesn't allow. */
@@ -607,8 +611,8 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description A secret for a device that isn't a tablet (a screen's). */
-      403: {
+      /** @description The device isn't a touchscreen (it's an e-paper screen). */
+      409: {
         headers: {
           [name: string]: unknown;
         };

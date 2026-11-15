@@ -77,11 +77,11 @@ def test_every_example_is_some_keys_or_routes() -> None:
 
 
 def test_the_routes_are_what_they_were() -> None:
-    # The routes the tablet runs on today: a change to any of these is a new route, not an edit.
+    # The routes the devices run on today: a change to any of these is a new route, not an edit.
     assert sorted(OPERATIONS) == [
-        ("/api/tablet", "get"),
-        ("/api/tablet/settings", "put"),
-        ("/api/tablets/register", "post"),
+        ("/api/config", "get"),
+        ("/api/config/touchscreen", "put"),
+        ("/api/devices/register", "post"),
     ]
 
 

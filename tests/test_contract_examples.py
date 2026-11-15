@@ -15,6 +15,7 @@ from countdown_api import fixtures, keys, models, scripts
 
 CONFIG = fixtures.load("config_store.json")
 PAIRING = fixtures.load("pairing_key.json")
+DEFS_TOUCHSCREEN = contract()["$defs"]["Touchscreen"]
 
 
 def test_config_store_is_a_config_under_its_key() -> None:
@@ -171,31 +172,57 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
             assert (value["device_id"] in sets[keys.subscription(source)]) == value[section]["enabled"]
 
 
-def test_tablet_is_a_registration_and_its_state_before_and_after_pairing() -> None:
-    example = fixtures.load("tablet.json")
-    device_id = example["device_id"]
+TOUCHSCREEN = fixtures.load("touchscreen.json")
+
+
+def test_touchscreen_registers_on_the_screens_route_and_reads_its_config() -> None:
+    device_id = TOUCHSCREEN["device_id"]
     check_schema("DeviceId", device_id)
-    check("TabletRegistration", example["registration"])
-    assert check("TabletRegistered", example["registered"]).device_id == device_id
-    unpaired = check("TabletState", example["unpaired"])
-    assert unpaired.device_id == device_id
-    assert unpaired.pairing is not None
-    assert unpaired.pairing.pairing_code == "ABC234"
-    # Before anything is saved, a tablet's settings are the defaults.
-    defaults = {name: field["default"] for name, field in contract()["$defs"]["TabletSettings"]["properties"].items()}
-    assert example["unpaired"]["settings"] == defaults
-    # What PUT /api/tablet/settings takes and answers, and then what GET /api/tablet answers, paired.
-    saved = check("TabletSettings", example["settings"])
-    paired = check("TabletState", example["paired"])
-    assert paired.pairing is None
-    assert paired.settings == saved
+    assert check("DeviceRegistration", TOUCHSCREEN["registration"]).type == "touchscreen"
+    # An e-paper screen registers on the same route, with its size and frame format, and no type.
+    assert check("DeviceRegistration", TOUCHSCREEN["epaper_registration"]).type is None
+    assert check("DeviceRegistered", TOUCHSCREEN["registered"]).device_id == device_id
+    # Unpaired, its config is the pairing value, as an e-paper screen's: with the code, and its block's defaults.
+    pairing = check("PairingConfig", TOUCHSCREEN["pairing"])
+    assert pairing.type == "touchscreen"
+    assert pairing.pairing_code == "ABC234"
+    defaults = {name: field["default"] for name, field in DEFS_TOUCHSCREEN["properties"].items()}
+    assert TOUCHSCREEN["pairing"]["touchscreen"] == defaults
+    # What PUT /api/config/touchscreen takes and answers, and then what GET /api/config answers, paired.
+    saved = check("Touchscreen", TOUCHSCREEN["touchscreen"])
+    config = check("ConfigResponse", TOUCHSCREEN["config"])
+    assert config.device_id == device_id
+    assert config.pairing_code is None
+    assert config.touchscreen == saved
 
 
-def test_tablet_settings_take_only_the_panels_choices() -> None:
+def test_only_a_touchscreen_has_a_touchscreen_block() -> None:
     jsonschema = pytest.importorskip("jsonschema")
-    settings = fixtures.load("tablet.json")["settings"]
+    # An e-paper screen's config, as every broker sends it, is an e-paper's, with no block.
+    assert check("ConfigResponse", CONFIG["value"]).type == "epaper"
+    touchscreen = TOUCHSCREEN["config"]
+    wrong = (
+        {key: value for key, value in touchscreen.items() if key != "touchscreen"},
+        {**touchscreen, "touchscreen": None},
+        {**CONFIG["value"], "touchscreen": touchscreen["touchscreen"]},
+        {**touchscreen, "type": "epaper"},
+    )
+    for config in wrong:
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("ConfigResponse", config)
+
+
+def test_touchscreen_settings_and_registrations_take_only_whats_allowed() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    settings = TOUCHSCREEN["touchscreen"]
     for wrong in ({**settings, "screen_sleep_minutes": 10}, {**settings, "theme": "dusk"}, {**settings, "extra": 1}):
         with pytest.raises(jsonschema.ValidationError):
-            check_schema("TabletSettings", wrong)
-    with pytest.raises(jsonschema.ValidationError):
-        check_schema("TabletRegistration", {"secret": "too-short"})
+            check_schema("Touchscreen", wrong)
+    epaper = TOUCHSCREEN["epaper_registration"]
+    for wrong in (
+        {"secret": "too-short", "type": "touchscreen"},
+        {key: value for key, value in epaper.items() if key != "format"},
+        {**TOUCHSCREEN["registration"], "width": 800},
+    ):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("DeviceRegistration", wrong)

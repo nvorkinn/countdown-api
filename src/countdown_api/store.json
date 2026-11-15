@@ -248,57 +248,60 @@
     }
   },
   "paths": {
-    "/api/tablets/register": {
+    "/api/devices/register": {
       "post": {
-        "operationId": "registerTablet",
-        "summary": "Give a tablet its identity.",
-        "description": "The secret the tablet generated and keeps becomes a device at once (201); only its hash is stored, and identifies the device. A repeat, e.g. on every start, is a 200 and changes nothing. Throttled per IP, as anyone can call it (429 with Retry-After).",
+        "operationId": "registerDevice",
+        "summary": "Give a device its identity.",
+        "description": "The secret the device generated and keeps becomes a device of its type at once (201); only its hash is stored, and identifies the device. A repeat, e.g. on every boot, is a 200 and changes nothing. Throttled per IP, as anyone can call it (429 with Retry-After), and refused (503 with Retry-After) while too many devices wait to be paired.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/$defs/TabletRegistration"
+                "$ref": "#/$defs/DeviceRegistration"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "A tablet already registered with that secret.",
+            "description": "A device already registered with that secret.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/$defs/TabletRegistered"
+                  "$ref": "#/$defs/DeviceRegistered"
                 }
               }
             }
           },
           "201": {
-            "description": "A new tablet.",
+            "description": "A new device.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/$defs/TabletRegistered"
+                  "$ref": "#/$defs/DeviceRegistered"
                 }
               }
             }
           },
           "400": {
-            "description": "No secret, or one shorter than 16 characters."
+            "description": "A registration the schema doesn't allow."
           },
           "429": {
             "description": "Too many registrations from this IP; try again after Retry-After."
+          },
+          "503": {
+            "description": "Too many devices waiting to be paired; try again after Retry-After."
           }
         },
-        "x-examples": ["tablet.json"]
+        "x-examples": ["touchscreen.json"]
       }
     },
-    "/api/tablet": {
+    "/api/config": {
       "get": {
-        "operationId": "getTablet",
-        "summary": "The tablet's settings, and its pairing code until it's paired.",
-        "description": "What the tablet polls, with its secret (Authorization: Bearer <secret>): its settings (the defaults until anything was saved) and, while no one has paired it, the code and link to pair it with, which the broker issues afresh as each expires. Once paired, its owner can change the settings on the settings site too, so the tablet takes the settings from here over its own.",
+        "operationId": "getConfig",
+        "summary": "The device's config.",
+        "description": "What a touchscreen polls: its config, as v1:config:<device id> holds it, with its touchscreen block. While no one has paired it, it's the pairing value instead (PairingConfig: the config with the code to show, which the broker issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen.",
         "security": [
           {
             "deviceSecret": []
@@ -306,30 +309,27 @@
         ],
         "responses": {
           "200": {
-            "description": "The tablet's state.",
+            "description": "The config, with `pairing_code` set while the device is to show one.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/$defs/TabletState"
+                  "$ref": "#/$defs/ConfigResponse"
                 }
               }
             }
           },
           "401": {
             "description": "A missing or unknown secret."
-          },
-          "403": {
-            "description": "A secret for a device that isn't a tablet (a screen's)."
           }
         },
-        "x-examples": ["tablet.json"]
+        "x-examples": ["touchscreen.json"]
       }
     },
-    "/api/tablet/settings": {
+    "/api/config/touchscreen": {
       "put": {
-        "operationId": "putTabletSettings",
-        "summary": "Save the tablet's settings.",
-        "description": "All of them at once, as the tablet's settings panel has them after a change; answered with what was saved. A tablet saves whether or not it's paired, so nothing chosen before pairing is lost.",
+        "operationId": "putTouchscreenConfig",
+        "summary": "Save a touchscreen's own settings.",
+        "description": "Its touchscreen block, all of it, as the touchscreen's settings panel has it after a change; answered with what was saved. A touchscreen saves whether or not it's paired, so nothing chosen before pairing is lost. The rest of its config is changed on the settings site, as an e-paper screen's is.",
         "security": [
           {
             "deviceSecret": []
@@ -340,18 +340,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/$defs/TabletSettings"
+                "$ref": "#/$defs/Touchscreen"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "The settings as saved.",
+            "description": "The touchscreen block as saved.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/$defs/TabletSettings"
+                  "$ref": "#/$defs/Touchscreen"
                 }
               }
             }
@@ -362,11 +362,11 @@
           "401": {
             "description": "A missing or unknown secret."
           },
-          "403": {
-            "description": "A secret for a device that isn't a tablet (a screen's)."
+          "409": {
+            "description": "The device isn't a touchscreen (it's an e-paper screen)."
           }
         },
-        "x-examples": ["tablet.json"]
+        "x-examples": ["touchscreen.json"]
       }
     }
   },
@@ -374,7 +374,7 @@
     "deviceSecret": {
       "type": "http",
       "scheme": "bearer",
-      "description": "The secret the device registered with (TabletRegistration), as Authorization: Bearer <secret>."
+      "description": "The secret the device registered with (DeviceRegistration), as Authorization: Bearer <secret>."
     }
   },
   "$defs": {
@@ -728,10 +728,51 @@
       "description": "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed location, that text's slug. weather_keys.json has examples."
     },
     "ConfigResponse": {
-      "description": "A screen's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig).",
+      "description": "A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "touchscreen"
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "properties": {
+          "touchscreen": {
+            "$ref": "#/$defs/Touchscreen"
+          }
+        },
+        "required": ["touchscreen"]
+      },
+      "else": {
+        "properties": {
+          "touchscreen": {
+            "type": "null"
+          }
+        }
+      },
       "properties": {
         "device_id": {
           "type": "string"
+        },
+        "type": {
+          "enum": ["epaper", "touchscreen"],
+          "default": "epaper",
+          "type": "string",
+          "description": "What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The render pool draws only e-paper screens' frames (v1:render:screens lists no touchscreen)."
+        },
+        "touchscreen": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Touchscreen"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A touchscreen's own settings, set for every touchscreen and for nothing else."
         },
         "interval": {
           "type": "integer",
@@ -1090,8 +1131,13 @@
       "title": "Weather",
       "type": "object"
     },
-    "TabletSettings": {
-      "description": "A tablet's settings, as its settings panel shows them, each set (to its default if unchosen).",
+    "DeviceType": {
+      "enum": ["epaper", "touchscreen"],
+      "type": "string",
+      "description": "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen (THE MAX MIX), which draws itself from its config."
+    },
+    "Touchscreen": {
+      "description": "A touchscreen's own settings, as its settings panel shows them, each set (to its default if unchosen). The settings it shares with an e-paper screen (clock_format, language, timezone) are the config's own.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1099,7 +1145,7 @@
           "enum": ["day", "auto", "night"],
           "default": "day",
           "type": "string",
-          "description": "The tablet's skin. auto follows the sun at the tablet's location (day from sunrise to sunset), so a tablet that doesn't know its location shows day."
+          "description": "The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a touchscreen that doesn't know its location shows day."
         },
         "theme_colour": {
           "enum": ["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"],
@@ -1111,74 +1157,70 @@
           "enum": [0, 2, 5, 15, 30],
           "default": 5,
           "type": "integer",
-          "description": "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only the Raspberry Pi kiosk sleeps its screen: a tablet in a browser keeps the setting but ignores it."
+          "description": "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
         }
       },
       "required": ["theme", "theme_colour", "screen_sleep_minutes"]
     },
-    "TabletPairing": {
-      "description": "How to pair an unpaired tablet, which shows the code and the link (as a QR code) to its owner.",
+    "DeviceRegistration": {
+      "description": "What POST /api/devices/register takes. An e-paper screen also says its size and the format it takes its frame in (its config's screen); a touchscreen draws itself, so says neither.",
       "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "pairing_code": {
-          "type": "string",
-          "pattern": "^[A-HJKMNP-Z2-9]{6}$",
-          "description": "The live code, as a screen's (PairingConfig): six of A-Z and 2-9, less 0, O, 1, I and L."
+      "if": {
+        "properties": {
+          "type": {
+            "const": "touchscreen"
+          }
         },
-        "pairing_url": {
-          "type": "string",
-          "format": "uri",
-          "description": "The settings site's page that pairs this tablet with whoever opens it, signed in."
-        },
-        "expires_at": {
-          "type": "string",
-          "format": "date-time",
-          "description": "When the code stops working; the tablet's next poll after that gets a new one."
-        }
+        "required": ["type"]
       },
-      "required": ["pairing_code", "pairing_url", "expires_at"]
-    },
-    "TabletState": {
-      "description": "What GET /api/tablet answers.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "device_id": {
-          "$ref": "#/$defs/DeviceId"
-        },
-        "settings": {
-          "$ref": "#/$defs/TabletSettings"
-        },
-        "pairing": {
+      "then": {
+        "not": {
           "anyOf": [
             {
-              "$ref": "#/$defs/TabletPairing"
+              "required": ["width"]
             },
             {
-              "type": "null"
+              "required": ["height"]
+            },
+            {
+              "required": ["format"]
             }
-          ],
-          "description": "Null once the tablet is paired."
+          ]
         }
       },
-      "required": ["device_id", "settings", "pairing"]
-    },
-    "TabletRegistration": {
-      "description": "What POST /api/tablets/register takes.",
-      "type": "object",
-      "additionalProperties": false,
+      "else": {
+        "required": ["width", "height", "format"]
+      },
       "properties": {
         "secret": {
           "type": "string",
           "minLength": 16,
-          "description": "A random string the tablet generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash."
+          "description": "A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash."
+        },
+        "type": {
+          "$ref": "#/$defs/DeviceType",
+          "description": "Optional, so a screen that doesn't send it registers as epaper."
+        },
+        "width": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "An e-paper screen's width, in pixels."
+        },
+        "height": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "An e-paper screen's height, in pixels."
+        },
+        "format": {
+          "enum": ["mono-1bpp-packed", "png"],
+          "type": "string",
+          "description": "The format an e-paper screen takes its frame in, as its config's screen.format."
         }
       },
       "required": ["secret"]
     },
-    "TabletRegistered": {
-      "description": "What POST /api/tablets/register answers.",
+    "DeviceRegistered": {
+      "description": "What POST /api/devices/register answers.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
