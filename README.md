@@ -18,7 +18,7 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:sub:<source>` | set | `Subscription` | none | the broker, on every config save | the providers |
 | `v1:sub:changed` | channel | `SubChanged` (empty) | | the broker, after the sets | every provider |
 | `v1:config:<device id>` | string, JSON | `ConfigResponse` | none | the broker | the render pool |
-| `v1:pairing:<device id>` | string, JSON | `PairingConfig` | 600 s, the code's own | the broker | the render pool |
+| `v1:pairing:<device id>` | string, JSON | `ConfigResponse` (`pairing_code` set) | 600 s, the code's own | the broker | the render pool |
 | `v1:render:screens` | hash | `RenderScreens` (device id to slug) | none | the broker | the render pool |
 | `v1:render:jobs` | list | `RenderJobs` (device ids) | none | the enqueue script | the render workers |
 | `v1:render:queued:<device id>` | string | `RenderQueuedFlag` | 60,000 ms | the enqueue script | the claim script |
@@ -47,19 +47,17 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
-| `GET /api/config` | | `ConfigResponse` | the device's config as the render pool reads it: the pairing value (`pairing_code` set) until it's paired |
-| `GET /api/devices/config` | | `DeviceConfig` | the device's config by section (below) |
-| `PUT /api/devices/config` | `DeviceConfig` | `DeviceConfig` | save it whole, from a device's own settings panel; its read-only fields sent as they came |
+| `GET /api/devices/config` | | `ConfigResponse` | the device's config: the pairing value (`pairing_code` set) until it's paired |
+| `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came |
 
 All but the registration take the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`).
-A route's shape never changes: a new shape is a new route, which is why `GET /api/config` stays as it was. The routes
-are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as its schemas
-(`paths["/api/devices/config"]["get"]`, `operations["getDeviceConfig"]`), and the reference lists them.
-`touchscreen.json` and `device_config.json` are their examples.
+The routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as
+its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), and the reference lists them.
+`touchscreen.json` and `config_store.json` are their examples.
 
-### A device's config, by section
+### A device's config
 
-`DeviceConfig` is a device's config as a few flat fields and a section per panel, each section its own schema
+`ConfigResponse` is a device's config as a few flat fields and a section per panel, each section its own schema
 (`config.weather.location`, not `config.weather_location`):
 
 - flat: `device_id`, `type`, `width`, `height` and `pairing_code`, all read-only (`readOnly: true`: the server's, or
@@ -71,11 +69,11 @@ are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` t
   read-only frame `format`, a touchscreen its `display` (when its screen sleeps).
 
 It's a `oneOf` of `EpaperConfig` and `TouchscreenConfig` with a `discriminator` on `type`, so both languages get a
-tagged union: `models.DeviceConfig` is a Pydantic discriminated union (read it with `TypeAdapter(DeviceConfig)`), and
-`DeviceConfig` in `store.d.ts` a union narrowed by `type`. It never has a secret: logins and keys (Spotify's link
-among them) are the owner's account's, held on the server. It's the same config as `ConfigResponse`, which the render
-pool still reads from `v1:config:<device id>`, less the fields only older renderers read (`tfl`, each panel's own
-`style`, the `touchscreen` block).
+tagged union: `models.ConfigResponse` is a Pydantic discriminated union (read it with `TypeAdapter(ConfigResponse)`),
+and `ConfigResponse` in `store.d.ts` a union narrowed by `type`. It never has a secret: logins and keys (Spotify's link
+among them) are the owner's account's, held on the server. It's the value of `v1:config:<device id>` (and, with
+`pairing_code` set, of `v1:pairing:<device id>`) as well as what the routes answer, so the render pool and a device
+read the same config.
 
 ## The package
 
@@ -84,7 +82,7 @@ pool still reads from `v1:config:<device id>`, less the fields only older render
 | module | what it is |
 | --- | --- |
 | `countdown_api.keys` | a builder per key (`keys.config(device_id)`), or a constant for one with no parameter (`keys.RENDER_JOBS`), each TTL (`keys.PAIRING_TTL_S`, `keys.RENDER_QUEUED_TTL_MS`), each key's prefix for a SCAN (`keys.CONFIG_PREFIX`), and the subscription sources (`keys.SOURCES`) |
-| `countdown_api.models` | a Pydantic model (or a type alias) of every schema: `ConfigResponse`, `PairingConfig`, `FrameRecord`, ... |
+| `countdown_api.models` | a Pydantic model (or a type alias) of every schema: `ConfigResponse`, `EpaperConfig`, `FrameRecord`, ... |
 | `countdown_api.scripts` | the Lua scripts: `scripts.ENQUEUE.source`, `.sha1`, and what its `keys` and `args` are |
 | `countdown_api.fixtures` | the canonical examples: `fixtures.load("config_store.json")`, `fixtures.read_bytes("frame_record.bin")`, `fixtures.DIRECTORY` |
 
@@ -93,7 +91,7 @@ There are TypeScript types of the schemas too, `src/countdown_api/store.d.ts`, w
 name, and as `components["schemas"][name]`:
 
 ```ts
-import type { ConfigResponse, DeviceConfig, FrameRecord } from "<this repository>/src/countdown_api/store";
+import type { ConfigResponse, FrameRecord, TouchscreenConfig } from "<this repository>/src/countdown_api/store";
 ```
 
 Every generated file starts with an `@generated` line, which most tools and reviews read as "don't edit".
