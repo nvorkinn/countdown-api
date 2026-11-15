@@ -540,12 +540,12 @@ export interface components {
     /** @description How a touchscreen looks. */
     TouchscreenStyle: {
       /**
-       * @description The touchscreen's theme.
+       * @description day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen that doesn't know its location shows as day.
        * @enum {string}
        */
-      theme: "day" | "autumn" | "night";
+      skin: "day" | "auto" | "night";
       /**
-       * @description The theme's colour. dynamic follows the album art of the song playing, and looks like forest when nothing is playing.
+       * @description The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any.
        * @enum {string}
        */
       colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "dynamic";

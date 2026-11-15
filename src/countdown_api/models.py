@@ -625,11 +625,16 @@ class TouchscreenDisplay(BaseModel):
 class TouchscreenStyle(BaseModel):
     """How a touchscreen looks."""
 
-    theme: Literal["day", "autumn", "night"] = Field(description="The touchscreen's theme.")
+    skin: Literal["day", "auto", "night"] = Field(
+        description=(
+            "day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen"
+            " that doesn't know its location shows as day."
+        ),
+    )
     colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
         description=(
-            "The theme's colour. dynamic follows the album art of the song playing, and looks like forest when nothing"
-            " is playing."
+            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
+            " looks like forest without any."
         ),
     )
 
