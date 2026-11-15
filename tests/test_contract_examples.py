@@ -232,3 +232,8 @@ def test_registrations_take_only_whats_allowed() -> None:
     ):
         with pytest.raises(jsonschema.ValidationError):
             check_schema("DeviceRegistration", wrong)
+
+
+def test_a_config_with_no_weather_place_has_no_weather_key() -> None:
+    config = check("ConfigResponse", {**CONFIG["value"], "weather": {"location": "", "key": None}})
+    assert config.weather.key is None
