@@ -276,9 +276,10 @@ scripts:
       in Unix ms), and only if that set it, LPUSH the device id onto the jobs. So a screen is in the queue at most once
       however many ask.
 
-# The broker's HTTP routes for its devices: registering one, an e-paper screen or a touchscreen, and reading a
-# device's config, which a touchscreen polls. A config, its touchscreen block included, is saved whole on the settings
-# site, as today, so there's no route here to save one. An
+# The broker's HTTP routes for its devices: registering one, an e-paper screen or a touchscreen, and reading and
+# saving a device's config. GET /api/config answers the config as the render pool reads it (ConfigResponse), as it
+# did; /api/devices/config is the same config by section (DeviceConfig), which a device with a settings panel of its
+# own also saves. A route's shape never changes: a new shape is a new route. An
 # OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the schemas, so store.d.ts types each route
 # (`paths`, `operations`), and to the reference. A `$ref` is to the `$defs` below. Each operation's `x-examples` names
 # its files in src/countdown_api/fixtures, as a key's `examples` do.
@@ -339,6 +340,58 @@ paths:
         '401':
           description: A missing or unknown secret.
       x-examples: [touchscreen.json]
+  /api/devices/config:
+    get:
+      operationId: getDeviceConfig
+      summary: The device's config, by section.
+      description: >-
+        The device's config as DeviceConfig: a few flat fields, then a section per panel, and `style`, whose schema
+        is its type's own (an e-paper screen's or a touchscreen's). The server is the one source of truth for it; the
+        device keeps a copy of the last one it got for when the server can't be reached. While no one has paired the
+        device, `pairing_code` is the code to show. It never has a secret of any kind: logins and keys are the
+        owner's account's, held on the server.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The config.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceConfig'
+        '401':
+          description: A missing or unknown secret.
+      x-examples: [device_config.json]
+    put:
+      operationId: putDeviceConfig
+      summary: Save the device's config, whole.
+      description: >-
+        What a device with a settings panel of its own (a touchscreen) saves when its owner changes something there:
+        the whole config, as it got it with the change made. The read-only fields (readOnly) are the server's or the
+        device's registration's and can't be changed here: they're sent as they came, and anything else is a 400.
+        Answers the config as saved, as GET does.
+      security:
+      - deviceSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/$defs/DeviceConfig'
+      responses:
+        '200':
+          description: The config as saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceConfig'
+        '400':
+          description: A config the schema doesn't allow, or one that changes a read-only field.
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, so there's no owner's config to save.
+      x-examples: [device_config.json]
 
 # How a device proves which it is on the routes above: the secret it registered with, as a bearer token.
 securitySchemes:
@@ -657,7 +710,8 @@ $defs:
     description: >-
       A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code
       set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type
-      touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
+      touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them. DeviceConfig is the same
+      config by section, which new readers read instead.
     if:
       properties:
         type:
@@ -1150,3 +1204,298 @@ $defs:
         $ref: '#/$defs/DeviceId'
     required:
     - device_id
+  DeviceConfig:
+    description: >-
+      A device's config by section, what GET and PUT /api/devices/config answer and take: a few flat fields (who and
+      what the device is, its size, and the settings every panel shares), then a section per panel, each its own
+      schema, and `style`, which every type has but whose schema is the type's own. `type` says which: an e-paper
+      screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It is the same config as ConfigResponse, without
+      the fields that only older renderers read, and never has a secret of any kind: logins and keys are the owner's
+      account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at
+      registration, and isn't changed by a save.
+    oneOf:
+    - $ref: '#/$defs/EpaperConfig'
+    - $ref: '#/$defs/TouchscreenConfig'
+    discriminator:
+      propertyName: type
+      mapping:
+        epaper: '#/$defs/EpaperConfig'
+        touchscreen: '#/$defs/TouchscreenConfig'
+  DeviceConfigBase:
+    description: >-
+      What every device's config has (DeviceConfig), whatever its type: the flat fields and the shared sections.
+    type: object
+    properties:
+      device_id:
+        $ref: '#/$defs/DeviceId'
+        readOnly: true
+      type:
+        $ref: '#/$defs/DeviceType'
+        readOnly: true
+      width:
+        type: integer
+        exclusiveMinimum: 0
+        readOnly: true
+        description: The device's screen width in pixels, as it reported at registration.
+      height:
+        type: integer
+        exclusiveMinimum: 0
+        readOnly: true
+        description: The device's screen height in pixels, as it reported at registration.
+      pairing_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        readOnly: true
+        description: The code to show while no one has paired the device; null once it's paired.
+      interval:
+        type: integer
+        exclusiveMinimum: 0
+        description: Seconds between updates.
+      clock_format:
+        enum:
+        - 12h
+        - 24h
+        type: string
+        description: >-
+          Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time
+          zones or log formats.
+      language:
+        enum:
+        - en
+        - nb
+        type: string
+        description: The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål).
+      timezone:
+        type: string
+        description: The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.
+      arrivals:
+        $ref: '#/$defs/ArrivalsSection'
+      weather:
+        $ref: '#/$defs/WeatherSection'
+      notice_board:
+        $ref: '#/$defs/NoticeBoardSection'
+      spotify:
+        $ref: '#/$defs/SpotifySection'
+      apple_music:
+        $ref: '#/$defs/AppleMusic'
+      glowmarkt:
+        $ref: '#/$defs/Glowmarkt'
+      developer:
+        $ref: '#/$defs/Developer'
+      parcels:
+        $ref: '#/$defs/Parcels'
+    required:
+    - device_id
+    - type
+    - width
+    - height
+    - pairing_code
+    - interval
+    - clock_format
+    - language
+    - timezone
+    - arrivals
+    - weather
+    - notice_board
+    - spotify
+    - apple_music
+    - glowmarkt
+    - developer
+    - parcels
+  EpaperConfig:
+    description: >-
+      An e-paper screen's config (DeviceConfig with type epaper), which the render pool draws its frames from.
+    allOf:
+    - $ref: '#/$defs/DeviceConfigBase'
+    type: object
+    properties:
+      type:
+        const: epaper
+        readOnly: true
+      format:
+        enum:
+        - mono-1bpp-packed
+        - png
+        type: string
+        readOnly: true
+        description: >-
+          The format the screen takes its frame in, as it reported at registration (FrameRecord's frame for
+          mono-1bpp-packed).
+      style:
+        $ref: '#/$defs/EpaperStyle'
+    required:
+    - type
+    - format
+    - style
+  EpaperStyle:
+    description: How an e-paper screen is drawn.
+    type: object
+    additionalProperties: false
+    properties:
+      orientation:
+        enum:
+        - horizontal
+        - vertical
+        type: string
+        description: How the screen hangs; vertical is portrait.
+      drawing:
+        enum:
+        - airy
+        - hero
+        - card
+        type: string
+        description: >-
+          How every panel is drawn, so the screen has one look. airy has small-caps labels over a hairline; hero has
+          an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded card with a
+          black title bar. ConfigResponse's style.
+      weather:
+        enum:
+        - columns
+        - timeline
+        - overview
+        - poster
+        type: string
+        description: >-
+          How the weather is drawn on an HD screen (1872x1404 hung portrait); other screens ignore it. See
+          ConfigResponse's weather.design.
+      layout:
+        anyOf:
+        - $ref: '#/$defs/Layout'
+        - type: 'null'
+        description: >-
+          Which layout the screen is drawn in, or null for its size's default. See ConfigResponse's screen.layout for
+          which sizes have which.
+    required:
+    - orientation
+    - drawing
+    - weather
+    - layout
+  TouchscreenConfig:
+    description: >-
+      A touchscreen's config (DeviceConfig with type touchscreen). It draws itself from it, and saves it from its own
+      settings panel.
+    allOf:
+    - $ref: '#/$defs/DeviceConfigBase'
+    type: object
+    properties:
+      type:
+        const: touchscreen
+        readOnly: true
+      style:
+        $ref: '#/$defs/TouchscreenStyle'
+      display:
+        $ref: '#/$defs/TouchscreenDisplay'
+    required:
+    - type
+    - style
+    - display
+  TouchscreenStyle:
+    description: How a touchscreen looks.
+    type: object
+    additionalProperties: false
+    properties:
+      skin:
+        enum:
+        - day
+        - auto
+        - night
+        type: string
+        description: >-
+          day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen
+          that doesn't know its location shows as day.
+      colour:
+        enum:
+        - forest
+        - navy
+        - teal
+        - plum
+        - terracotta
+        - pink
+        - yellow
+        - black
+        - dynamic
+        type: string
+        description: >-
+          The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and
+          looks like forest without any.
+    required:
+    - skin
+    - colour
+  TouchscreenDisplay:
+    description: A touchscreen's screen itself.
+    type: object
+    additionalProperties: false
+    properties:
+      sleep_minutes:
+        enum:
+        - 0
+        - 2
+        - 5
+        - 15
+        - 30
+        type: integer
+        description: >-
+          Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk
+          sleeps its screen: a touchscreen in a browser keeps the setting but ignores it.
+    required:
+    - sleep_minutes
+  ArrivalsSection:
+    description: The arrivals panel (bus, train and tram stops).
+    type: object
+    additionalProperties: false
+    properties:
+      stops:
+        type: array
+        items:
+          $ref: '#/$defs/DepartureStop'
+        description: Every stop whose departures the device shows, from any source, in the owner's order.
+    required:
+    - stops
+  WeatherSection:
+    description: The weather panel.
+    type: object
+    additionalProperties: false
+    properties:
+      location:
+        type: string
+        description: The place as the owner named it.
+      key:
+        $ref: '#/$defs/WeatherKey'
+        description: The key its weather is kept under in the store, v1:weather:<key>.
+    required:
+    - location
+    - key
+  NoticeBoardSection:
+    description: The notice board, of notices about the device's place.
+    type: object
+    additionalProperties: false
+    properties:
+      postcode:
+        anyOf:
+        - type: string
+        - type: 'null'
+        description: The place's postcode, or null for no local notices.
+      country:
+        anyOf:
+        - enum:
+          - 'GB'
+          - 'NO'
+          type: string
+        - type: 'null'
+        description: The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.
+    required:
+    - postcode
+    - country
+  SpotifySection:
+    description: The Spotify area.
+    type: object
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+        description: >-
+          Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills
+          with the account's Spotify link, so no token is sent here.
+    required:
+    - enabled

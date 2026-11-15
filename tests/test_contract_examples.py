@@ -5,11 +5,12 @@ contract's, so a change to one that the schemas don't allow fails here, before e
 """
 
 import hashlib
+import json
 from datetime import datetime
 
 import pytest
 from contract_helpers import ROOT, check, check_schema, check_schema_property, contract
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 
 from countdown_api import fixtures, keys, models, scripts
 
@@ -226,3 +227,77 @@ def test_touchscreen_settings_and_registrations_take_only_whats_allowed() -> Non
     ):
         with pytest.raises(jsonschema.ValidationError):
             check_schema("DeviceRegistration", wrong)
+
+
+DEVICE_CONFIG = fixtures.load("device_config.json")
+DEVICE_CONFIGS = TypeAdapter(models.DeviceConfig)
+
+
+def _device_config(value: dict) -> models.EpaperConfig | models.TouchscreenConfig:
+    check_schema("DeviceConfig", value)
+    return DEVICE_CONFIGS.validate_json(json.dumps(value))
+
+
+def test_device_config_is_each_types_own() -> None:
+    epaper = _device_config(DEVICE_CONFIG["epaper"])
+    assert isinstance(epaper, models.EpaperConfig)
+    assert epaper.style.drawing == "hero"
+    touchscreen = _device_config(DEVICE_CONFIG["touchscreen"])
+    assert isinstance(touchscreen, models.TouchscreenConfig)
+    assert touchscreen.style.colour == "dynamic"
+    assert touchscreen.pairing_code is None
+    pairing = _device_config(DEVICE_CONFIG["pairing"])
+    assert isinstance(pairing, models.TouchscreenConfig)
+    assert pairing.pairing_code == "ABC234"
+    saved = _device_config(DEVICE_CONFIG["touchscreen_save"])
+    # A save changes only what isn't read-only.
+    read_only = {
+        name for name, field in contract()["$defs"]["DeviceConfigBase"]["properties"].items() if field.get("readOnly")
+    }
+    assert {name: getattr(saved, name) for name in read_only} == {
+        name: getattr(touchscreen, name) for name in read_only
+    }
+    assert saved.style != touchscreen.style
+
+
+def test_device_config_is_config_responses_config() -> None:
+    # The same e-paper screen as config_store.json's value, by section.
+    epaper, old = DEVICE_CONFIG["epaper"], CONFIG["value"]
+    assert epaper["device_id"] == old["device_id"]
+    assert (epaper["width"], epaper["height"], epaper["format"]) == tuple(
+        old["screen"][k] for k in ("width", "height", "format")
+    )
+    assert epaper["style"] == {
+        "orientation": old["screen"]["orientation"],
+        "drawing": old["style"],
+        "weather": old["weather"]["design"],
+        "layout": old["screen"]["layout"],
+    }
+    assert epaper["arrivals"]["stops"] == old["departures"]["stops"]
+    assert epaper["weather"] == {"location": old["weather"]["location"], "key": old["weather"]["key"]}
+    assert epaper["notice_board"] == {k: old["notice_board"][k] for k in ("postcode", "country")}
+    for section in ("glowmarkt", "developer", "parcels", "apple_music"):
+        assert epaper[section] == old[section]
+    assert epaper["spotify"] == {"enabled": old["spotify"]["enabled"]}
+    for name in ("interval", "clock_format", "language", "timezone", "pairing_code"):
+        assert epaper[name] == old[name]
+
+
+def test_device_config_takes_only_its_types_style() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    epaper, touchscreen = DEVICE_CONFIG["epaper"], DEVICE_CONFIG["touchscreen"]
+    wrong = (
+        {**epaper, "style": touchscreen["style"]},
+        {**touchscreen, "style": epaper["style"]},
+        {**touchscreen, "type": "epaper"},
+        {key: value for key, value in epaper.items() if key != "format"},
+        {key: value for key, value in touchscreen.items() if key != "display"},
+        {**epaper, "type": "kiosk"},
+        {**touchscreen, "display": {"sleep_minutes": 10}},
+        {**epaper, "weather": {**epaper["weather"], "design": "columns"}},
+    )
+    for config in wrong:
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("DeviceConfig", config)
+        with pytest.raises(ValidationError):
+            DEVICE_CONFIGS.validate_json(json.dumps(config))

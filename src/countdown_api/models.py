@@ -42,6 +42,16 @@ class DepartureStop(BaseModel):
     )
 
 
+class ArrivalsSection(BaseModel):
+    """The arrivals panel (bus, train and tram stops)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stops: list[DepartureStop] = Field(
+        description="Every stop whose departures the device shows, from any source, in the owner's order.",
+    )
+
+
 class Departures(BaseModel):
     """The ``Departures`` object."""
 
@@ -258,7 +268,8 @@ class ConfigResponse(BaseModel):
 
     It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of
     v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type
-    touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
+    touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them. DeviceConfig is
+    the same config by section, which new readers read instead.
     """
 
     device_id: str
@@ -345,6 +356,106 @@ DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
 
+DeviceType = Literal["epaper", "touchscreen"]
+"""What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool
+draws, or a touchscreen, which draws itself from its config.
+"""
+
+
+class NoticeBoardSection(BaseModel):
+    """The notice board, of notices about the device's place."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    postcode: str | None = Field(description="The place's postcode, or null for no local notices.")
+    country: Literal["GB", "NO"] | None = Field(
+        description="The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.",
+    )
+
+
+class SpotifySection(BaseModel):
+    """The Spotify area."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = Field(
+        description=(
+            "Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills "
+            "with the account's Spotify link, so no token is sent here."
+        ),
+    )
+
+
+WeatherKey = Annotated[str, Field(pattern="^[^\\s:]+$")]
+"""A weather key. For a place picked on the settings page it is the slug of its name, its country (xx
+for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a
+typed location, that text's slug. weather_keys.json has examples.
+"""
+
+
+class WeatherSection(BaseModel):
+    """The weather panel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    location: str = Field(description="The place as the owner named it.")
+    key: WeatherKey = Field(
+        description=(
+            "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for "
+            "none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed "
+            "location, that text's slug. weather_keys.json has examples."
+        ),
+    )
+
+
+class DeviceConfigBase(BaseModel):
+    """The ``DeviceConfigBase`` object.
+
+    What every device's config has (DeviceConfig), whatever its type: the flat fields and the shared
+    sections.
+    """
+
+    device_id: DeviceId = Field(
+        description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
+    )
+    type: DeviceType = Field(
+        description=(
+            "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, "
+            "or a touchscreen, which draws itself from its config."
+        ),
+    )
+    width: Annotated[int, Field(gt=0)] = Field(
+        description="The device's screen width in pixels, as it reported at registration.",
+    )
+    height: Annotated[int, Field(gt=0)] = Field(
+        description="The device's screen height in pixels, as it reported at registration.",
+    )
+    pairing_code: str | None = Field(
+        description="The code to show while no one has paired the device; null once it's paired.",
+    )
+    interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
+    clock_format: Literal["12h", "24h"] = Field(
+        description=(
+            "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time "
+            "zones or log formats."
+        ),
+    )
+    language: Literal["en", "nb"] = Field(
+        description="The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål).",
+    )
+    timezone: str = Field(
+        description="The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.",
+    )
+    arrivals: ArrivalsSection = Field(description="The arrivals panel (bus, train and tram stops).")
+    weather: WeatherSection = Field(description="The weather panel.")
+    notice_board: NoticeBoardSection = Field(description="The notice board, of notices about the device's place.")
+    spotify: SpotifySection = Field(description="The Spotify area.")
+    apple_music: AppleMusic
+    glowmarkt: Glowmarkt
+    developer: Developer
+    parcels: Parcels
+
+
 class DeviceRegistered(BaseModel):
     """What POST /api/devices/register answers."""
 
@@ -353,12 +464,6 @@ class DeviceRegistered(BaseModel):
     device_id: DeviceId = Field(
         description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
     )
-
-
-DeviceType = Literal["epaper", "touchscreen"]
-"""What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool
-draws, or a touchscreen, which draws itself from its config.
-"""
 
 
 class DeviceRegistration(BaseModel):
@@ -387,6 +492,50 @@ class DeviceRegistration(BaseModel):
         default=None,
         description="The format an e-paper screen takes its frame in, as its config's screen.format.",
     )
+
+
+class EpaperStyle(BaseModel):
+    """How an e-paper screen is drawn."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    orientation: Literal["horizontal", "vertical"] = Field(description="How the screen hangs; vertical is portrait.")
+    drawing: Literal["airy", "hero", "card"] = Field(
+        description=(
+            "How every panel is drawn, so the screen has one look. airy has small-caps labels over a hairline; hero "
+            "has an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded card"
+            " with a black title bar. ConfigResponse's style."
+        ),
+    )
+    weather: Literal["columns", "timeline", "overview", "poster"] = Field(
+        description=(
+            "How the weather is drawn on an HD screen (1872x1404 hung portrait); other screens ignore it. See "
+            "ConfigResponse's weather.design."
+        ),
+    )
+    layout: Layout | None = Field(
+        description=(
+            "Which layout the screen is drawn in, or null for its size's default. See ConfigResponse's screen.layout "
+            "for which sizes have which."
+        ),
+    )
+
+
+class EpaperConfig(DeviceConfigBase):
+    """The ``EpaperConfig`` object.
+
+    An e-paper screen's config (DeviceConfig with type epaper), which the render pool draws its frames
+    from.
+    """
+
+    type: Literal["epaper"]
+    format: Literal["mono-1bpp-packed", "png"] = Field(
+        description=(
+            "The format the screen takes its frame in, as it reported at registration (FrameRecord's frame for "
+            "mono-1bpp-packed)."
+        ),
+    )
+    style: EpaperStyle = Field(description="How an e-paper screen is drawn.")
 
 
 class FrameRecord(BaseModel):
@@ -613,8 +762,56 @@ Subscription = list[Annotated[str, Field(min_length=1)]]
 """A subscription set's members, in no order. See `sources` for each source's."""
 
 
-WeatherKey = Annotated[str, Field(pattern="^[^\\s:]+$")]
-"""A weather key. For a place picked on the settings page it is the slug of its name, its country (xx
-for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a
-typed location, that text's slug. weather_keys.json has examples.
+class TouchscreenDisplay(BaseModel):
+    """A touchscreen's screen itself."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sleep_minutes: Literal[0, 2, 5, 15, 30] = Field(
+        description=(
+            "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk "
+            "sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
+        ),
+    )
+
+
+class TouchscreenStyle(BaseModel):
+    """How a touchscreen looks."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    skin: Literal["day", "auto", "night"] = Field(
+        description=(
+            "day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen"
+            " that doesn't know its location shows as day."
+        ),
+    )
+    colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
+        description=(
+            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
+            " looks like forest without any."
+        ),
+    )
+
+
+class TouchscreenConfig(DeviceConfigBase):
+    """A touchscreen's config (DeviceConfig with type touchscreen).
+
+    It draws itself from it, and saves it from its own settings panel.
+    """
+
+    type: Literal["touchscreen"]
+    style: TouchscreenStyle = Field(description="How a touchscreen looks.")
+    display: TouchscreenDisplay = Field(description="A touchscreen's screen itself.")
+
+
+DeviceConfig = Annotated[EpaperConfig | TouchscreenConfig, Field(discriminator="type")]
+"""A device's config by section, what GET and PUT /api/devices/config answer and take: a few flat
+fields (who and what the device is, its size, and the settings every panel shares), then a section
+per panel, each its own schema, and `style`, which every type has but whose schema is the type's
+own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig).
+It is the same config as ConfigResponse, without the fields that only older renderers read, and
+never has a secret of any kind: logins and keys are the owner's account's, held on the server. A
+read-only field (readOnly) is the server's, or what the device said at registration, and isn't
+changed by a save.
 """
