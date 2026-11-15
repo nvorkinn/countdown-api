@@ -16,11 +16,15 @@ store.yaml is the one source. From it this writes:
 - store.d.ts: a TypeScript type per schema, written by openapi-typescript (package.json pins it) from the same
   OpenAPI document as the models: `import type { ConfigResponse } from ".../countdown_api/store"`; and the HTTP
   routes' `paths` and `operations`.
+- client.ts: a typed function per route, named by its operationId, so a TypeScript caller never writes a path: a call
+  (`getConfig(client)`) for each route of the devices' API, and a URL builder (`registerTouchscreenUrl(base, query)`)
+  for each settings-site page a device sends a browser to. Typed by store.d.ts's `operations`; plain fetch, nothing to
+  install.
 - store.json: store.yaml as JSON, for anything that reads the contract without PyYAML.
 - __init__.py.
 
-The generated Python is what `ruff check --fix` and `ruff format` leave, so it passes both; store.d.ts and store.json
-are what `biome check --write` leaves.
+The generated Python is what `ruff check --fix` and `ruff format` leave, so it passes both; store.d.ts, client.ts and
+store.json are what `biome check --write` leaves.
 """
 
 from __future__ import annotations
@@ -86,6 +90,7 @@ def package_files(contract: dict[str, Any]) -> dict[str, str]:
     files["scripts.py"] = render_scripts(contract)
     files = {name: ruff(text, name) if name.endswith(".py") else text for name, text in files.items()}
     files["store.d.ts"] = biome(typescript(document), "store.d.ts")
+    files["client.ts"] = biome(render_client(contract), "client.ts")
     files["store.json"] = biome(json.dumps(contract, indent=2, ensure_ascii=False) + "\n", "store.json")
     return files
 
@@ -210,6 +215,189 @@ def typescript(document: dict[str, Any]) -> str:
         ).stdout
     # Nothing here uses the exported types (the consumers do), which a JetBrains IDE would otherwise flag one by one.
     return f"// noinspection JSUnusedGlobalSymbols\n// {HEADER.removeprefix('# ')}\n{types}"
+
+
+CLIENT_RUNTIME = """\
+/**
+ * A typed function per route in the contract's `paths`, named by its operationId, so callers never write a path.
+ *
+ * - The devices' API (JSON): `getConfig(client)`, `putConfig(client, config)`, ... Each answers `{ data, response }`
+ *   for a 2xx, or `{ error, response }` for anything else (the error body, as JSON if it is, else as text). One that
+ *   takes the device's secret sends `client.secret` as `Authorization: Bearer`.
+ * - The settings site's pages (HTML), which a device sends a browser to: a URL builder, `registerTouchscreenUrl(base,
+ *   query)`, `deviceSettingsPageUrl(base, path)`. A page's own form posts (POST /register) are the page's, not here.
+ */
+import type { operations } from "./store.js";
+
+/** Where a call goes and as whom. */
+export interface Client {
+  /** The server's origin, e.g. `https://api.example.com`: each route's path is resolved against it. */
+  readonly baseUrl: string | URL;
+  /** The device's secret, for the routes behind the contract's `deviceSecret`. */
+  readonly secret?: string;
+  /** The fetch to call with, e.g. a test's; the global one by default. */
+  readonly fetch?: typeof fetch;
+}
+
+/** What a single call can add: a signal to abort it, and headers (e.g. `If-Match`). */
+export interface RequestOptions {
+  readonly signal?: AbortSignal;
+  readonly headers?: HeadersInit;
+}
+
+/** A call's outcome: `data` for a 2xx, `error` for anything else, and the response either way (its headers). */
+export type Result<T> =
+  | { readonly data: T; readonly error?: undefined; readonly response: Response }
+  | { readonly data?: undefined; readonly error: unknown; readonly response: Response };
+
+type Query = { readonly [name: string]: string | number | boolean | undefined };
+
+/** `path` on `baseUrl`, with each set value of `query` as a query parameter. */
+function url(baseUrl: string | URL, path: string, query: Query = {}): URL {
+  const result = new URL(path, baseUrl);
+  for (const [name, value] of Object.entries(query)) {
+    if (value !== undefined) {
+      result.searchParams.set(name, String(value));
+    }
+  }
+  return result;
+}
+
+interface Call extends RequestOptions {
+  readonly method: string;
+  readonly path: string;
+  readonly query?: Query;
+  readonly secret: boolean;
+  readonly body?: unknown;
+  readonly json: boolean;
+}
+
+async function request<T>(client: Client, call: Call): Promise<Result<T>> {
+  const headers = new Headers(call.headers);
+  if (call.secret) {
+    if (!client.secret) {
+      throw new Error(`${call.method} ${call.path} needs the device's secret`);
+    }
+    headers.set("Authorization", `Bearer ${client.secret}`);
+  }
+  const init: RequestInit = { method: call.method, headers };
+  if (call.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+    init.body = JSON.stringify(call.body);
+  }
+  if (call.signal) {
+    init.signal = call.signal;
+  }
+  const response = await (client.fetch ?? fetch)(url(client.baseUrl, call.path, call.query), init);
+  if (!response.ok) {
+    const text = await response.text();
+    const isJson = response.headers.get("Content-Type")?.includes("json") ?? false;
+    return { error: isJson && text ? JSON.parse(text) : text, response };
+  }
+  return { data: (call.json ? await response.json() : undefined) as T, response };
+}
+"""
+
+_HTTP_METHODS = ("get", "put", "post", "delete", "patch")
+
+
+def render_client(contract: dict[str, Any]) -> str:
+    """Return client.ts: CLIENT_RUNTIME, then a call per JSON route and a URL builder per page a browser goes to."""
+    parts = ["// noinspection JSUnusedGlobalSymbols", f"// {HEADER.removeprefix('# ')}", CLIENT_RUNTIME]
+    parts.extend(
+        _render_operation(path, method, item[method])
+        for path, item in contract.get("paths", {}).items()
+        for method in _HTTP_METHODS
+        if method in item
+    )
+    return "\n".join(part for part in parts if part)
+
+
+def _render_operation(path: str, method: str, operation: dict[str, Any]) -> str:
+    name = operation["operationId"]
+    op = f'operations["{name}"]'
+    success = {status: response for status, response in operation["responses"].items() if status.startswith("2")}
+    kinds = {kind for response in success.values() for kind in response.get("content", {})}
+    if kinds == {"text/html"}:
+        if method != "get":
+            return ""  # A page's own form posts it.
+        return _render_page(path, operation, op)
+    if kinds - {"application/json"}:
+        msg = f"{name}: a client.ts call answers JSON or a page, not {sorted(kinds)}"
+        raise ValueError(msg)
+
+    params = _params(operation)
+    args = ["client: Client"]
+    fields = [f'method: "{method.upper()}"', f"path: {_path_expression(path)}"]
+    if "path" in params:
+        args.append(f'path: {op}["parameters"]["path"]')
+    if "query" in params:
+        optional = " = {}" if not params["query"] else ""
+        args.append(f'query: NonNullable<{op}["parameters"]["query"]>{optional}')
+        fields.append("query")
+    body = operation.get("requestBody", {}).get("content", {})
+    if body:
+        if list(body) != ["application/json"]:
+            msg = f"{name}: a client.ts call sends JSON, not {list(body)}"
+            raise ValueError(msg)
+        args.append(f'body: {op}["requestBody"]["content"]["application/json"]')
+        fields.append("body")
+    args.append("options: RequestOptions = {}")
+    secret = any("deviceSecret" in requirement for requirement in operation.get("security", []))
+    fields.append(f"secret: {'true' if secret else 'false'}")
+    if kinds:
+        statuses = " | ".join(sorted(success))
+        data = f'{op}["responses"][{statuses}]["content"]["application/json"]'
+        fields.append("json: true")
+    else:
+        data = "undefined"
+        fields.append("json: false")
+    how = f"`{method.upper()} {path}`" + (", with the device's secret." if secret else ".")
+    return (
+        f"{_doc(operation, how)}export function {name}({', '.join(args)}): Promise<Result<{data}>> {{\n"
+        f"  return request(client, {{ ...options, {', '.join(fields)} }});\n}}\n"
+    )
+
+
+def _render_page(path: str, operation: dict[str, Any], op: str) -> str:
+    params = _params(operation)
+    args = ["baseUrl: string | URL"]
+    if "path" in params:
+        args.append(f'path: {op}["parameters"]["path"]')
+    query = "{}"
+    if "query" in params:
+        optional = " = {}" if not params["query"] else ""
+        args.append(f'query: NonNullable<{op}["parameters"]["query"]>{optional}')
+        query = "query"
+    name = operation["operationId"]
+    how = f"The address of the page `GET {path}`, to send a browser to."
+    return (
+        f"{_doc(operation, how)}export function {name}Url({', '.join(args)}): URL {{\n"
+        f"  return url(baseUrl, {_path_expression(path)}, {query});\n}}\n"
+    )
+
+
+def _params(operation: dict[str, Any]) -> dict[str, bool]:
+    """Return {"path" or "query": whether any is required} for the parameters `operation` has."""
+    found: dict[str, bool] = {}
+    for parameter in operation.get("parameters", []):
+        where = parameter["in"]
+        if where not in {"path", "query"}:
+            msg = f"{operation['operationId']}: client.ts takes path and query parameters, not {where}"
+            raise ValueError(msg)
+        found[where] = found.get(where, False) or parameter.get("required", where == "path")
+    return found
+
+
+def _path_expression(path: str) -> str:
+    if not _PARAM.search(path):
+        return f'"{path}"'
+    return "`" + _PARAM.sub(r"${encodeURIComponent(path.\1)}", path) + "`"
+
+
+def _doc(operation: dict[str, Any], how: str) -> str:
+    lines = [operation.get("summary", operation["operationId"]), "", how]
+    return "/**\n" + "".join(f" * {line}".rstrip() + "\n" for line in lines) + " */\n"
 
 
 def _as_components(node: Any) -> Any:  # noqa: ANN401 -- any JSON
