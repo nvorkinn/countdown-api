@@ -179,7 +179,7 @@ def test_touchscreen_registers_on_the_screens_route_and_reads_its_config() -> No
     device_id = TOUCHSCREEN["device_id"]
     check_schema("DeviceId", device_id)
     assert check("DeviceRegistration", TOUCHSCREEN["registration"]).type == "touchscreen"
-    # An e-paper screen registers on the same route, with its size and frame format, and no type.
+    # An e-paper screen registers on the same route, with its frame format as well as its size, and no type.
     assert check("DeviceRegistration", TOUCHSCREEN["epaper_registration"]).type is None
     assert check("DeviceRegistered", TOUCHSCREEN["registered"]).device_id == device_id
     # Unpaired, its config is the pairing value, as an e-paper screen's: with the code, and its block's defaults.
@@ -222,7 +222,8 @@ def test_touchscreen_settings_and_registrations_take_only_whats_allowed() -> Non
     for wrong in (
         {"secret": "too-short", "type": "touchscreen"},
         {key: value for key, value in epaper.items() if key != "format"},
-        {**TOUCHSCREEN["registration"], "width": 800},
+        {key: value for key, value in TOUCHSCREEN["registration"].items() if key != "height"},
+        {**TOUCHSCREEN["registration"], "format": "png"},
     ):
         with pytest.raises(jsonschema.ValidationError):
             check_schema("DeviceRegistration", wrong)

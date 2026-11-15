@@ -424,16 +424,16 @@ export interface components {
        */
       screen_sleep_minutes: 0 | 2 | 5 | 15 | 30;
     };
-    /** @description What POST /api/devices/register takes. An e-paper screen also says its size and the format it takes its frame in (its config's screen); a touchscreen draws itself, so says neither. */
+    /** @description What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's screen), while a touchscreen draws itself, so says no format. */
     DeviceRegistration: {
       /** @description A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash. */
       secret: string;
       /** @description Optional, so a screen that doesn't send it registers as epaper. */
       type?: components["schemas"]["DeviceType"];
-      /** @description An e-paper screen's width, in pixels. */
-      width?: number;
-      /** @description An e-paper screen's height, in pixels. */
-      height?: number;
+      /** @description The device's screen width, in pixels. */
+      width: number;
+      /** @description The device's screen height, in pixels. */
+      height: number;
       /**
        * @description The format an e-paper screen takes its frame in, as its config's screen.format.
        * @enum {string}

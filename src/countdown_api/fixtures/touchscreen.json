@@ -3,7 +3,9 @@
   "device_id": "0a1b2c3d4e5f",
   "registration": {
     "secret": "example-not-a-real-secret-0001",
-    "type": "touchscreen"
+    "type": "touchscreen",
+    "width": 1280,
+    "height": 800
   },
   "epaper_registration": {
     "secret": "example-not-a-real-secret-0002",

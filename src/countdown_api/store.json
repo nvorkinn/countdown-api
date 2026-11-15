@@ -1163,7 +1163,7 @@
       "required": ["theme", "theme_colour", "screen_sleep_minutes"]
     },
     "DeviceRegistration": {
-      "description": "What POST /api/devices/register takes. An e-paper screen also says its size and the format it takes its frame in (its config's screen); a touchscreen draws itself, so says neither.",
+      "description": "What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's screen), while a touchscreen draws itself, so says no format.",
       "type": "object",
       "if": {
         "properties": {
@@ -1175,21 +1175,11 @@
       },
       "then": {
         "not": {
-          "anyOf": [
-            {
-              "required": ["width"]
-            },
-            {
-              "required": ["height"]
-            },
-            {
-              "required": ["format"]
-            }
-          ]
+          "required": ["format"]
         }
       },
       "else": {
-        "required": ["width", "height", "format"]
+        "required": ["format"]
       },
       "properties": {
         "secret": {
@@ -1204,12 +1194,12 @@
         "width": {
           "type": "integer",
           "exclusiveMinimum": 0,
-          "description": "An e-paper screen's width, in pixels."
+          "description": "The device's screen width, in pixels."
         },
         "height": {
           "type": "integer",
           "exclusiveMinimum": 0,
-          "description": "An e-paper screen's height, in pixels."
+          "description": "The device's screen height, in pixels."
         },
         "format": {
           "enum": ["mono-1bpp-packed", "png"],
@@ -1217,7 +1207,7 @@
           "description": "The format an e-paper screen takes its frame in, as its config's screen.format."
         }
       },
-      "required": ["secret"]
+      "required": ["secret", "width", "height"]
     },
     "DeviceRegistered": {
       "description": "What POST /api/devices/register answers.",

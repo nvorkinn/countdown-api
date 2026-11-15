@@ -47,7 +47,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
-| `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps; an e-paper screen's also says its size and frame format |
+| `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
 | `GET /api/config` | | `ConfigResponse` | a touchscreen's config: the pairing value (`pairing_code` set) until it's paired |
 | `PUT /api/config/touchscreen` | `Touchscreen` | `Touchscreen` | its settings panel's choices, all at once (409 for an e-paper screen) |
 

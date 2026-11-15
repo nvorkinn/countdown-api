@@ -364,8 +364,8 @@ draws, or a touchscreen, which draws itself from its config.
 class DeviceRegistration(BaseModel):
     """What POST /api/devices/register takes.
 
-    An e-paper screen also says its size and the format it takes its frame in (its config's screen); a
-    touchscreen draws itself, so says neither.
+    Every device says its size; an e-paper screen also says the format it takes its frame in (its
+    config's screen), while a touchscreen draws itself, so says no format.
     """
 
     secret: Annotated[str, Field(min_length=16)] = Field(
@@ -381,11 +381,8 @@ class DeviceRegistration(BaseModel):
             "or a touchscreen, which draws itself from its config."
         ),
     )
-    width: Annotated[int, Field(gt=0)] | None = Field(default=None, description="An e-paper screen's width, in pixels.")
-    height: Annotated[int, Field(gt=0)] | None = Field(
-        default=None,
-        description="An e-paper screen's height, in pixels.",
-    )
+    width: Annotated[int, Field(gt=0)] = Field(description="The device's screen width, in pixels.")
+    height: Annotated[int, Field(gt=0)] = Field(description="The device's screen height, in pixels.")
     format: Literal["mono-1bpp-packed", "png"] | None = Field(
         default=None,
         description="The format an e-paper screen takes its frame in, as its config's screen.format.",
