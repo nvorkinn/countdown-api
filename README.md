@@ -47,14 +47,20 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
-| `GET /api/devices/config` | | `ConfigResponse` | the device's config: for an e-paper screen, the pairing value (`pairing_code` set) until it's paired |
-| `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came |
+| `GET /api/devices/config` | | `ConfigResponse`, its version as `ETag` | the device's config: for an e-paper screen, the pairing value (`pairing_code` set) until it's paired |
+| `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came; `If-Match` optional |
+| `PUT /api/devices/config/{section}` | a section (`ConfigSection` names it), `If-Match` | `ConfigResponse`, its new `ETag` | save one section whole; 409 when `If-Match` is stale, so the caller reloads instead of overwriting |
+| `GET /api/stops/search` | `q` | `StopSearchResult[]` | London's and Norway's stops, for a stop picker |
+| `GET /api/places/search` | `q` | `PlaceSearchResult[]` | towns and cities (Open-Meteo), for the weather picker |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 
 All but the registrations take the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`);
 `/register` takes the person's login instead, on the settings site rather than the devices' API.
+The config and search routes also work on the settings site with the person's login instead of a secret, the config
+ones for the device their `device_id` query names. Both searches answer the same result shape (`SearchResult`: `id`,
+`name`, `subtitle`, `indent`) with a `value` that is what picking it saves, in the config's own shape.
 The routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as
 its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), and the reference lists them.
 `touchscreen.json` and `config_store.json` are their examples.

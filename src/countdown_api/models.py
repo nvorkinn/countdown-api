@@ -118,6 +118,33 @@ class ConfigBase(BaseModel):
     notice_board: NoticeBoard = Field(description="The notice board, of notices about the device's place.")
 
 
+ConfigSection = Literal[
+    "clock_format",
+    "language",
+    "arrivals",
+    "weather",
+    "notice_board",
+    "spotify",
+    "apple_music",
+    "glowmarkt",
+    "developer",
+    "parcels",
+    "style",
+    "display",
+]
+"""A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
+only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
+type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style` and
+`display`.
+"""
+
+
+ConfigVersion = Annotated[str, Field(pattern='^"[0-9a-f]{32}"$')]
+"""A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and
+only then. getConfig answers it, and a save sends it back as If-Match.
+"""
+
+
 class Developer(BaseModel):
     """The ``Developer`` object."""
 
@@ -392,6 +419,37 @@ id>.
 """
 
 
+class SearchResult(BaseModel):
+    """The ``SearchResult`` object.
+
+    One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name`
+    over `subtitle`, indented under the result before it when `indent`) and what picking it saves
+    (`value`, in the config's own shape).
+    """
+
+    id: Annotated[str, Field(min_length=1)] = Field(description="The result's id at its source, as text.")
+    name: str = Field(description="Its name, the main line.")
+    subtitle: str = Field(description="The line under it, e.g. what stops there or the place's region and country.")
+    indent: bool = Field(
+        description="Whether it belongs to the result before it (a platform of a station), shown indented under it.",
+    )
+
+
+class PlaceSearchResult(SearchResult):
+    """The ``PlaceSearchResult`` object.
+
+    A town or city that searchPlaces found, for the weather (SearchResult); its `id` is Open-Meteo's.
+    """
+
+    value: Weather = Field(description="The weather panel.")
+    label: str = Field(
+        description="Its name, region and country in one line, as the settings site's weather box shows it.",
+    )
+    country_code: str = Field(description="Its country (ISO 3166-1 alpha-2); empty when Open-Meteo gives none.")
+    latitude: float
+    longitude: float
+
+
 RenderJobs = list[DeviceId]
 """v1:render:jobs, device ids, newest first (LPUSH; the workers BRPOP the oldest)."""
 
@@ -448,6 +506,22 @@ class SpotifyPlayback(BaseModel):
     is_playing: bool
     progress_ms: Annotated[int, Field(ge=0)]
     track_id: str | None = None
+
+
+class StopSearchResult(SearchResult):
+    """A station or stop that searchStops found (SearchResult)."""
+
+    value: DepartureStop
+    source: Literal["tfl", "entur"] = Field(description="Where it's from, as `value.source`.")
+    area: str = Field(description="The town or district it's in, to tell stops of the same name apart; may be empty.")
+    mode: str = Field(
+        description=(
+            "What it's for, for its icon: tube, metro, tram, rail, water or bus (a bus stop shows its `letter`), or "
+            "another mode, shown as a bus stop is."
+        ),
+    )
+    letter: str = Field(description="Its stop letter or platform code; may be empty.")
+    lines: list[str] = Field(description="The lines that stop there.")
 
 
 class StoredDeveloper(BaseModel):

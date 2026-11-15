@@ -106,9 +106,10 @@ export function registerDevice(
  */
 export function getConfig(
   client: Client,
+  query: NonNullable<operations["getConfig"]["parameters"]["query"]> = {},
   options: RequestOptions = {},
 ): Promise<Result<operations["getConfig"]["responses"][200]["content"]["application/json"]>> {
-  return request(client, { ...options, method: "GET", path: "/api/devices/config", secret: true, json: true });
+  return request(client, { ...options, method: "GET", path: "/api/devices/config", query, secret: true, json: true });
 }
 
 /**
@@ -122,6 +123,55 @@ export function putConfig(
   options: RequestOptions = {},
 ): Promise<Result<operations["putConfig"]["responses"][200]["content"]["application/json"]>> {
   return request(client, { ...options, method: "PUT", path: "/api/devices/config", body, secret: true, json: true });
+}
+
+/**
+ * Save one section of the device's config, whole.
+ *
+ * `PUT /api/devices/config/{section}`, with the device's secret.
+ */
+export function putConfigSection(
+  client: Client,
+  path: operations["putConfigSection"]["parameters"]["path"],
+  query: NonNullable<operations["putConfigSection"]["parameters"]["query"]> = {},
+  body: operations["putConfigSection"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<operations["putConfigSection"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, {
+    ...options,
+    method: "PUT",
+    path: `/api/devices/config/${encodeURIComponent(path.section)}`,
+    query,
+    body,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
+ * Search for stations and stops to show departures from.
+ *
+ * `GET /api/stops/search`, with the device's secret.
+ */
+export function searchStops(
+  client: Client,
+  query: NonNullable<operations["searchStops"]["parameters"]["query"]>,
+  options: RequestOptions = {},
+): Promise<Result<operations["searchStops"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/stops/search", query, secret: true, json: true });
+}
+
+/**
+ * Search for a town or city for the weather.
+ *
+ * `GET /api/places/search`, with the device's secret.
+ */
+export function searchPlaces(
+  client: Client,
+  query: NonNullable<operations["searchPlaces"]["parameters"]["query"]>,
+  options: RequestOptions = {},
+): Promise<Result<operations["searchPlaces"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/places/search", query, secret: true, json: true });
 }
 
 /**
