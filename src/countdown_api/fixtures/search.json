@@ -1,0 +1,68 @@
+{
+  "about": "What the pickers' searches answer (GET /api/stops/search and GET /api/places/search): `stops` for ?q=oslo s, Oslo's central station and one of its platforms indented under it, then a London bus stop; `places` for ?q=oslo. Every result has the same core (SearchResult: id, name, subtitle, indent) and a `value`, what picking it saves: a stop for arrivals.stops, or a place's whole weather section. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "stops_query": "oslo s",
+  "stops": [
+    {
+      "id": "NSR:StopPlace:337",
+      "name": "Oslo S",
+      "subtitle": "Train & Metro • All platforms • L1, R10, 1, 2 (+12 more)",
+      "indent": false,
+      "value": {
+        "source": "entur",
+        "id": "NSR:StopPlace:337"
+      },
+      "source": "entur",
+      "area": "Oslo",
+      "mode": "rail",
+      "letter": "",
+      "lines": ["L1", "R10", "1", "2"]
+    },
+    {
+      "id": "NSR:Quay:7333",
+      "name": "Oslo S",
+      "subtitle": "Platform 4 • towards Drammen • L1",
+      "indent": true,
+      "value": {
+        "source": "entur",
+        "id": "NSR:Quay:7333"
+      },
+      "source": "entur",
+      "area": "",
+      "mode": "rail",
+      "letter": "4",
+      "lines": ["L1"]
+    },
+    {
+      "id": "490000077E",
+      "name": "Oval Station",
+      "subtitle": "Stop E • 36, 185, 436",
+      "indent": false,
+      "value": {
+        "source": "tfl",
+        "id": "490000077E"
+      },
+      "source": "tfl",
+      "area": "London",
+      "mode": "bus",
+      "letter": "E",
+      "lines": ["36", "185", "436"]
+    }
+  ],
+  "places_query": "oslo",
+  "places": [
+    {
+      "id": "3143244",
+      "name": "Oslo",
+      "subtitle": "Norway",
+      "indent": false,
+      "value": {
+        "location": "Oslo",
+        "key": "oslo-no-3143244"
+      },
+      "label": "Oslo, Norway",
+      "country_code": "NO",
+      "latitude": 59.91273,
+      "longitude": 10.74609
+    }
+  ]
+}

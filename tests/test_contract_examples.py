@@ -196,6 +196,39 @@ def test_touchscreen_registers_on_the_screens_route_and_reads_and_saves_its_conf
     assert (saved.style, saved.display) != (config.style, config.display)
 
 
+def test_a_section_save_is_one_section_whole_and_answers_the_config_with_its_new_version() -> None:
+    save = TOUCHSCREEN["section_save"]
+    config = check("ConfigResponse", TOUCHSCREEN["config"])
+    assert save["section"] in contract()["$defs"]["ConfigSection"]["enum"]
+    check_schema("ConfigVersion", save["if_match"])
+    check_schema("ConfigVersion", save["etag"])
+    assert save["etag"] != save["if_match"]
+    answered = check("ConfigResponse", save["config"])
+    # The section is what was sent, whole, and nothing else changed.
+    assert getattr(answered, save["section"]).model_dump(mode="json") == save["body"]
+    assert answered.model_copy(update={save["section"]: getattr(config, save["section"])}) == config
+
+
+SEARCH = fixtures.load("search.json")
+
+
+def test_both_searches_answer_the_same_result_shape_with_what_picking_saves() -> None:
+    stops = [check("StopSearchResult", result) for result in SEARCH["stops"]]
+    places = [check("PlaceSearchResult", result) for result in SEARCH["places"]]
+    core = set(contract()["$defs"]["SearchResult"]["required"])
+    for result in (*SEARCH["stops"], *SEARCH["places"]):
+        assert core | {"value"} <= set(result)
+    # A stop's value is the stop as arrivals has it; a place's, the whole weather section, with a key of the place.
+    for stop in stops:
+        assert (stop.value.source, stop.value.id) == (stop.source, stop.id)
+    for place in places:
+        assert check("Weather", place.value.model_dump(mode="json")).location == place.name
+        assert place.value.key is not None
+        assert place.value.key.endswith(f"-{place.country_code.lower()}-{place.id}")
+    # A platform is indented under its station, the result before it.
+    assert [stop.indent for stop in stops] == [False, True, False]
+
+
 def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     token = check("SpotifyAccessToken", TOUCHSCREEN["spotify_token"])
 

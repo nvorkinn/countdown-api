@@ -84,8 +84,11 @@ def test_the_routes_are_what_they_were() -> None:
     assert sorted(OPERATIONS) == [
         ("/api/devices/config", "get"),
         ("/api/devices/config", "put"),
+        ("/api/devices/config/{section}", "put"),
         ("/api/devices/register", "post"),
         ("/api/devices/spotify/token", "get"),
+        ("/api/places/search", "get"),
+        ("/api/stops/search", "get"),
         ("/device/{device_id}", "get"),
         ("/register", "get"),
         ("/register", "post"),

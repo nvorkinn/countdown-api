@@ -378,12 +378,18 @@ def _render_page(path: str, operation: dict[str, Any], op: str) -> str:
 
 
 def _params(operation: dict[str, Any]) -> dict[str, bool]:
-    """Return {"path" or "query": whether any is required} for the parameters `operation` has."""
+    """Return {"path" or "query": whether any is required} for the parameters `operation` has.
+
+    A header parameter (If-Match, If-None-Match) isn't an argument of its own: the caller sends it in the call's
+    options (RequestOptions.headers).
+    """
     found: dict[str, bool] = {}
     for parameter in operation.get("parameters", []):
         where = parameter["in"]
+        if where == "header":
+            continue
         if where not in {"path", "query"}:
-            msg = f"{operation['operationId']}: client.ts takes path and query parameters, not {where}"
+            msg = f"{operation['operationId']}: client.ts takes path, query and header parameters, not {where}"
             raise ValueError(msg)
         found[where] = found.get(where, False) or parameter.get("required", where == "path")
     return found
