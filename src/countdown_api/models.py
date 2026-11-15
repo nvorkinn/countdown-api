@@ -197,6 +197,36 @@ class Tfl(BaseModel):
     )
 
 
+class Touchscreen(BaseModel):
+    """The ``Touchscreen`` object.
+
+    A touchscreen's own settings, as its settings panel shows them, each set (to its default if
+    unchosen). The settings it shares with an e-paper screen (clock_format, language, timezone) are the
+    config's own.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    theme: Literal["day", "auto", "night"] = Field(
+        description=(
+            "The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a "
+            "touchscreen that doesn't know its location shows day."
+        ),
+    )
+    theme_colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
+        description=(
+            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
+            " looks like forest without any."
+        ),
+    )
+    screen_sleep_minutes: Literal[0, 2, 5, 15, 30] = Field(
+        description=(
+            "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk "
+            "sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
+        ),
+    )
+
+
 class Weather(BaseModel):
     """The ``Weather`` object."""
 
@@ -224,13 +254,25 @@ class Weather(BaseModel):
 
 
 class ConfigResponse(BaseModel):
-    """A screen's config.
+    """A device's config.
 
     It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of
-    v1:pairing:<device id> (PairingConfig).
+    v1:pairing:<device id> (PairingConfig). A touchscreen (type touchscreen) has its own settings in
+    `touchscreen`, and only a touchscreen has them.
     """
 
     device_id: str
+    type: Literal["epaper", "touchscreen"] = Field(
+        default="epaper",
+        description=(
+            "What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The "
+            "render pool draws only e-paper screens' frames (v1:render:screens lists no touchscreen)."
+        ),
+    )
+    touchscreen: Touchscreen | None = Field(
+        default=None,
+        description="A touchscreen's own settings, set for every touchscreen and for nothing else.",
+    )
     interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
     clock_format: Literal["12h", "24h"] = Field(
         default="24h",
@@ -301,6 +343,50 @@ class ConfigResponse(BaseModel):
 
 DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
+
+
+class DeviceRegistered(BaseModel):
+    """What POST /api/devices/register answers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: DeviceId = Field(
+        description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
+    )
+
+
+DeviceType = Literal["epaper", "touchscreen"]
+"""What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool
+draws, or a touchscreen, which draws itself from its config.
+"""
+
+
+class DeviceRegistration(BaseModel):
+    """What POST /api/devices/register takes.
+
+    Every device says its size; an e-paper screen also says the format it takes its frame in (its
+    config's screen), while a touchscreen draws itself, so says no format.
+    """
+
+    secret: Annotated[str, Field(min_length=16)] = Field(
+        description=(
+            "A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>. "
+            "Never logged; the broker keeps only its hash."
+        ),
+    )
+    type: DeviceType | None = Field(
+        default=None,
+        description=(
+            "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, "
+            "or a touchscreen, which draws itself from its config."
+        ),
+    )
+    width: Annotated[int, Field(gt=0)] = Field(description="The device's screen width, in pixels.")
+    height: Annotated[int, Field(gt=0)] = Field(description="The device's screen height, in pixels.")
+    format: Literal["mono-1bpp-packed", "png"] | None = Field(
+        default=None,
+        description="The format an e-paper screen takes its frame in, as its config's screen.format.",
+    )
 
 
 class FrameRecord(BaseModel):

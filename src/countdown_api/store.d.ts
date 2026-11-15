@@ -5,7 +5,28 @@
  * Do not make direct changes to the file.
  */
 
-export type paths = Record<string, never>;
+export interface paths {
+  "/api/devices/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Give a device its identity.
+     * @description The secret the device generated and keeps becomes a device of its type at once (201); only its hash is stored, and identifies the device. A repeat, e.g. on every boot, is a 200 and changes nothing. Throttled per IP, as anyone can call it (429 with Retry-After), and refused (503 with Retry-After) while too many devices wait to be paired.
+     */
+    post: operations["registerDevice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+}
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
@@ -145,10 +166,21 @@ export interface components {
     WeatherKey: string;
     /**
      * ConfigResponse
-     * @description A screen's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig).
+     * @description A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig). A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
      */
     ConfigResponse: {
       device_id: string;
+      /**
+       * @description What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The render pool draws only e-paper screens' frames (v1:render:screens lists no touchscreen).
+       * @default epaper
+       * @enum {string}
+       */
+      type: "epaper" | "touchscreen";
+      /**
+       * @description A touchscreen's own settings, set for every touchscreen and for nothing else.
+       * @default null
+       */
+      touchscreen: components["schemas"]["Touchscreen"] | null;
       /** @description Seconds between updates. */
       interval: number;
       /**
@@ -326,6 +358,52 @@ export interface components {
        */
       design: "columns" | "timeline" | "overview" | "poster";
     };
+    /**
+     * @description What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen, which draws itself from its config.
+     * @enum {string}
+     */
+    DeviceType: "epaper" | "touchscreen";
+    /** @description A touchscreen's own settings, as its settings panel shows them, each set (to its default if unchosen). The settings it shares with an e-paper screen (clock_format, language, timezone) are the config's own. */
+    Touchscreen: {
+      /**
+       * @description The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a touchscreen that doesn't know its location shows day.
+       * @default day
+       * @enum {string}
+       */
+      theme: "day" | "auto" | "night";
+      /**
+       * @description The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any.
+       * @default forest
+       * @enum {string}
+       */
+      theme_colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "dynamic";
+      /**
+       * @description Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it.
+       * @default 5
+       * @enum {integer}
+       */
+      screen_sleep_minutes: 0 | 2 | 5 | 15 | 30;
+    };
+    /** @description What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's screen), while a touchscreen draws itself, so says no format. */
+    DeviceRegistration: {
+      /** @description A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash. */
+      secret: string;
+      /** @description Optional, so a screen that doesn't send it registers as epaper. */
+      type?: components["schemas"]["DeviceType"];
+      /** @description The device's screen width, in pixels. */
+      width: number;
+      /** @description The device's screen height, in pixels. */
+      height: number;
+      /**
+       * @description The format an e-paper screen takes its frame in, as its config's screen.format.
+       * @enum {string}
+       */
+      format?: "mono-1bpp-packed" | "png";
+    };
+    /** @description What POST /api/devices/register answers. */
+    DeviceRegistered: {
+      device_id: components["schemas"]["DeviceId"];
+    };
   };
   responses: never;
   parameters: never;
@@ -370,8 +448,67 @@ export type Screen = components["schemas"]["Screen"];
 export type Spotify = components["schemas"]["Spotify"];
 export type Tfl = components["schemas"]["Tfl"];
 export type Weather = components["schemas"]["Weather"];
+export type DeviceType = components["schemas"]["DeviceType"];
+export type Touchscreen = components["schemas"]["Touchscreen"];
+export type DeviceRegistration = components["schemas"]["DeviceRegistration"];
+export type DeviceRegistered = components["schemas"]["DeviceRegistered"];
 export type $defs = Record<string, never>;
+export interface operations {
+  registerDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeviceRegistration"];
+      };
+    };
+    responses: {
+      /** @description A device already registered with that secret. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceRegistered"];
+        };
+      };
+      /** @description A new device. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceRegistered"];
+        };
+      };
+      /** @description A registration the schema doesn't allow. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too many registrations from this IP; try again after Retry-After. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too many devices waiting to be paired; try again after Retry-After. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+}
 type WithRequired<T, K extends keyof T> = T & {
   [P in K]-?: T[P];
 };
-export type operations = Record<string, never>;

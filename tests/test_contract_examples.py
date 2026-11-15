@@ -15,6 +15,7 @@ from countdown_api import fixtures, keys, models, scripts
 
 CONFIG = fixtures.load("config_store.json")
 PAIRING = fixtures.load("pairing_key.json")
+DEFS_TOUCHSCREEN = contract()["$defs"]["Touchscreen"]
 
 
 def test_config_store_is_a_config_under_its_key() -> None:
@@ -169,3 +170,59 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
             assert stop["id"] in sets[keys.subscription(stop["source"])]
         for source, section in ((keys.SPOTIFY, "spotify"), (keys.DEVELOPER, "developer"), (keys.PARCEL, "parcels")):
             assert (value["device_id"] in sets[keys.subscription(source)]) == value[section]["enabled"]
+
+
+TOUCHSCREEN = fixtures.load("touchscreen.json")
+
+
+def test_touchscreen_registers_on_the_screens_route_and_has_a_config() -> None:
+    device_id = TOUCHSCREEN["device_id"]
+    check_schema("DeviceId", device_id)
+    assert check("DeviceRegistration", TOUCHSCREEN["registration"]).type == "touchscreen"
+    # An e-paper screen registers on the same route, with its frame format as well as its size, and no type.
+    assert check("DeviceRegistration", TOUCHSCREEN["epaper_registration"]).type is None
+    assert check("DeviceRegistered", TOUCHSCREEN["registered"]).device_id == device_id
+    # Unpaired, its config is the pairing value, as an e-paper screen's: with the code, and its block's defaults.
+    pairing = check("PairingConfig", TOUCHSCREEN["pairing"])
+    assert pairing.type == "touchscreen"
+    assert pairing.pairing_code == "ABC234"
+    defaults = {name: field["default"] for name, field in DEFS_TOUCHSCREEN["properties"].items()}
+    assert TOUCHSCREEN["pairing"]["touchscreen"] == defaults
+    # Paired, its config, saved whole, as an e-paper screen's is, with its touchscreen block.
+    config = check("ConfigResponse", TOUCHSCREEN["config"])
+    assert config.device_id == device_id
+    assert config.pairing_code is None
+    assert config.touchscreen == check("Touchscreen", TOUCHSCREEN["config"]["touchscreen"])
+
+
+def test_only_a_touchscreen_has_a_touchscreen_block() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    # An e-paper screen's config, as every broker sends it, is an e-paper's, with no block.
+    assert check("ConfigResponse", CONFIG["value"]).type == "epaper"
+    touchscreen = TOUCHSCREEN["config"]
+    wrong = (
+        {key: value for key, value in touchscreen.items() if key != "touchscreen"},
+        {**touchscreen, "touchscreen": None},
+        {**CONFIG["value"], "touchscreen": touchscreen["touchscreen"]},
+        {**touchscreen, "type": "epaper"},
+    )
+    for config in wrong:
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("ConfigResponse", config)
+
+
+def test_touchscreen_settings_and_registrations_take_only_whats_allowed() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    settings = TOUCHSCREEN["config"]["touchscreen"]
+    for wrong in ({**settings, "screen_sleep_minutes": 10}, {**settings, "theme": "dusk"}, {**settings, "extra": 1}):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("Touchscreen", wrong)
+    epaper = TOUCHSCREEN["epaper_registration"]
+    for wrong in (
+        {"secret": "too-short", "type": "touchscreen"},
+        {key: value for key, value in epaper.items() if key != "format"},
+        {key: value for key, value in TOUCHSCREEN["registration"].items() if key != "height"},
+        {**TOUCHSCREEN["registration"], "format": "png"},
+    ):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("DeviceRegistration", wrong)

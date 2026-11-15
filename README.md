@@ -5,7 +5,11 @@ pool) don't talk to each other over HTTP: they share a Redis, and that is all th
 contract for it: every key and channel that crosses between them, what each holds, its TTL, who writes it and who reads
 it, the Lua script they run, and the canonical examples every consumer's tests check against. It is one file,
 [`store.yaml`](store.yaml), and the model code generated from it for Python (the `countdown_api` package, Pydantic
-models) and TypeScript (`store.d.ts`). (The repository keeps its old name; the HTTP API it was named for is gone.)
+models) and TypeScript (`store.d.ts`).
+
+It also has the broker's HTTP route for registering a device (see [The devices' routes](#the-devices-routes)). A device is an e-paper screen (`epaper`) or a
+touchscreen (`touchscreen`), its config's `type`; a
+touchscreen's own settings are its config's `touchscreen` block, which only a touchscreen has.
 
 ## What's in the contract
 
@@ -37,6 +41,17 @@ the renderers, the render lease) aren't here: they are that side's own.
 The enqueue script, [`lua/enqueue.lua`](lua/enqueue.lua), is the one way anything queues a render: `SET` the queued
 flag `NX` with its TTL, and only if that set it, `LPUSH` the device id. Every consumer runs it from here, byte for byte, so
 its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
+
+### The devices' routes
+
+| route | takes | answers | what it is |
+| --- | --- | --- | --- |
+| `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
+
+A device's config, its touchscreen block included, is saved whole and read on the routes it is today. The route is an
+OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types it as well as its schemas
+(`paths["/api/devices/register"]["post"]`, `operations["registerDevice"]`), and the reference lists it.
+`touchscreen.json` is its example.
 
 ## The package
 

@@ -1,5 +1,6 @@
 # The countdown store contract: every Redis key, value and script that crosses the boundary between the broker
-# and the renderers. Edit this file (and lua/), then run `python generate.py`; see the README.
+# and the renderers, and the broker's HTTP routes for its devices' config. Edit this file (and lua/), then run
+# `python generate.py`; see the README.
 # `info.version` is a placeholder: this project isn't released on its own.
 info:
   title: countdown store contract
@@ -274,6 +275,48 @@ scripts:
       Queue a render of a screen unless one is queued already: SET the queued flag NX with its TTL (to Redis's clock,
       in Unix ms), and only if that set it, LPUSH the device id onto the jobs. So a screen is in the queue at most once
       however many ask.
+
+# The broker's HTTP routes for its devices: registering one, an e-paper screen or a touchscreen. A device's config,
+# its touchscreen block included, is saved whole and read on the routes it is today, so isn't here. An
+# OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the schemas, so store.d.ts types each route
+# (`paths`, `operations`), and to the reference. A `$ref` is to the `$defs` below. Each operation's `x-examples` names
+# its files in src/countdown_api/fixtures, as a key's `examples` do.
+paths:
+  /api/devices/register:
+    post:
+      operationId: registerDevice
+      summary: Give a device its identity.
+      description: >-
+        The secret the device generated and keeps becomes a device of its type at once (201); only its hash is
+        stored, and identifies the device. A repeat, e.g. on every boot, is a 200 and changes nothing. Throttled per
+        IP, as anyone can call it (429 with Retry-After), and refused (503 with Retry-After) while too many devices
+        wait to be paired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/$defs/DeviceRegistration'
+      responses:
+        '200':
+          description: A device already registered with that secret.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceRegistered'
+        '201':
+          description: A new device.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceRegistered'
+        '400':
+          description: A registration the schema doesn't allow.
+        '429':
+          description: Too many registrations from this IP; try again after Retry-After.
+        '503':
+          description: Too many devices waiting to be paired; try again after Retry-After.
+      x-examples: [touchscreen.json]
 
 # The schemas, JSON Schema 2020-12. openapi-codegen turns them into the Pydantic models of countdown_api.models.
 $defs:
@@ -583,11 +626,43 @@ $defs:
       text's slug. weather_keys.json has examples.
   ConfigResponse:
     description: >-
-      A screen's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code
-      set, of v1:pairing:<device id> (PairingConfig).
+      A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code
+      set, of v1:pairing:<device id> (PairingConfig). A touchscreen (type
+      touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
+    if:
+      properties:
+        type:
+          const: touchscreen
+      required:
+      - type
+    then:
+      properties:
+        touchscreen:
+          $ref: '#/$defs/Touchscreen'
+      required:
+      - touchscreen
+    else:
+      properties:
+        touchscreen:
+          type: 'null'
     properties:
       device_id:
         type: string
+      type:
+        enum:
+        - epaper
+        - touchscreen
+        default: epaper
+        type: string
+        description: >-
+          What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The render pool draws
+          only e-paper screens' frames (v1:render:screens lists no touchscreen).
+      touchscreen:
+        anyOf:
+        - $ref: '#/$defs/Touchscreen'
+        - type: 'null'
+        default: null
+        description: A touchscreen's own settings, set for every touchscreen and for nothing else.
       interval:
         type: integer
         exclusiveMinimum: 0
@@ -935,3 +1010,114 @@ $defs:
     - location
     title: Weather
     type: object
+  DeviceType:
+    enum:
+    - epaper
+    - touchscreen
+    type: string
+    description: >-
+      What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a
+      touchscreen, which draws itself from its config.
+  Touchscreen:
+    description: >-
+      A touchscreen's own settings, as its settings panel shows them, each set (to its default if unchosen). The
+      settings it shares with an e-paper screen (clock_format, language, timezone) are the config's own.
+    type: object
+    additionalProperties: false
+    properties:
+      theme:
+        enum:
+        - day
+        - auto
+        - night
+        default: day
+        type: string
+        description: >-
+          The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a
+          touchscreen that doesn't know its location shows day.
+      theme_colour:
+        enum:
+        - forest
+        - navy
+        - teal
+        - plum
+        - terracotta
+        - pink
+        - yellow
+        - black
+        - dynamic
+        default: forest
+        type: string
+        description: >-
+          The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing,
+          and looks like forest without any.
+      screen_sleep_minutes:
+        enum:
+        - 0
+        - 2
+        - 5
+        - 15
+        - 30
+        default: 5
+        type: integer
+        description: >-
+          Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk
+          sleeps its screen: a touchscreen in a browser keeps the setting but ignores it.
+    required:
+    - theme
+    - theme_colour
+    - screen_sleep_minutes
+  DeviceRegistration:
+    description: >-
+      What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it
+      takes its frame in (its config's screen), while a touchscreen draws itself, so says no format.
+    type: object
+    if:
+      properties:
+        type:
+          const: touchscreen
+      required:
+      - type
+    then:
+      not:
+        required: [format]
+    else:
+      required:
+      - format
+    properties:
+      secret:
+        type: string
+        minLength: 16
+        description: >-
+          A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>.
+          Never logged; the broker keeps only its hash.
+      type:
+        $ref: '#/$defs/DeviceType'
+        description: Optional, so a screen that doesn't send it registers as epaper.
+      width:
+        type: integer
+        exclusiveMinimum: 0
+        description: The device's screen width, in pixels.
+      height:
+        type: integer
+        exclusiveMinimum: 0
+        description: The device's screen height, in pixels.
+      format:
+        enum:
+        - mono-1bpp-packed
+        - png
+        type: string
+        description: The format an e-paper screen takes its frame in, as its config's screen.format.
+    required:
+    - secret
+    - width
+    - height
+  DeviceRegistered:
+    description: What POST /api/devices/register answers.
+    type: object
+    additionalProperties: false
+    properties:
+      device_id:
+        $ref: '#/$defs/DeviceId'
+    required:
+    - device_id
