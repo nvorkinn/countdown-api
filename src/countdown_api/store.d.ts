@@ -26,6 +26,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/config": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's config.
+     * @description What a touchscreen polls: its config, as v1:config:<device id> holds it, with its touchscreen block. While no one has paired it, it's the pairing value instead (PairingConfig: the config with the code to show, which the broker issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The config is changed only on the settings site, and saved whole.
+     */
+    get: operations["getConfig"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -166,7 +186,7 @@ export interface components {
     WeatherKey: string;
     /**
      * ConfigResponse
-     * @description A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig). A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
+     * @description A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
      */
     ConfigResponse: {
       device_id: string;
@@ -501,6 +521,33 @@ export interface operations {
       };
       /** @description Too many devices waiting to be paired; try again after Retry-After. */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The config, with `pairing_code` set while the device is to show one. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConfigResponse"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
         headers: {
           [name: string]: unknown;
         };
