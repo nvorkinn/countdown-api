@@ -35,7 +35,7 @@ export interface paths {
     };
     /**
      * The device's config.
-     * @description The device's config, as v1:config:<device id> holds it (ConfigResponse); while no one has paired it, the pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The server is the one source of truth for it; the device keeps a copy of the last one it got for when the server can't be reached.
+     * @description The device's config, as v1:config:<device id> holds it (ConfigResponse); for an e-paper screen no one has paired, the pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server issues afresh as each expires), as the render pool gets for its pairing screen. A touchscreen is paired by token and never has a code. The server is the one source of truth for it; the device keeps a copy of the last one it got for when the server can't be reached.
      */
     get: operations["getConfig"];
     /**
@@ -335,9 +335,9 @@ export interface components {
        */
       return_to?: string;
     };
-    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and the settings every panel shares), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
+    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board, its look and its screen's sleep; an e-paper screen's also has its language, time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
     ConfigResponse: components["schemas"]["EpaperConfig"] | components["schemas"]["TouchscreenConfig"];
-    /** @description What every device's config has (ConfigResponse), whatever its type: the flat fields and the shared sections. */
+    /** @description What every device's config has (ConfigResponse), whatever its type: who and what the device is, its size, its clock format, and the panels both types show (arrivals, weather and the notice board). */
     ConfigBase: {
       readonly device_id: components["schemas"]["DeviceId"];
       readonly type: components["schemas"]["DeviceType"];
@@ -345,15 +345,23 @@ export interface components {
       readonly width: number;
       /** @description The device's screen height in pixels, as it reported at registration. */
       readonly height: number;
-      /** @description The code to show while no one has paired the device: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L. Only v1:pairing:<device id> has one; null in v1:config:<device id>, and once it's paired. */
-      readonly pairing_code: string | null;
-      /** @description Seconds between updates. */
-      interval: number;
       /**
        * @description Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time zones or log formats.
        * @enum {string}
        */
       clock_format: "12h" | "24h";
+      arrivals: components["schemas"]["Arrivals"];
+      weather: components["schemas"]["Weather"];
+      notice_board: components["schemas"]["NoticeBoard"];
+    };
+    /** @description An e-paper screen's config (ConfigResponse with type epaper), which the render pool draws its frames from. */
+    EpaperConfig: {
+      /** @constant */
+      readonly type: "epaper";
+      /** @description The code to show while no one has paired the device: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L. Only v1:pairing:<device id> has one; null in v1:config:<device id>, and once it's paired. */
+      readonly pairing_code: string | null;
+      /** @description Seconds between updates. */
+      interval: number;
       /**
        * @description The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål).
        * @enum {string}
@@ -361,25 +369,17 @@ export interface components {
       language: "en" | "nb";
       /** @description The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. */
       timezone: string;
-      arrivals: components["schemas"]["Arrivals"];
-      weather: components["schemas"]["Weather"];
-      notice_board: components["schemas"]["NoticeBoard"];
-      spotify: components["schemas"]["Spotify"];
-      apple_music: components["schemas"]["AppleMusic"];
-      glowmarkt: components["schemas"]["Glowmarkt"];
-      developer: components["schemas"]["Developer"];
-      parcels: components["schemas"]["Parcels"];
-    };
-    /** @description An e-paper screen's config (ConfigResponse with type epaper), which the render pool draws its frames from. */
-    EpaperConfig: {
-      /** @constant */
-      readonly type: "epaper";
       /**
        * @description The format the screen takes its frame in, as it reported at registration (FrameRecord's frame for mono-1bpp-packed).
        * @enum {string}
        */
       readonly format: "mono-1bpp-packed" | "png";
       style: components["schemas"]["EpaperStyle"];
+      spotify: components["schemas"]["Spotify"];
+      apple_music: components["schemas"]["AppleMusic"];
+      glowmarkt: components["schemas"]["Glowmarkt"];
+      developer: components["schemas"]["Developer"];
+      parcels: components["schemas"]["Parcels"];
     } & (WithRequired<components["schemas"]["ConfigBase"], "type"> & {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -407,7 +407,7 @@ export interface components {
       /** @description Which layout the screen is drawn in, or null for its size's default. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. */
       layout: components["schemas"]["Layout"] | null;
     };
-    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings panel. */
+    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is English only and paired by token, so it has no language and no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections. Its Wi-Fi stays on the device, never here. */
     TouchscreenConfig: {
       /** @constant */
       readonly type: "touchscreen";
@@ -423,12 +423,12 @@ export interface components {
     /** @description How a touchscreen looks. */
     TouchscreenStyle: {
       /**
-       * @description day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen that doesn't know its location shows as day.
+       * @description The touchscreen's theme.
        * @enum {string}
        */
-      skin: "day" | "auto" | "night";
+      theme: "day" | "autumn" | "night";
       /**
-       * @description The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any.
+       * @description The theme's colour. dynamic follows the album art of the song playing, and looks like forest when nothing is playing.
        * @enum {string}
        */
       colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "dynamic";
@@ -595,7 +595,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The config, with `pairing_code` set while the device is to show one. */
+      /** @description The config, with an e-paper screen's `pairing_code` set while it is to show one. */
       200: {
         headers: {
           [name: string]: unknown;

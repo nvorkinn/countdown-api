@@ -47,7 +47,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
-| `GET /api/devices/config` | | `ConfigResponse` | the device's config: the pairing value (`pairing_code` set) until it's paired |
+| `GET /api/devices/config` | | `ConfigResponse` | the device's config: for an e-paper screen, the pairing value (`pairing_code` set) until it's paired |
 | `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
@@ -64,20 +64,23 @@ its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), 
 `ConfigResponse` is a device's config as a few flat fields and a section per panel, each section its own schema
 (`config.weather.location`, not `config.weather_location`):
 
-- flat: `device_id`, `type`, `width`, `height` and `pairing_code`, all read-only (`readOnly: true`: the server's, or
-  what the device said at registration), then `interval`, `clock_format`, `language` and `timezone`;
-- every type's sections: `arrivals`, `weather`, `notice_board`, `spotify`, `apple_music`, `glowmarkt`, `developer`
-  and `parcels`;
+- every type's flat fields: `device_id`, `type`, `width` and `height`, all read-only (`readOnly: true`: the server's,
+  or what the device said at registration), then `clock_format`;
+- every type's sections: `arrivals`, `weather` and `notice_board`;
 - `style`, on every type, but its type's own schema: an e-paper screen's (`EpaperStyle`: orientation, drawing style,
-  weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour). An e-paper screen also has its
-  read-only frame `format`, a touchscreen its `display` (when its screen sleeps).
+  weather design, layout) or a touchscreen's (`TouchscreenStyle`: theme and colour);
+- an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval`, `language` and `timezone`,
+  and the sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
+- a touchscreen's own: `display` (when its screen sleeps). That is all of it: a touchscreen is English only, keeps its
+  own time, plays music itself and has no other integrations. Every setting a device has lives here on the server,
+  but for its Wi-Fi, which stays on the device.
 
 It's a `oneOf` of `EpaperConfig` and `TouchscreenConfig` with a `discriminator` on `type`, so both languages get a
 tagged union: `models.ConfigResponse` is a Pydantic discriminated union (read it with `TypeAdapter(ConfigResponse)`),
 and `ConfigResponse` in `store.d.ts` a union narrowed by `type`. It never has a secret: logins and keys (Spotify's link
-among them) are the owner's account's, held on the server. It's the value of `v1:config:<device id>` (and, with
-`pairing_code` set, of `v1:pairing:<device id>`) as well as what the routes answer, so the render pool and a device
-read the same config.
+among them) are the owner's account's, held on the server. It's the value of `v1:config:<device id>` (and, with an
+e-paper screen's `pairing_code` set, of `v1:pairing:<device id>`) as well as what the routes answer, so the render pool
+and a device read the same config.
 
 ## The package
 

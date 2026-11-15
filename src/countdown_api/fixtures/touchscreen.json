@@ -1,5 +1,5 @@
 {
-  "about": "A touchscreen: what it registers with (beside an e-paper screen's registration, the same route) and is answered, what GET /api/devices/config answers before it is paired (the pairing value: its config with the code to show and its style's and display's defaults) and after, and what it saves with PUT /api/devices/config from its own settings panel (`save`: the whole config as it got it, its skin and sleep changed, read-only fields and all), and what GET /api/devices/spotify/token answers it once paired (`spotify_token`: an access token for its owner's Spotify). It can register through the login instead, at the settings site's /register (`register`: the query it opens, with its secret's hash, and `registered_return` and `taken_return`, where the page sends it back to). The touchscreen's tests check its client against these, and the broker's tests its routes. An e-paper screen's config is config_store.json's. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "about": "A touchscreen: what it registers with (beside an e-paper screen's registration, the same route) and is answered, what GET /api/devices/config answers (a touchscreen is paired by token, so never has a pairing code), and what it saves with PUT /api/devices/config from its own settings panel (`save`: the whole config as it got it, its theme and sleep changed, read-only fields and all), and what GET /api/devices/spotify/token answers it once paired (`spotify_token`: an access token for its owner's Spotify). It can register through the login instead, at the settings site's /register (`register`: the query it opens, with its secret's hash, and `registered_return` and `taken_return`, where the page sends it back to). The touchscreen's tests check its client against these, and the broker's tests its routes. An e-paper screen's config is config_store.json's. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
   "device_id": "0a1b2c3d4e5f",
   "registration": {
     "secret": "example-not-a-real-secret-0001",
@@ -16,60 +16,12 @@
   "registered": {
     "device_id": "0a1b2c3d4e5f"
   },
-  "pairing": {
-    "device_id": "0a1b2c3d4e5f",
-    "type": "touchscreen",
-    "width": 1280,
-    "height": 800,
-    "pairing_code": "ABC234",
-    "interval": 60,
-    "clock_format": "24h",
-    "language": "en",
-    "timezone": "Europe/London",
-    "arrivals": {
-      "stops": []
-    },
-    "weather": {
-      "location": "London",
-      "key": "london-gb-2643743"
-    },
-    "notice_board": {
-      "postcode": null,
-      "country": null
-    },
-    "spotify": {
-      "enabled": false
-    },
-    "apple_music": {
-      "enabled": false
-    },
-    "glowmarkt": {
-      "enabled": false
-    },
-    "developer": {
-      "enabled": false
-    },
-    "parcels": {
-      "enabled": false
-    },
-    "style": {
-      "skin": "day",
-      "colour": "forest"
-    },
-    "display": {
-      "sleep_minutes": 5
-    }
-  },
   "config": {
     "device_id": "0a1b2c3d4e5f",
     "type": "touchscreen",
     "width": 1280,
     "height": 800,
-    "pairing_code": null,
-    "interval": 60,
     "clock_format": "24h",
-    "language": "nb",
-    "timezone": "Europe/Oslo",
     "arrivals": {
       "stops": [
         {
@@ -86,23 +38,8 @@
       "postcode": "0150",
       "country": "NO"
     },
-    "spotify": {
-      "enabled": true
-    },
-    "apple_music": {
-      "enabled": false
-    },
-    "glowmarkt": {
-      "enabled": false
-    },
-    "developer": {
-      "enabled": false
-    },
-    "parcels": {
-      "enabled": false
-    },
     "style": {
-      "skin": "auto",
+      "theme": "autumn",
       "colour": "dynamic"
     },
     "display": {
@@ -114,11 +51,7 @@
     "type": "touchscreen",
     "width": 1280,
     "height": 800,
-    "pairing_code": null,
-    "interval": 60,
     "clock_format": "24h",
-    "language": "nb",
-    "timezone": "Europe/Oslo",
     "arrivals": {
       "stops": [
         {
@@ -135,23 +68,8 @@
       "postcode": "0150",
       "country": "NO"
     },
-    "spotify": {
-      "enabled": true
-    },
-    "apple_music": {
-      "enabled": false
-    },
-    "glowmarkt": {
-      "enabled": false
-    },
-    "developer": {
-      "enabled": false
-    },
-    "parcels": {
-      "enabled": false
-    },
     "style": {
-      "skin": "night",
+      "theme": "night",
       "colour": "dynamic"
     },
     "display": {
