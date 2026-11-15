@@ -296,85 +296,6 @@
         },
         "x-examples": ["touchscreen.json"]
       }
-    },
-    "/api/config": {
-      "get": {
-        "operationId": "getConfig",
-        "summary": "The device's config.",
-        "description": "What a touchscreen polls: its config, as v1:config:<device id> holds it, with its touchscreen block. While no one has paired it, it's the pairing value instead (PairingConfig: the config with the code to show, which the broker issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen.",
-        "security": [
-          {
-            "deviceSecret": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The config, with `pairing_code` set while the device is to show one.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/$defs/ConfigResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "A missing or unknown secret."
-          }
-        },
-        "x-examples": ["touchscreen.json"]
-      }
-    },
-    "/api/config/touchscreen": {
-      "put": {
-        "operationId": "putTouchscreenConfig",
-        "summary": "Save a touchscreen's own settings.",
-        "description": "Its touchscreen block, all of it, as the touchscreen's settings panel has it after a change; answered with what was saved. A touchscreen saves whether or not it's paired, so nothing chosen before pairing is lost. The rest of its config is changed on the settings site, as an e-paper screen's is.",
-        "security": [
-          {
-            "deviceSecret": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/$defs/Touchscreen"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The touchscreen block as saved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/$defs/Touchscreen"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Settings the schema doesn't allow."
-          },
-          "401": {
-            "description": "A missing or unknown secret."
-          },
-          "409": {
-            "description": "The device isn't a touchscreen (it's an e-paper screen)."
-          }
-        },
-        "x-examples": ["touchscreen.json"]
-      }
-    }
-  },
-  "securitySchemes": {
-    "deviceSecret": {
-      "type": "http",
-      "scheme": "bearer",
-      "description": "The secret the device registered with (DeviceRegistration), as Authorization: Bearer <secret>."
     }
   },
   "$defs": {
@@ -728,7 +649,7 @@
       "description": "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed location, that text's slug. weather_keys.json has examples."
     },
     "ConfigResponse": {
-      "description": "A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.",
+      "description": "A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig). A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.",
       "if": {
         "properties": {
           "type": {

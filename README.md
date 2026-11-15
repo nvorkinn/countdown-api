@@ -7,8 +7,7 @@ it, the Lua script they run, and the canonical examples every consumer's tests c
 [`store.yaml`](store.yaml), and the model code generated from it for Python (the `countdown_api` package, Pydantic
 models) and TypeScript (`store.d.ts`).
 
-It also has the broker's three HTTP routes for its devices' config (see [The devices' routes](#the-devices-routes)):
-registering a device, and reading and saving a touchscreen's config. A device is an e-paper screen (`epaper`) or a
+It also has the broker's HTTP route for registering a device (see [The devices' routes](#the-devices-routes)). A device is an e-paper screen (`epaper`) or a
 touchscreen (`touchscreen`), its config's `type`; a
 touchscreen's own settings are its config's `touchscreen` block, which only a touchscreen has.
 
@@ -48,13 +47,11 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
-| `GET /api/config` | | `ConfigResponse` | a touchscreen's config: the pairing value (`pairing_code` set) until it's paired |
-| `PUT /api/config/touchscreen` | `Touchscreen` | `Touchscreen` | its settings panel's choices, all at once (409 for an e-paper screen) |
 
-The last two take the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`). They're an
-OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as its schemas
-(`paths["/api/config"]["get"]`, `operations["getConfig"]`), and the reference lists them. `touchscreen.json` is their
-example.
+A device's config, its touchscreen block included, is saved whole and read on the routes it is today. The route is an
+OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types it as well as its schemas
+(`paths["/api/devices/register"]["post"]`, `operations["registerDevice"]`), and the reference lists it.
+`touchscreen.json` is its example.
 
 ## The package
 

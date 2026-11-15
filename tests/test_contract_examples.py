@@ -175,7 +175,7 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
 TOUCHSCREEN = fixtures.load("touchscreen.json")
 
 
-def test_touchscreen_registers_on_the_screens_route_and_reads_its_config() -> None:
+def test_touchscreen_registers_on_the_screens_route_and_has_a_config() -> None:
     device_id = TOUCHSCREEN["device_id"]
     check_schema("DeviceId", device_id)
     assert check("DeviceRegistration", TOUCHSCREEN["registration"]).type == "touchscreen"
@@ -188,12 +188,11 @@ def test_touchscreen_registers_on_the_screens_route_and_reads_its_config() -> No
     assert pairing.pairing_code == "ABC234"
     defaults = {name: field["default"] for name, field in DEFS_TOUCHSCREEN["properties"].items()}
     assert TOUCHSCREEN["pairing"]["touchscreen"] == defaults
-    # What PUT /api/config/touchscreen takes and answers, and then what GET /api/config answers, paired.
-    saved = check("Touchscreen", TOUCHSCREEN["touchscreen"])
+    # Paired, its config, saved whole, as an e-paper screen's is, with its touchscreen block.
     config = check("ConfigResponse", TOUCHSCREEN["config"])
     assert config.device_id == device_id
     assert config.pairing_code is None
-    assert config.touchscreen == saved
+    assert config.touchscreen == check("Touchscreen", TOUCHSCREEN["config"]["touchscreen"])
 
 
 def test_only_a_touchscreen_has_a_touchscreen_block() -> None:
@@ -214,7 +213,7 @@ def test_only_a_touchscreen_has_a_touchscreen_block() -> None:
 
 def test_touchscreen_settings_and_registrations_take_only_whats_allowed() -> None:
     jsonschema = pytest.importorskip("jsonschema")
-    settings = TOUCHSCREEN["touchscreen"]
+    settings = TOUCHSCREEN["config"]["touchscreen"]
     for wrong in ({**settings, "screen_sleep_minutes": 10}, {**settings, "theme": "dusk"}, {**settings, "extra": 1}):
         with pytest.raises(jsonschema.ValidationError):
             check_schema("Touchscreen", wrong)
