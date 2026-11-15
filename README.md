@@ -50,8 +50,10 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/config` | | `ConfigResponse` | the device's config: the pairing value (`pairing_code` set) until it's paired |
 | `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
+| `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 
-All but the registration take the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`).
+All but the registrations take the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`);
+`/register` takes the person's login instead, on the settings site rather than the devices' API.
 The routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as
 its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), and the reference lists them.
 `touchscreen.json` and `config_store.json` are their examples.
