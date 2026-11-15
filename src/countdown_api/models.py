@@ -45,8 +45,6 @@ class DepartureStop(BaseModel):
 class Arrivals(BaseModel):
     """The arrivals panel (bus, train and tram stops)."""
 
-    model_config = ConfigDict(extra="forbid")
-
     stops: list[DepartureStop] = Field(
         description="Every stop whose departures the device shows, from any source, in the owner's order.",
     )
@@ -87,8 +85,6 @@ class Glowmarkt(BaseModel):
 class NoticeBoard(BaseModel):
     """The notice board, of notices about the device's place."""
 
-    model_config = ConfigDict(extra="forbid")
-
     postcode: str | None = Field(description="The place's postcode, or null for no local notices.")
     country: Literal["GB", "NO"] | None = Field(
         description="The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.",
@@ -109,8 +105,6 @@ class Parcels(BaseModel):
 class Spotify(BaseModel):
     """The Spotify area."""
 
-    model_config = ConfigDict(extra="forbid")
-
     enabled: bool = Field(
         description=(
             "Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills "
@@ -128,8 +122,6 @@ typed location, that text's slug. weather_keys.json has examples.
 
 class Weather(BaseModel):
     """The weather panel."""
-
-    model_config = ConfigDict(extra="forbid")
 
     location: str = Field(description="The place as the owner named it.")
     key: WeatherKey | None = Field(
@@ -246,8 +238,6 @@ Layout = Literal[
 
 class EpaperStyle(BaseModel):
     """How an e-paper screen is drawn."""
-
-    model_config = ConfigDict(extra="forbid")
 
     orientation: Literal["horizontal", "vertical"] = Field(description="How the screen hangs; vertical is portrait.")
     drawing: Literal["airy", "hero", "card"] = Field(
@@ -519,8 +509,6 @@ Subscription = list[Annotated[str, Field(min_length=1)]]
 class TouchscreenDisplay(BaseModel):
     """A touchscreen's screen itself."""
 
-    model_config = ConfigDict(extra="forbid")
-
     sleep_minutes: Literal[0, 2, 5, 15, 30] = Field(
         description=(
             "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk "
@@ -531,8 +519,6 @@ class TouchscreenDisplay(BaseModel):
 
 class TouchscreenStyle(BaseModel):
     """How a touchscreen looks."""
-
-    model_config = ConfigDict(extra="forbid")
 
     skin: Literal["day", "auto", "night"] = Field(
         description=(

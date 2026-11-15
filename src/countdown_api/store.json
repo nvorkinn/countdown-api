@@ -997,7 +997,6 @@
     "EpaperStyle": {
       "description": "How an e-paper screen is drawn.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "orientation": {
           "enum": ["horizontal", "vertical"],
@@ -1053,7 +1052,6 @@
     "TouchscreenStyle": {
       "description": "How a touchscreen looks.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "skin": {
           "enum": ["day", "auto", "night"],
@@ -1071,7 +1069,6 @@
     "TouchscreenDisplay": {
       "description": "A touchscreen's screen itself.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "sleep_minutes": {
           "enum": [0, 2, 5, 15, 30],
@@ -1084,7 +1081,6 @@
     "Arrivals": {
       "description": "The arrivals panel (bus, train and tram stops).",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "stops": {
           "type": "array",
@@ -1099,7 +1095,6 @@
     "Weather": {
       "description": "The weather panel.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "location": {
           "type": "string",
@@ -1122,7 +1117,6 @@
     "NoticeBoard": {
       "description": "The notice board, of notices about the device's place.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "postcode": {
           "anyOf": [
@@ -1153,7 +1147,6 @@
     "Spotify": {
       "description": "The Spotify area.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "enabled": {
           "type": "boolean",
