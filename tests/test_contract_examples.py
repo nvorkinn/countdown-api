@@ -200,6 +200,16 @@ def test_touchscreen_registers_on_the_screens_route_and_reads_and_saves_its_conf
     assert (saved.style, saved.display) != (config.style, config.display)
 
 
+def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
+    token = check("SpotifyAccessToken", TOUCHSCREEN["spotify_token"])
+
+    assert token.token_type == "Bearer"  # noqa: S105 -- the scheme's name, not a password
+    assert token.expires_in > 0
+    # What its Web Playback SDK needs: without streaming the SDK can't play.
+    assert {"streaming", "user-modify-playback-state", "user-read-playback-state"} <= set(token.scope.split())
+    assert "refresh_token" not in TOUCHSCREEN["spotify_token"]
+
+
 def test_a_config_takes_only_its_types_style() -> None:
     jsonschema = pytest.importorskip("jsonschema")
     epaper, touchscreen = CONFIG["value"], TOUCHSCREEN["config"]
