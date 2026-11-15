@@ -35,14 +35,74 @@ export interface paths {
     };
     /**
      * The device's config.
-     * @description The device's config, as v1:config:<device id> holds it (ConfigResponse); while no one has paired it, the pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The server is the one source of truth for it; the device keeps a copy of the last one it got for when the server can't be reached.
+     * @description The device's config, as v1:config:<device id> holds it (ConfigResponse); while no one has paired it, the pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The server is the one source of truth for it; the device keeps a copy of the last one it got for when the server can't be reached. Its version comes as the ETag, which a save sends back as If-Match; with If-None-Match of the version the caller has, it's a 304 while that is still the config. The settings site (APP_HOST) reads it too, with the person's login instead of a secret, for the device its `device_id` names.
      */
     get: operations["getConfig"];
     /**
      * Save the device's config, whole.
-     * @description What a device with a settings panel of its own (a touchscreen) saves when its owner changes something there: the whole config, as it got it with the change made. The read-only fields (readOnly) are the server's or the device's registration's and can't be changed here: they're sent as they came, and anything else is a 400. Answers the config as saved, as GET does.
+     * @description What a device with a settings panel of its own (a touchscreen) saves when its owner changes something there: the whole config, as it got it with the change made. The read-only fields (readOnly) are the server's or the device's registration's and can't be changed here: they're sent as they came, and anything else is a 400. Answers the config as saved, as GET does. With If-Match, saved only while the config is still that version. A section at a time is putConfigSection, which the settings site uses too.
      */
     put: operations["putConfig"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/config/{section}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Save one section of the device's config, whole.
+     * @description Replaces one section of the config (ConfigSection) with the one sent, whole: there's no saving a field on its own. The server puts it into the config as it stands, checks the result against the device type's schema (EpaperConfig or TouchscreenConfig), saves it, and answers the whole config as saved, with its new version. If-Match is required, the ETag of the config the change was made to: when someone has saved since, it's a 409 and nothing is saved, so read the config again (getConfig) rather than overwrite theirs. What the server works out itself is answered as it works it out, whatever was sent: the notice board's `country` (from the postcode, which it writes in its usual form) and the weather's `location` (the name of the place whose key is sent). A weather `key` is one a place search answered (searchPlaces' `value`), or the one saved; null, with an empty `location`, clears the place. A service's `enabled` is saved as sent, but answered as on only while the owner's account has the login or key it needs. A device saves its own config only if it's a paired touchscreen; on the settings site, with the person's login instead of the secret, any device of theirs, named by `device_id`.
+     */
+    put: operations["putConfigSection"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/stops/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search for stations and stops to show departures from.
+     * @description London's (TfL) and Norway's (Entur) stops matching the text, asked at once: Norway's first when the text has æ, ø or å, London's first otherwise. A Norwegian station is followed by its platforms (or stop poles), indented under it. Each result's `value` is the stop as the config's arrivals has it, to add to `arrivals.stops`. On the settings site (APP_HOST) it takes the person's login instead of a secret.
+     */
+    get: operations["searchStops"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/places/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search for a town or city for the weather.
+     * @description The places Open-Meteo's geocoding finds for the name, best first (the first is the one the weather would find for that name too). Each result's `value` is the config's weather section for that place, to save whole as `weather`. On the settings site (APP_HOST) it takes the person's login instead of a secret.
+     */
+    get: operations["searchPlaces"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -247,6 +307,63 @@ export interface components {
     Pace: string;
     /** @description A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed location, that text's slug. weather_keys.json has examples. */
     WeatherKey: string;
+    /** @description A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and only then. getConfig answers it, and a save sends it back as If-Match. */
+    ConfigVersion: string;
+    /**
+     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: `display` is a touchscreen's.
+     * @enum {string}
+     */
+    ConfigSection:
+      | "clock_format"
+      | "language"
+      | "arrivals"
+      | "weather"
+      | "notice_board"
+      | "spotify"
+      | "apple_music"
+      | "glowmarkt"
+      | "developer"
+      | "parcels"
+      | "style"
+      | "display";
+    /** @description One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape). */
+    SearchResult: {
+      /** @description The result's id at its source, as text. */
+      id: string;
+      /** @description Its name, the main line. */
+      name: string;
+      /** @description The line under it, e.g. what stops there or the place's region and country. */
+      subtitle: string;
+      /** @description Whether it belongs to the result before it (a platform of a station), shown indented under it. */
+      indent: boolean;
+    };
+    /** @description A station or stop that searchStops found (SearchResult). */
+    StopSearchResult: {
+      value: components["schemas"]["DepartureStop"];
+      /**
+       * @description Where it's from, as `value.source`.
+       * @enum {string}
+       */
+      source: "tfl" | "entur";
+      /** @description The town or district it's in, to tell stops of the same name apart; may be empty. */
+      area: string;
+      /** @description What it's for, for its icon: tube, metro, tram, rail, water or bus (a bus stop shows its `letter`), or another mode, shown as a bus stop is. */
+      mode: string;
+      /** @description Its stop letter or platform code; may be empty. */
+      letter: string;
+      /** @description The lines that stop there. */
+      lines: string[];
+    } & components["schemas"]["SearchResult"];
+    /** @description A town or city that searchPlaces found, for the weather (SearchResult); its `id` is Open-Meteo's. */
+    PlaceSearchResult: {
+      value: components["schemas"]["Weather"];
+      /** @description Its name, region and country in one line, as the settings site's weather box shows it. */
+      label: string;
+      /** @description Its country (ISO 3166-1 alpha-2); empty when Open-Meteo gives none. */
+      country_code: string;
+      latitude: number;
+      longitude: number;
+    } & components["schemas"]["SearchResult"];
     /** DepartureStop */
     DepartureStop: {
       /**
@@ -506,6 +623,11 @@ export type ParcelsLinkStatus = components["schemas"]["ParcelsLinkStatus"];
 export type AlbumArt = components["schemas"]["AlbumArt"];
 export type Pace = components["schemas"]["Pace"];
 export type WeatherKey = components["schemas"]["WeatherKey"];
+export type ConfigVersion = components["schemas"]["ConfigVersion"];
+export type ConfigSection = components["schemas"]["ConfigSection"];
+export type SearchResult = components["schemas"]["SearchResult"];
+export type StopSearchResult = components["schemas"]["StopSearchResult"];
+export type PlaceSearchResult = components["schemas"]["PlaceSearchResult"];
 export type DepartureStop = components["schemas"]["DepartureStop"];
 export type AppleMusic = components["schemas"]["AppleMusic"];
 export type Developer = components["schemas"]["Developer"];
@@ -588,8 +710,14 @@ export interface operations {
   };
   getConfig: {
     parameters: {
-      query?: never;
-      header?: never;
+      query?: {
+        /** @description On the settings site only, with the person's login instead of the secret: which of their devices. A device sends no `device_id`: its secret says which it is. */
+        device_id?: components["schemas"]["DeviceId"];
+      };
+      header?: {
+        /** @description The ETag of the copy the caller has. */
+        "If-None-Match"?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -598,14 +726,39 @@ export interface operations {
       /** @description The config, with `pairing_code` set while the device is to show one. */
       200: {
         headers: {
+          /** @description The config's version, quoted (ConfigVersion), to send back as If-Match. */
+          ETag?: components["schemas"]["ConfigVersion"];
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["ConfigResponse"];
         };
       };
-      /** @description A missing or unknown secret. */
+      /** @description The config is still the version If-None-Match names. */
+      304: {
+        headers: {
+          /** @description The config's version, quoted (ConfigVersion), to send back as If-Match. */
+          ETag?: components["schemas"]["ConfigVersion"];
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description On the settings site, no `device_id`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description On the settings site, not one of the signed-in person's devices. */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -616,7 +769,10 @@ export interface operations {
   putConfig: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description The ETag of the config the change was made to; a stale one is a 409, and nothing is saved. */
+        "If-Match"?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -629,6 +785,8 @@ export interface operations {
       /** @description The config as saved. */
       200: {
         headers: {
+          /** @description The config's version, quoted (ConfigVersion), to send back as If-Match. */
+          ETag?: components["schemas"]["ConfigVersion"];
           [name: string]: unknown;
         };
         content: {
@@ -649,12 +807,202 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The device isn't paired yet, so there's no owner's config to save. */
+      /** @description The device isn't paired yet, so there's no owner's config to save; or If-Match is stale: someone saved in between, so read the config again. */
       409: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  putConfigSection: {
+    parameters: {
+      query?: {
+        /** @description On the settings site only, with the person's login instead of the secret: which of their devices. A device sends no `device_id`: its secret says which it is. */
+        device_id?: components["schemas"]["DeviceId"];
+      };
+      header: {
+        /** @description The ETag of the config the change was made to (getConfig's, or the last save's). */
+        "If-Match": string;
+      };
+      path: {
+        /** @description The section to replace; one the device's type doesn't have is a 404. */
+        section: components["schemas"]["ConfigSection"];
+      };
+      cookie?: never;
+    };
+    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style` and `display`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay). */
+    requestBody: {
+      content: {
+        "application/json":
+          | components["schemas"]["Arrivals"]
+          | components["schemas"]["Weather"]
+          | components["schemas"]["NoticeBoard"]
+          | components["schemas"]["Spotify"]
+          | components["schemas"]["AppleMusic"]
+          | components["schemas"]["Glowmarkt"]
+          | components["schemas"]["Developer"]
+          | components["schemas"]["Parcels"]
+          | components["schemas"]["EpaperStyle"]
+          | components["schemas"]["TouchscreenStyle"]
+          | components["schemas"]["TouchscreenDisplay"]
+          | ("12h" | "24h")
+          | ("en" | "nb");
+      };
+    };
+    responses: {
+      /** @description The whole config as saved. */
+      200: {
+        headers: {
+          /** @description The config's version, quoted (ConfigVersion), to send back as If-Match. */
+          ETag?: components["schemas"]["ConfigVersion"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConfigResponse"];
+        };
+      };
+      /** @description A value the section's schema doesn't allow, or that makes a config the device type's schema doesn't: an unknown weather key, a postcode that isn't a UK or Norwegian one, a stop whose source isn't its id's; or, on the settings site, no `device_id`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device saving its own config isn't a paired touchscreen, or its owner doesn't approve the save. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A section the device's type doesn't have; or, on the settings site, not one of the signed-in person's devices. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description If-Match is stale (someone saved in between), so read the config again; nothing was saved. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No If-Match. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The weather place couldn't be checked with Open-Meteo just now; try again shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  searchStops: {
+    parameters: {
+      query: {
+        /** @description The text to search for; under 2 characters (after trimming) answers no results. */
+        q: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The results, best first, possibly none. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StopSearchResult"][];
+        };
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Neither TfL nor Entur could be asked; the body is no results. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StopSearchResult"][];
+        };
+      };
+    };
+  };
+  searchPlaces: {
+    parameters: {
+      query: {
+        /** @description The name to search for; under 2 characters (after trimming) answers no results. */
+        q: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The results, best first, possibly none. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlaceSearchResult"][];
+        };
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Open-Meteo couldn't be asked; the body is no results. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlaceSearchResult"][];
+        };
       };
     };
   };
