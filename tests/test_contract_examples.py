@@ -185,14 +185,10 @@ def test_touchscreen_registers_on_the_screens_route_and_reads_and_saves_its_conf
     # An e-paper screen registers on the same route, with its frame format as well as its size, and no type.
     assert check("DeviceRegistration", TOUCHSCREEN["epaper_registration"]).type is None
     assert check("DeviceRegistered", TOUCHSCREEN["registered"]).device_id == device_id
-    # Unpaired, its config is the pairing value, as an e-paper screen's: with the code to show.
-    pairing = check("ConfigResponse", TOUCHSCREEN["pairing"])
-    assert isinstance(pairing, models.TouchscreenConfig)
-    assert pairing.pairing_code == "ABC234"
-    # Paired, its config, with its size as it registered.
+    # Its config, with its size as it registered (paired by token, it never has a pairing code).
     config = check("ConfigResponse", TOUCHSCREEN["config"])
     assert isinstance(config, models.TouchscreenConfig)
-    assert (config.device_id, config.pairing_code) == (device_id, None)
+    assert config.device_id == device_id
     assert (config.width, config.height) == (registration.width, registration.height)
     # A save is the whole config as it came, with only what isn't read-only changed.
     saved = check("ConfigResponse", TOUCHSCREEN["save"])
@@ -275,13 +271,46 @@ def test_a_config_takes_only_its_types_style() -> None:
         {key: value for key, value in touchscreen.items() if key != "display"},
         {**epaper, "type": "kiosk"},
         {**touchscreen, "display": {"sleep_minutes": 10}},
-        {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
+        {**touchscreen, "style": {**touchscreen["style"], "theme": "auto"}},
+        {key: value for key, value in epaper.items() if key != "language"},
+        {key: value for key, value in epaper.items() if key != "pairing_code"},
     )
     for config in wrong:
         with pytest.raises(jsonschema.ValidationError):
             check_schema("ConfigResponse", config)
         with pytest.raises(ValidationError):
             check_model("ConfigResponse", config)
+
+
+def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
+    # The flat fields, the panels it shows, its look and its screen's sleep: no language, pairing code, time zone,
+    # interval, music or other integrations, which only an e-paper screen has.
+    assert set(models.TouchscreenConfig.model_fields) == {
+        "device_id",
+        "type",
+        "width",
+        "height",
+        "clock_format",
+        "arrivals",
+        "weather",
+        "notice_board",
+        "style",
+        "display",
+    }
+    assert set(TOUCHSCREEN["config"]) == set(models.TouchscreenConfig.model_fields)
+    epaper_only = set(models.EpaperConfig.model_fields) - set(models.TouchscreenConfig.model_fields)
+    assert epaper_only == {
+        "pairing_code",
+        "interval",
+        "language",
+        "timezone",
+        "format",
+        "spotify",
+        "apple_music",
+        "glowmarkt",
+        "developer",
+        "parcels",
+    }
 
 
 def test_registrations_take_only_whats_allowed() -> None:

@@ -50,17 +50,6 @@ class Arrivals(BaseModel):
     )
 
 
-class Developer(BaseModel):
-    """The ``Developer`` object."""
-
-    enabled: bool = Field(
-        description=(
-            "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer"
-            " provider fills with the GitHub token it holds, so no token is sent here."
-        ),
-    )
-
-
 DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
@@ -71,45 +60,12 @@ draws, or a touchscreen, which draws itself from its config.
 """
 
 
-class Glowmarkt(BaseModel):
-    """The ``Glowmarkt`` object."""
-
-    enabled: bool = Field(
-        description=(
-            "Whether the screen shows the energy panel. Its data comes from the store, which the broker's Glowmarkt "
-            "provider fills, so no credentials are sent here."
-        ),
-    )
-
-
 class NoticeBoard(BaseModel):
     """The notice board, of notices about the device's place."""
 
     postcode: str | None = Field(description="The place's postcode, or null for no local notices.")
     country: Literal["GB", "NO"] | None = Field(
         description="The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.",
-    )
-
-
-class Parcels(BaseModel):
-    """The ``Parcels`` object."""
-
-    enabled: bool = Field(
-        description=(
-            "Whether the screen shows the parcels panel and parcel notices. Their data comes from the store, which the"
-            " parcel provider fills with the Parcel API key it holds, so no key is sent here."
-        ),
-    )
-
-
-class Spotify(BaseModel):
-    """The Spotify area."""
-
-    enabled: bool = Field(
-        description=(
-            "Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills "
-            "with the account's Spotify link, so no token is sent here."
-        ),
     )
 
 
@@ -132,8 +88,8 @@ class Weather(BaseModel):
 class ConfigBase(BaseModel):
     """The ``ConfigBase`` object.
 
-    What every device's config has (ConfigResponse), whatever its type: the flat fields and the shared
-    sections.
+    What every device's config has (ConfigResponse), whatever its type: who and what the device is, its
+    size, its clock format, and the panels both types show (arrivals, weather and the notice board).
     """
 
     device_id: DeviceId = Field(
@@ -151,33 +107,15 @@ class ConfigBase(BaseModel):
     height: Annotated[int, Field(gt=0)] = Field(
         description="The device's screen height in pixels, as it reported at registration.",
     )
-    pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] | None = Field(
-        description=(
-            "The code to show while no one has paired the device: six of A-Z and 2-9, less the look-alikes 0, O, 1, I "
-            "and L. Only v1:pairing:<device id> has one; null in v1:config:<device id>, and once it's paired."
-        ),
-    )
-    interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
     clock_format: Literal["12h", "24h"] = Field(
         description=(
             "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time "
             "zones or log formats."
         ),
     )
-    language: Literal["en", "nb"] = Field(
-        description="The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål).",
-    )
-    timezone: str = Field(
-        description="The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.",
-    )
     arrivals: Arrivals = Field(description="The arrivals panel (bus, train and tram stops).")
     weather: Weather = Field(description="The weather panel.")
     notice_board: NoticeBoard = Field(description="The notice board, of notices about the device's place.")
-    spotify: Spotify = Field(description="The Spotify area.")
-    apple_music: AppleMusic
-    glowmarkt: Glowmarkt
-    developer: Developer
-    parcels: Parcels
 
 
 ConfigSection = Literal[
@@ -196,7 +134,8 @@ ConfigSection = Literal[
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
-type has: `display` is a touchscreen's.
+type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style` and
+`display`.
 """
 
 
@@ -204,6 +143,17 @@ ConfigVersion = Annotated[str, Field(pattern='^"[0-9a-f]{32}"$')]
 """A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and
 only then. getConfig answers it, and a save sends it back as If-Match.
 """
+
+
+class Developer(BaseModel):
+    """The ``Developer`` object."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer"
+            " provider fills with the GitHub token it holds, so no token is sent here."
+        ),
+    )
 
 
 class DeviceRegistered(BaseModel):
@@ -303,6 +253,39 @@ class EpaperStyle(BaseModel):
     )
 
 
+class Glowmarkt(BaseModel):
+    """The ``Glowmarkt`` object."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the screen shows the energy panel. Its data comes from the store, which the broker's Glowmarkt "
+            "provider fills, so no credentials are sent here."
+        ),
+    )
+
+
+class Parcels(BaseModel):
+    """The ``Parcels`` object."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the screen shows the parcels panel and parcel notices. Their data comes from the store, which the"
+            " parcel provider fills with the Parcel API key it holds, so no key is sent here."
+        ),
+    )
+
+
+class Spotify(BaseModel):
+    """The Spotify area."""
+
+    enabled: bool = Field(
+        description=(
+            "Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills "
+            "with the account's Spotify link, so no token is sent here."
+        ),
+    )
+
+
 class EpaperConfig(ConfigBase):
     """The ``EpaperConfig`` object.
 
@@ -311,6 +294,19 @@ class EpaperConfig(ConfigBase):
     """
 
     type: Literal["epaper"]
+    pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] | None = Field(
+        description=(
+            "The code to show while no one has paired the device: six of A-Z and 2-9, less the look-alikes 0, O, 1, I "
+            "and L. Only v1:pairing:<device id> has one; null in v1:config:<device id>, and once it's paired."
+        ),
+    )
+    interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
+    language: Literal["en", "nb"] = Field(
+        description="The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål).",
+    )
+    timezone: str = Field(
+        description="The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.",
+    )
     format: Literal["mono-1bpp-packed", "png"] = Field(
         description=(
             "The format the screen takes its frame in, as it reported at registration (FrameRecord's frame for "
@@ -318,6 +314,11 @@ class EpaperConfig(ConfigBase):
         ),
     )
     style: EpaperStyle = Field(description="How an e-paper screen is drawn.")
+    spotify: Spotify = Field(description="The Spotify area.")
+    apple_music: AppleMusic
+    glowmarkt: Glowmarkt
+    developer: Developer
+    parcels: Parcels
 
 
 class FrameRecord(BaseModel):
@@ -624,16 +625,11 @@ class TouchscreenDisplay(BaseModel):
 class TouchscreenStyle(BaseModel):
     """How a touchscreen looks."""
 
-    skin: Literal["day", "auto", "night"] = Field(
-        description=(
-            "day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen"
-            " that doesn't know its location shows as day."
-        ),
-    )
+    theme: Literal["day", "autumn", "night"] = Field(description="The touchscreen's theme.")
     colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
         description=(
-            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
-            " looks like forest without any."
+            "The theme's colour. dynamic follows the album art of the song playing, and looks like forest when nothing"
+            " is playing."
         ),
     )
 
@@ -641,7 +637,10 @@ class TouchscreenStyle(BaseModel):
 class TouchscreenConfig(ConfigBase):
     """A touchscreen's config (ConfigResponse with type touchscreen).
 
-    It draws itself from it, and saves it from its own settings panel.
+    It draws itself from it, and saves it from its own settings, as its owner does on the settings site.
+    It is English only and paired by token, so it has no language and no pairing code; it keeps its own
+    time, so it has no time zone or interval; and it plays music itself, so it has no music or other
+    integrations' sections. Its Wi-Fi stays on the device, never here.
     """
 
     type: Literal["touchscreen"]
@@ -678,9 +677,11 @@ class TouchscreenRegistration(BaseModel):
 ConfigResponse = Annotated[EpaperConfig | TouchscreenConfig, Field(discriminator="type")]
 """A device's config: the value of v1:config:<device id> (with no pairing code) and, with its
 pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and
-take. A few flat fields (who and what the device is, its size, and the settings every panel shares),
-then a section per panel, each its own schema, and `style`, which every type has but whose schema is
-the type's own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's
+take. A few flat fields (who and what the device is, its size, and its clock format), then a section
+per panel, each its own schema, and `style`, which every type has but whose schema is the type's
+own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board,
+its look and its screen's sleep; an e-paper screen's also has its language, time zone, pairing code
+and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's
 (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's,
 held on the server. A read-only field (readOnly) is the server's, or what the device said at
 registration, and isn't changed by a save.
