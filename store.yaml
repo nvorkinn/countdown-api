@@ -324,16 +324,17 @@ paths:
       operationId: getConfig
       summary: The device's config.
       description: >-
-        The device's config, as v1:config:<device id> holds it (ConfigResponse); while no one has paired it, the
-        pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server issues
-        afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The server is the
+        The device's config, as v1:config:<device id> holds it (ConfigResponse); for an e-paper screen no one has
+        paired, the pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server
+        issues afresh as each expires), as the render pool gets for its pairing screen. A touchscreen is paired by
+        token and never has a code. The server is the
         one source of truth for it; the device keeps a copy of the last one it got for when the server can't be
         reached.
       security:
       - deviceSecret: []
       responses:
         '200':
-          description: The config, with `pairing_code` set while the device is to show one.
+          description: The config, with an e-paper screen's `pairing_code` set while it is to show one.
           content:
             application/json:
               schema:
@@ -1011,8 +1012,10 @@ $defs:
     description: >-
       A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of
       v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and
-      what the device is, its size, and the settings every panel shares), then a section per panel, each its own
-      schema, and `style`, which every type has but whose schema is the type's own. `type` says which: an e-paper
+      what the device is, its size, and its clock format), then a section per panel, each its own schema, and
+      `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself:
+      the arrivals, the weather and the notice board, its look and its screen's sleep; an e-paper screen's also has its
+      language, time zone, pairing code and the rest of its panels. `type` says which: an e-paper
       screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and
       keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the
       device said at registration, and isn't changed by a save.
@@ -1026,7 +1029,8 @@ $defs:
         touchscreen: '#/$defs/TouchscreenConfig'
   ConfigBase:
     description: >-
-      What every device's config has (ConfigResponse), whatever its type: the flat fields and the shared sections.
+      What every device's config has (ConfigResponse), whatever its type: who and what the device is, its size, its
+      clock format, and the panels both types show (arrivals, weather and the notice board).
     type: object
     properties:
       device_id:
@@ -1045,6 +1049,39 @@ $defs:
         exclusiveMinimum: 0
         readOnly: true
         description: The device's screen height in pixels, as it reported at registration.
+      clock_format:
+        enum:
+        - 12h
+        - 24h
+        type: string
+        description: >-
+          Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time
+          zones or log formats.
+      arrivals:
+        $ref: '#/$defs/Arrivals'
+      weather:
+        $ref: '#/$defs/Weather'
+      notice_board:
+        $ref: '#/$defs/NoticeBoard'
+    required:
+    - device_id
+    - type
+    - width
+    - height
+    - clock_format
+    - arrivals
+    - weather
+    - notice_board
+  EpaperConfig:
+    description: >-
+      An e-paper screen's config (ConfigResponse with type epaper), which the render pool draws its frames from.
+    allOf:
+    - $ref: '#/$defs/ConfigBase'
+    type: object
+    properties:
+      type:
+        const: epaper
+        readOnly: true
       pairing_code:
         anyOf:
         - type: string
@@ -1058,14 +1095,6 @@ $defs:
         type: integer
         exclusiveMinimum: 0
         description: Seconds between updates.
-      clock_format:
-        enum:
-        - 12h
-        - 24h
-        type: string
-        description: >-
-          Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time
-          zones or log formats.
       language:
         enum:
         - en
@@ -1075,50 +1104,6 @@ $defs:
       timezone:
         type: string
         description: The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.
-      arrivals:
-        $ref: '#/$defs/Arrivals'
-      weather:
-        $ref: '#/$defs/Weather'
-      notice_board:
-        $ref: '#/$defs/NoticeBoard'
-      spotify:
-        $ref: '#/$defs/Spotify'
-      apple_music:
-        $ref: '#/$defs/AppleMusic'
-      glowmarkt:
-        $ref: '#/$defs/Glowmarkt'
-      developer:
-        $ref: '#/$defs/Developer'
-      parcels:
-        $ref: '#/$defs/Parcels'
-    required:
-    - device_id
-    - type
-    - width
-    - height
-    - pairing_code
-    - interval
-    - clock_format
-    - language
-    - timezone
-    - arrivals
-    - weather
-    - notice_board
-    - spotify
-    - apple_music
-    - glowmarkt
-    - developer
-    - parcels
-  EpaperConfig:
-    description: >-
-      An e-paper screen's config (ConfigResponse with type epaper), which the render pool draws its frames from.
-    allOf:
-    - $ref: '#/$defs/ConfigBase'
-    type: object
-    properties:
-      type:
-        const: epaper
-        readOnly: true
       format:
         enum:
         - mono-1bpp-packed
@@ -1130,10 +1115,29 @@ $defs:
           mono-1bpp-packed).
       style:
         $ref: '#/$defs/EpaperStyle'
+      spotify:
+        $ref: '#/$defs/Spotify'
+      apple_music:
+        $ref: '#/$defs/AppleMusic'
+      glowmarkt:
+        $ref: '#/$defs/Glowmarkt'
+      developer:
+        $ref: '#/$defs/Developer'
+      parcels:
+        $ref: '#/$defs/Parcels'
     required:
     - type
+    - pairing_code
+    - interval
+    - language
+    - timezone
     - format
     - style
+    - spotify
+    - apple_music
+    - glowmarkt
+    - developer
+    - parcels
   EpaperStyle:
     description: How an e-paper screen is drawn.
     type: object
@@ -1195,7 +1199,9 @@ $defs:
   TouchscreenConfig:
     description: >-
       A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own
-      settings panel.
+      settings, as its owner does on the settings site. It is English only and paired by token, so it has no language
+      and no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it
+      has no music or other integrations' sections. Its Wi-Fi stays on the device, never here.
     allOf:
     - $ref: '#/$defs/ConfigBase'
     type: object
@@ -1215,15 +1221,13 @@ $defs:
     description: How a touchscreen looks.
     type: object
     properties:
-      skin:
+      theme:
         enum:
         - day
-        - auto
+        - autumn
         - night
         type: string
-        description: >-
-          day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen
-          that doesn't know its location shows as day.
+        description: The touchscreen's theme.
       colour:
         enum:
         - forest
@@ -1237,10 +1241,10 @@ $defs:
         - dynamic
         type: string
         description: >-
-          The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and
-          looks like forest without any.
+          The theme's colour. dynamic follows the album art of the song playing, and looks like forest when nothing is
+          playing.
     required:
-    - skin
+    - theme
     - colour
   TouchscreenDisplay:
     description: A touchscreen's screen itself.
