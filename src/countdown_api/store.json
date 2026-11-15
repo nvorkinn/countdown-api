@@ -535,6 +535,47 @@
         },
         "x-examples": ["touchscreen.json"]
       }
+    },
+    "/device/{device_id}": {
+      "get": {
+        "operationId": "deviceSettingsPage",
+        "summary": "The settings page of one of the signed-in person's devices.",
+        "description": "The device's settings, as its owner sees them on the settings site; a device that isn't theirs is a 404. With `embed=1` the page has no site navigation and no list of their screens, only the page itself, for a frame in the device's own settings, and its forms and redirects keep `embed=1`. A frame only has the person's login when the page around it is on the same site as the settings site (the login's cookies are SameSite=Lax); without it the frame gets the login's redirect, which the login provider refuses to show in a frame.",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/$defs/DeviceId"
+            }
+          },
+          {
+            "name": "embed",
+            "in": "query",
+            "required": false,
+            "description": "1 for the page without the site around it, to show in a frame.",
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The device's settings page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such device, or not one of the signed-in person's."
+          }
+        }
+      }
     }
   },
   "securitySchemes": {

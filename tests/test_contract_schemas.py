@@ -61,8 +61,9 @@ def _refs(node: object) -> list[str]:
 def test_each_routes_schemas_security_and_examples_exist(path: str, method: str) -> None:
     operation = OPERATIONS[path, method]
     assert method in {"get", "post", "put", "delete"}
-    # The devices' API, or the settings site's one page a touchscreen opens to register through the login.
-    assert path.startswith("/api/") or path == "/register"
+    # The devices' API, or the settings site's pages a touchscreen opens: registering through the login, and a
+    # device's settings, which it shows in a frame.
+    assert path.startswith("/api/") or path in {"/register", "/device/{device_id}"}
     refs = _refs(operation)
     assert refs
     assert all(ref.removeprefix("#/$defs/") in DEFS for ref in refs), refs
@@ -85,6 +86,7 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/config", "put"),
         ("/api/devices/register", "post"),
         ("/api/devices/spotify/token", "get"),
+        ("/device/{device_id}", "get"),
         ("/register", "get"),
         ("/register", "post"),
     ]
