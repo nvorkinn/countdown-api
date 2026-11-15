@@ -278,7 +278,8 @@ scripts:
 
 # The broker's HTTP routes for its devices: registering one, an e-paper screen or a touchscreen, and reading and
 # saving a device's config (ConfigResponse, as the store holds it), which a device with a settings panel of its own
-# saves too; and the settings site's /register, where a touchscreen registers through the login instead. An
+# saves too; and the settings site's /register, where a touchscreen registers through the login instead, and
+# /device/{device_id}, a device's settings page, which a touchscreen shows in a frame. An
 # OpenAPI 3.1 paths object: generate.py hands it to openapi-typescript with the schemas, so store.d.ts types each route
 # (`paths`, `operations`), and to the reference. A `$ref` is to the `$defs` below. Each operation's `x-examples` names
 # its files in src/countdown_api/fixtures, as a key's `examples` do.
@@ -499,6 +500,41 @@ paths:
         '429':
           description: Too many registrations from this IP; try again after Retry-After.
       x-examples: [touchscreen.json]
+
+  # On the settings site too, behind the login: a device's own settings, which a touchscreen shows in a frame in its
+  # Settings tab (embed=1). The site has more pages per device (/device/{device_id}/...), but this is the one a device
+  # links to.
+  /device/{device_id}:
+    get:
+      operationId: deviceSettingsPage
+      summary: The settings page of one of the signed-in person's devices.
+      description: >-
+        The device's settings, as its owner sees them on the settings site; a device that isn't theirs is a 404. With
+        `embed=1` the page has no site navigation and no list of their screens, only the page itself, for a frame in
+        the device's own settings, and its forms and redirects keep `embed=1`. A frame only has the person's login
+        when the page around it is on the same site as the settings site (the login's cookies are SameSite=Lax);
+        without it the frame gets the login's redirect, which the login provider refuses to show in a frame.
+      parameters:
+      - name: device_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/$defs/DeviceId'
+      - name: embed
+        in: query
+        required: false
+        description: '1 for the page without the site around it, to show in a frame.'
+        schema:
+          const: '1'
+      responses:
+        '200':
+          description: The device's settings page.
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: No such device, or not one of the signed-in person's.
 
 # How a device proves which it is on the routes above: the secret it registered with, as a bearer token.
 securitySchemes:

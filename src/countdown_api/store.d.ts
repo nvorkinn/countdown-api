@@ -94,6 +94,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/device/{device_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The settings page of one of the signed-in person's devices.
+     * @description The device's settings, as its owner sees them on the settings site; a device that isn't theirs is a 404. With `embed=1` the page has no site navigation and no list of their screens, only the page itself, for a frame in the device's own settings, and its forms and redirects keep `embed=1`. A frame only has the person's login when the page around it is on the same site as the settings site (the login's cookies are SameSite=Lax); without it the frame gets the login's redirect, which the login provider refuses to show in a frame.
+     */
+    get: operations["deviceSettingsPage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -803,6 +823,38 @@ export interface operations {
       };
       /** @description Too many registrations from this IP; try again after Retry-After. */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  deviceSettingsPage: {
+    parameters: {
+      query?: {
+        /** @description 1 for the page without the site around it, to show in a frame. */
+        embed?: "1";
+      };
+      header?: never;
+      path: {
+        device_id: components["schemas"]["DeviceId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The device's settings page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+      /** @description No such device, or not one of the signed-in person's. */
+      404: {
         headers: {
           [name: string]: unknown;
         };
