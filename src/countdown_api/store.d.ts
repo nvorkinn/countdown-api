@@ -50,6 +50,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/spotify/token": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * An access token for the owner's Spotify, for a touchscreen.
+     * @description A short-lived Spotify access token for the account that owns the touchscreen, in Spotify's own token shape, for its Web Playback SDK and Web API calls. The Spotify link is the account's (its Account page); the server keeps the refresh token and the app's secret, and renews the access token itself, so neither ever reaches a device. Ask again before expires_in runs out. Only a paired touchscreen gets one.
+     */
+    get: operations["getSpotifyToken"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -386,6 +406,17 @@ export interface components {
       /** @description Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills with the account's Spotify link, so no token is sent here. */
       enabled: boolean;
     };
+    /** @description A Spotify access token, in the shape Spotify's own token endpoint answers (without its refresh token). */
+    SpotifyAccessToken: {
+      /** @description The token, sent to Spotify as Authorization Bearer. */
+      access_token: string;
+      /** @constant */
+      token_type: "Bearer";
+      /** @description Seconds until it expires, counted from the answer. */
+      expires_in: number;
+      /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
+      scope: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -436,6 +467,7 @@ export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type Spotify = components["schemas"]["Spotify"];
+export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
 export type $defs = Record<string, never>;
 export interface operations {
   registerDevice: {
@@ -557,6 +589,61 @@ export interface operations {
       };
       /** @description The device isn't paired yet, so there's no owner's config to save. */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSpotifyToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The token. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SpotifyAccessToken"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The account linked Spotify before touchscreens could use it, so its link lacks the scopes they need (SpotifyAccessToken's scope); linking it again on the Account page grants them. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The owner's account hasn't linked Spotify. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Spotify couldn't be reached, or refused to renew the token. */
+      502: {
         headers: {
           [name: string]: unknown;
         };

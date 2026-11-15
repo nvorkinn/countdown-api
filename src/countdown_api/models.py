@@ -404,6 +404,26 @@ RenderScreens = dict[str, Annotated[str, Field(pattern="^[a-z0-9][a-z0-9_-]{1,31
 """v1:render:screens, device id to the screen's slug."""
 
 
+class SpotifyAccessToken(BaseModel):
+    """The ``SpotifyAccessToken`` object.
+
+    A Spotify access token, in the shape Spotify's own token endpoint answers (without its refresh
+    token).
+    """
+
+    access_token: Annotated[str, Field(min_length=1)] = Field(
+        description="The token, sent to Spotify as Authorization Bearer.",
+    )
+    token_type: Literal["Bearer"]
+    expires_in: Annotated[int, Field(ge=0)] = Field(description="Seconds until it expires, counted from the answer.")
+    scope: str = Field(
+        description=(
+            "The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, "
+            "which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of."
+        ),
+    )
+
+
 class SpotifyPlayback(BaseModel):
     """Where Spotify's player was, from /me/player/currently-playing, as of `fetched_at`.
 

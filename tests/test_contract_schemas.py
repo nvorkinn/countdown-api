@@ -83,6 +83,7 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/config", "get"),
         ("/api/devices/config", "put"),
         ("/api/devices/register", "post"),
+        ("/api/devices/spotify/token", "get"),
     ]
 
 

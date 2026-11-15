@@ -370,6 +370,37 @@ paths:
         '409':
           description: The device isn't paired yet, so there's no owner's config to save.
       x-examples: [touchscreen.json, config_store.json]
+  /api/devices/spotify/token:
+    get:
+      operationId: getSpotifyToken
+      summary: An access token for the owner's Spotify, for a touchscreen.
+      description: >-
+        A short-lived Spotify access token for the account that owns the touchscreen, in Spotify's own token shape,
+        for its Web Playback SDK and Web API calls. The Spotify link is the account's (its Account page); the server
+        keeps the refresh token and the app's secret, and renews the access token itself, so neither ever reaches a
+        device. Ask again before expires_in runs out. Only a paired touchscreen gets one.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/SpotifyAccessToken'
+        '401':
+          description: A missing or unknown secret.
+        '403':
+          description: >-
+            The account linked Spotify before touchscreens could use it, so its link lacks the scopes they need
+            (SpotifyAccessToken's scope); linking it again on the Account page grants them.
+        '404':
+          description: The owner's account hasn't linked Spotify.
+        '409':
+          description: The device isn't paired yet, or isn't a touchscreen.
+        '502':
+          description: Spotify couldn't be reached, or refused to renew the token.
+      x-examples: [touchscreen.json]
 
 # How a device proves which it is on the routes above: the secret it registered with, as a bearer token.
 securitySchemes:
@@ -1117,3 +1148,28 @@ $defs:
           with the account's Spotify link, so no token is sent here.
     required:
     - enabled
+  SpotifyAccessToken:
+    description: A Spotify access token, in the shape Spotify's own token endpoint answers (without its refresh token).
+    type: object
+    properties:
+      access_token:
+        type: string
+        minLength: 1
+        description: The token, sent to Spotify as Authorization Bearer.
+      token_type:
+        const: Bearer
+        type: string
+      expires_in:
+        type: integer
+        minimum: 0
+        description: Seconds until it expires, counted from the answer.
+      scope:
+        type: string
+        description: >-
+          The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for,
+          which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of.
+    required:
+    - access_token
+    - token_type
+    - expires_in
+    - scope
