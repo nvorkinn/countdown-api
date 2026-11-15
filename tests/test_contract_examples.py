@@ -210,6 +210,27 @@ def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     assert "refresh_token" not in TOUCHSCREEN["spotify_token"]
 
 
+def test_a_touchscreen_registers_through_the_login_with_its_secrets_hash() -> None:
+    query = check("TouchscreenRegistration", TOUCHSCREEN["register"])
+    registration = check("DeviceRegistration", TOUCHSCREEN["registration"])
+    # The hash of the secret it registers with on the devices' API, so the two are the same device; never the secret.
+    assert query.secret_hash == hashlib.sha256(registration.secret.encode()).hexdigest()
+    assert registration.secret not in str(TOUCHSCREEN["register"])
+    assert (query.width, query.height) == (registration.width, registration.height)
+    # Sent back to its return URL, its query kept, with the device id or the error added.
+    device_id = TOUCHSCREEN["device_id"]
+    assert TOUCHSCREEN["registered_return"] == f"{query.return_to}&device_id={device_id}"
+    assert TOUCHSCREEN["taken_return"] == f"{query.return_to}&error=taken"
+
+
+def test_a_secret_hash_is_lower_case_hex_sha256() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    check_schema("SecretHash", TOUCHSCREEN["register"]["secret_hash"])
+    for bad in ("E" * 64, "e" * 63, "e" * 65, "g" * 64):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("SecretHash", bad)
+
+
 def test_a_config_takes_only_its_types_style() -> None:
     jsonschema = pytest.importorskip("jsonschema")
     epaper, touchscreen = CONFIG["value"], TOUCHSCREEN["config"]

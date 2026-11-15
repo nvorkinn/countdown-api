@@ -406,6 +406,135 @@
         },
         "x-examples": ["touchscreen.json"]
       }
+    },
+    "/register": {
+      "get": {
+        "operationId": "registerTouchscreen",
+        "summary": "Register a touchscreen and make the person signed in on it its owner.",
+        "description": "The page a touchscreen opens to register through the login, in place of a pairing code: by the time the request arrives the person has signed in (or signed up), and the one visit registers the touchscreen and claims it for them. The tablet sends only its secret's hash (SecretHash), so the secret is never in a URL; it then calls the devices' API with the secret itself, paired from its first call. With `return_to`, the page redirects there once it's done (303), adding `device_id`, or `error=taken` when someone else owns the touchscreen. A visit the browser says came from another site (Sec-Fetch-Site), or that doesn't say, changes nothing and answers a page that asks to confirm, which posts the same fields from this site. Throttled per IP.",
+        "parameters": [
+          {
+            "name": "secret_hash",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/$defs/SecretHash"
+            }
+          },
+          {
+            "name": "width",
+            "in": "query",
+            "required": true,
+            "description": "The touchscreen's width, in pixels.",
+            "schema": {
+              "$ref": "#/$defs/ScreenSize"
+            }
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": true,
+            "description": "The touchscreen's height, in pixels.",
+            "schema": {
+              "$ref": "#/$defs/ScreenSize"
+            }
+          },
+          {
+            "name": "return_to",
+            "in": "query",
+            "required": false,
+            "description": "A URL of the tablet's own app to come back to once registered, on one of the origins the server allows (its setting TOUCHSCREEN_RETURN_ORIGINS); any other is a 400, before anything is registered.",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page saying the touchscreen is theirs (also for a repeat), or, for a visit from another site, the page that asks to confirm.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "Back to `return_to`, with `device_id` (registered, or theirs already) or `error=taken`.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A hash, size or return URL that isn't one (a return URL must be on an origin the server allows)."
+          },
+          "409": {
+            "description": "Someone else owns the touchscreen (with no `return_to`; with one, a 303 with `error=taken`)."
+          },
+          "429": {
+            "description": "Too many registrations from this IP; try again after Retry-After."
+          }
+        },
+        "x-examples": ["touchscreen.json"]
+      },
+      "post": {
+        "operationId": "confirmTouchscreenRegistration",
+        "summary": "Confirm a touchscreen's registration from the page that asks to.",
+        "description": "What the confirming page posts, from this site only: the same fields as the GET's query, and the same answers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/$defs/TouchscreenRegistration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A page saying the touchscreen is theirs.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "Back to `return_to`, with `device_id` or `error=taken`.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A hash, size or return URL that isn't one."
+          },
+          "403": {
+            "description": "Posted from another site."
+          },
+          "409": {
+            "description": "Someone else owns the touchscreen (with no `return_to`)."
+          },
+          "429": {
+            "description": "Too many registrations from this IP; try again after Retry-After."
+          }
+        },
+        "x-examples": ["touchscreen.json"]
+      }
     }
   },
   "securitySchemes": {
@@ -889,6 +1018,39 @@
         }
       },
       "required": ["device_id"]
+    },
+    "SecretHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "A device's secret (DeviceRegistration's), hashed: the hex SHA-256 of its UTF-8 bytes, in lower case. It's what the broker stores, and doesn't authenticate anything, so it can go in a URL where the secret can't."
+    },
+    "ScreenSize": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 10000,
+      "description": "A screen's width or height, in pixels."
+    },
+    "TouchscreenRegistration": {
+      "description": "What GET /register takes as its query, and its confirming page posts as a form: a touchscreen registering through the login.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "secret_hash": {
+          "$ref": "#/$defs/SecretHash"
+        },
+        "width": {
+          "$ref": "#/$defs/ScreenSize"
+        },
+        "height": {
+          "$ref": "#/$defs/ScreenSize"
+        },
+        "return_to": {
+          "type": "string",
+          "format": "uri",
+          "description": "A URL of the tablet's own app to come back to, on an origin the server allows; it gets `device_id` (or `error=taken`) added to its query."
+        }
+      },
+      "required": ["secret_hash", "width", "height"]
     },
     "ConfigResponse": {
       "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and the settings every panel shares), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",

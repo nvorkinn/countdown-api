@@ -404,6 +404,17 @@ RenderScreens = dict[str, Annotated[str, Field(pattern="^[a-z0-9][a-z0-9_-]{1,31
 """v1:render:screens, device id to the screen's slug."""
 
 
+ScreenSize = Annotated[int, Field(le=10000, gt=0)]
+"""A screen's width or height, in pixels."""
+
+
+SecretHash = Annotated[str, Field(pattern="^[0-9a-f]{64}$")]
+"""A device's secret (DeviceRegistration's), hashed: the hex SHA-256 of its UTF-8 bytes, in lower case.
+It's what the broker stores, and doesn't authenticate anything, so it can go in a URL where the
+secret can't.
+"""
+
+
 class SpotifyAccessToken(BaseModel):
     """The ``SpotifyAccessToken`` object.
 
@@ -563,6 +574,32 @@ class TouchscreenConfig(ConfigBase):
     type: Literal["touchscreen"]
     style: TouchscreenStyle = Field(description="How a touchscreen looks.")
     display: TouchscreenDisplay = Field(description="A touchscreen's screen itself.")
+
+
+class TouchscreenRegistration(BaseModel):
+    """The ``TouchscreenRegistration`` object.
+
+    What GET /register takes as its query, and its confirming page posts as a form: a touchscreen
+    registering through the login.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    secret_hash: SecretHash = Field(
+        description=(
+            "A device's secret (DeviceRegistration's), hashed: the hex SHA-256 of its UTF-8 bytes, in lower case. It's"
+            " what the broker stores, and doesn't authenticate anything, so it can go in a URL where the secret can't."
+        ),
+    )
+    width: ScreenSize = Field(description="A screen's width or height, in pixels.")
+    height: ScreenSize = Field(description="A screen's width or height, in pixels.")
+    return_to: str | None = Field(
+        default=None,
+        description=(
+            "A URL of the tablet's own app to come back to, on an origin the server allows; it gets `device_id` (or "
+            "`error=taken`) added to its query."
+        ),
+    )
 
 
 ConfigResponse = Annotated[EpaperConfig | TouchscreenConfig, Field(discriminator="type")]

@@ -70,6 +70,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Register a touchscreen and make the person signed in on it its owner.
+     * @description The page a touchscreen opens to register through the login, in place of a pairing code: by the time the request arrives the person has signed in (or signed up), and the one visit registers the touchscreen and claims it for them. The tablet sends only its secret's hash (SecretHash), so the secret is never in a URL; it then calls the devices' API with the secret itself, paired from its first call. With `return_to`, the page redirects there once it's done (303), adding `device_id`, or `error=taken` when someone else owns the touchscreen. A visit the browser says came from another site (Sec-Fetch-Site), or that doesn't say, changes nothing and answers a page that asks to confirm, which posts the same fields from this site. Throttled per IP.
+     */
+    get: operations["registerTouchscreen"];
+    put?: never;
+    /**
+     * Confirm a touchscreen's registration from the page that asks to.
+     * @description What the confirming page posts, from this site only: the same fields as the GET's query, and the same answers.
+     */
+    post: operations["confirmTouchscreenRegistration"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -276,6 +300,21 @@ export interface components {
     DeviceRegistered: {
       device_id: components["schemas"]["DeviceId"];
     };
+    /** @description A device's secret (DeviceRegistration's), hashed: the hex SHA-256 of its UTF-8 bytes, in lower case. It's what the broker stores, and doesn't authenticate anything, so it can go in a URL where the secret can't. */
+    SecretHash: string;
+    /** @description A screen's width or height, in pixels. */
+    ScreenSize: number;
+    /** @description What GET /register takes as its query, and its confirming page posts as a form: a touchscreen registering through the login. */
+    TouchscreenRegistration: {
+      secret_hash: components["schemas"]["SecretHash"];
+      width: components["schemas"]["ScreenSize"];
+      height: components["schemas"]["ScreenSize"];
+      /**
+       * Format: uri
+       * @description A URL of the tablet's own app to come back to, on an origin the server allows; it gets `device_id` (or `error=taken`) added to its query.
+       */
+      return_to?: string;
+    };
     /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and the settings every panel shares), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
     ConfigResponse: components["schemas"]["EpaperConfig"] | components["schemas"]["TouchscreenConfig"];
     /** @description What every device's config has (ConfigResponse), whatever its type: the flat fields and the shared sections. */
@@ -456,6 +495,9 @@ export type Layout = components["schemas"]["Layout"];
 export type DeviceType = components["schemas"]["DeviceType"];
 export type DeviceRegistration = components["schemas"]["DeviceRegistration"];
 export type DeviceRegistered = components["schemas"]["DeviceRegistered"];
+export type SecretHash = components["schemas"]["SecretHash"];
+export type ScreenSize = components["schemas"]["ScreenSize"];
+export type TouchscreenRegistration = components["schemas"]["TouchscreenRegistration"];
 export type ConfigResponse = components["schemas"]["ConfigResponse"];
 export type ConfigBase = components["schemas"]["ConfigBase"];
 export type EpaperConfig = components["schemas"]["EpaperConfig"];
@@ -644,6 +686,123 @@ export interface operations {
       };
       /** @description Spotify couldn't be reached, or refused to renew the token. */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  registerTouchscreen: {
+    parameters: {
+      query: {
+        secret_hash: components["schemas"]["SecretHash"];
+        /** @description The touchscreen's width, in pixels. */
+        width: components["schemas"]["ScreenSize"];
+        /** @description The touchscreen's height, in pixels. */
+        height: components["schemas"]["ScreenSize"];
+        /** @description A URL of the tablet's own app to come back to once registered, on one of the origins the server allows (its setting TOUCHSCREEN_RETURN_ORIGINS); any other is a 400, before anything is registered. */
+        return_to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A page saying the touchscreen is theirs (also for a repeat), or, for a visit from another site, the page that asks to confirm. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+      /** @description Back to `return_to`, with `device_id` (registered, or theirs already) or `error=taken`. */
+      303: {
+        headers: {
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A hash, size or return URL that isn't one (a return URL must be on an origin the server allows). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Someone else owns the touchscreen (with no `return_to`; with one, a 303 with `error=taken`). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too many registrations from this IP; try again after Retry-After. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  confirmTouchscreenRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/x-www-form-urlencoded": components["schemas"]["TouchscreenRegistration"];
+      };
+    };
+    responses: {
+      /** @description A page saying the touchscreen is theirs. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+      /** @description Back to `return_to`, with `device_id` or `error=taken`. */
+      303: {
+        headers: {
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A hash, size or return URL that isn't one. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Posted from another site. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Someone else owns the touchscreen (with no `return_to`). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too many registrations from this IP; try again after Retry-After. */
+      429: {
         headers: {
           [name: string]: unknown;
         };
