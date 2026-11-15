@@ -8,8 +8,8 @@ it, the Lua script they run, and the canonical examples every consumer's tests c
 models) and TypeScript (`store.d.ts`).
 
 It also has the broker's HTTP routes for its devices (see [The devices' routes](#the-devices-routes)): registering a
-device, and reading a device's config. A device is an e-paper screen (`epaper`) or a touchscreen (`touchscreen`), its
-config's `type`; a touchscreen's own settings are its config's `touchscreen` block, which only a touchscreen has.
+device, and reading and saving a device's config. A device is an e-paper screen (`epaper`) or a touchscreen
+(`touchscreen`), its config's `type`. So the contract covers both: the Redis keys, and the devices' HTTP API.
 
 ## What's in the contract
 
@@ -18,7 +18,7 @@ config's `type`; a touchscreen's own settings are its config's `touchscreen` blo
 | `v1:sub:<source>` | set | `Subscription` | none | the broker, on every config save | the providers |
 | `v1:sub:changed` | channel | `SubChanged` (empty) | | the broker, after the sets | every provider |
 | `v1:config:<device id>` | string, JSON | `ConfigResponse` | none | the broker | the render pool |
-| `v1:pairing:<device id>` | string, JSON | `PairingConfig` | 600 s, the code's own | the broker | the render pool |
+| `v1:pairing:<device id>` | string, JSON | `ConfigResponse` (`pairing_code` set) | 600 s, the code's own | the broker | the render pool |
 | `v1:render:screens` | hash | `RenderScreens` (device id to slug) | none | the broker | the render pool |
 | `v1:render:jobs` | list | `RenderJobs` (device ids) | none | the enqueue script | the render workers |
 | `v1:render:queued:<device id>` | string | `RenderQueuedFlag` | 60,000 ms | the enqueue script | the claim script |
@@ -47,13 +47,33 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
-| `GET /api/config` | | `ConfigResponse` | the device's config: the pairing value (`pairing_code` set) until it's paired |
+| `GET /api/devices/config` | | `ConfigResponse` | the device's config: the pairing value (`pairing_code` set) until it's paired |
+| `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came |
 
-`GET /api/config` takes the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`). A
-config, its touchscreen block included, is saved whole on the settings site, as today, so no route saves one. The
-routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as its
-schemas (`paths["/api/config"]["get"]`, `operations["getConfig"]`), and the reference lists them. `touchscreen.json`
-is their example.
+All but the registration take the device's secret as `Authorization: Bearer <secret>` (`securitySchemes.deviceSecret`).
+The routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as
+its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), and the reference lists them.
+`touchscreen.json` and `config_store.json` are their examples.
+
+### A device's config
+
+`ConfigResponse` is a device's config as a few flat fields and a section per panel, each section its own schema
+(`config.weather.location`, not `config.weather_location`):
+
+- flat: `device_id`, `type`, `width`, `height` and `pairing_code`, all read-only (`readOnly: true`: the server's, or
+  what the device said at registration), then `interval`, `clock_format`, `language` and `timezone`;
+- every type's sections: `arrivals`, `weather`, `notice_board`, `spotify`, `apple_music`, `glowmarkt`, `developer`
+  and `parcels`;
+- `style`, on every type, but its type's own schema: an e-paper screen's (`EpaperStyle`: orientation, drawing style,
+  weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour). An e-paper screen also has its
+  read-only frame `format`, a touchscreen its `display` (when its screen sleeps).
+
+It's a `oneOf` of `EpaperConfig` and `TouchscreenConfig` with a `discriminator` on `type`, so both languages get a
+tagged union: `models.ConfigResponse` is a Pydantic discriminated union (read it with `TypeAdapter(ConfigResponse)`),
+and `ConfigResponse` in `store.d.ts` a union narrowed by `type`. It never has a secret: logins and keys (Spotify's link
+among them) are the owner's account's, held on the server. It's the value of `v1:config:<device id>` (and, with
+`pairing_code` set, of `v1:pairing:<device id>`) as well as what the routes answer, so the render pool and a device
+read the same config.
 
 ## The package
 
@@ -62,7 +82,7 @@ is their example.
 | module | what it is |
 | --- | --- |
 | `countdown_api.keys` | a builder per key (`keys.config(device_id)`), or a constant for one with no parameter (`keys.RENDER_JOBS`), each TTL (`keys.PAIRING_TTL_S`, `keys.RENDER_QUEUED_TTL_MS`), each key's prefix for a SCAN (`keys.CONFIG_PREFIX`), and the subscription sources (`keys.SOURCES`) |
-| `countdown_api.models` | a Pydantic model (or a type alias) of every schema: `ConfigResponse`, `PairingConfig`, `FrameRecord`, ... |
+| `countdown_api.models` | a Pydantic model (or a type alias) of every schema: `ConfigResponse`, `EpaperConfig`, `FrameRecord`, ... |
 | `countdown_api.scripts` | the Lua scripts: `scripts.ENQUEUE.source`, `.sha1`, and what its `keys` and `args` are |
 | `countdown_api.fixtures` | the canonical examples: `fixtures.load("config_store.json")`, `fixtures.read_bytes("frame_record.bin")`, `fixtures.DIRECTORY` |
 
@@ -71,8 +91,10 @@ There are TypeScript types of the schemas too, `src/countdown_api/store.d.ts`, w
 name, and as `components["schemas"][name]`:
 
 ```ts
-import type { ConfigResponse, FrameRecord } from "<this repository>/src/countdown_api/store";
+import type { ConfigResponse, FrameRecord, TouchscreenConfig } from "<this repository>/src/countdown_api/store";
 ```
+
+Every generated file starts with an `@generated` line, which most tools and reviews read as "don't edit".
 
 The package also carries the contract itself as `countdown_api/store.json`. It needs only pydantic.
 
@@ -119,7 +141,9 @@ the contract's schemas as an OpenAPI document's components: JSON Schema 2020-12 
 the models are the same classes they were when the contract was an HTTP API. `store.d.ts` comes from
 openapi-typescript (pinned in `package.json`/`package-lock.json`), from the same OpenAPI document. It writes `keys.py`,
 `scripts.py`, `store.json` and `__init__.py` itself, from the same file, and runs `ruff check --fix` and `ruff format`
-on the Python and `biome check --write` on `store.d.ts` and `store.json`.
+on the Python and `biome check --write` on `store.d.ts` and `store.json`. It writes each tagged union (a `oneOf` with a
+`discriminator`) in `models.py` itself, after its members, as a Pydantic discriminated union: openapi-codegen would
+write a plain union, and can put it before its members.
 The models check the schemas' `pattern`s too, and the tests check every example against the schemas with jsonschema.
 
 CI checks it's up to date (`python generate.py --check`), type-checks `store.d.ts` with `tsc` (`tsconfig.json`: strict,

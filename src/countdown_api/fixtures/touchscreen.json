@@ -1,5 +1,5 @@
 {
-  "about": "A touchscreen: what it registers with (beside an e-paper screen's registration, the same route) and is answered, what GET /api/config answers before it is paired (the pairing value: its config with the code to show and its touchscreen block's defaults) and after, as the settings site saved it whole. The touchscreen's tests check its client against these, and the broker's tests its routes. The rest of the config is config_store.json's, as the settings site would leave it. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "about": "A touchscreen: what it registers with (beside an e-paper screen's registration, the same route) and is answered, what GET /api/devices/config answers before it is paired (the pairing value: its config with the code to show and its style's and display's defaults) and after, and what it saves with PUT /api/devices/config from its own settings panel (`save`: the whole config as it got it, its skin and sleep changed, read-only fields and all). The touchscreen's tests check its client against these, and the broker's tests its routes. An e-paper screen's config is config_store.json's. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
   "device_id": "0a1b2c3d4e5f",
   "registration": {
     "secret": "example-not-a-real-secret-0001",
@@ -19,139 +19,143 @@
   "pairing": {
     "device_id": "0a1b2c3d4e5f",
     "type": "touchscreen",
-    "touchscreen": {
-      "theme": "day",
-      "theme_colour": "forest",
-      "screen_sleep_minutes": 5
-    },
+    "width": 1280,
+    "height": 800,
+    "pairing_code": "ABC234",
     "interval": 60,
-    "clock_format": "12h",
+    "clock_format": "24h",
     "language": "en",
     "timezone": "Europe/London",
-    "style": "hero",
-    "screen": {
-      "orientation": "vertical",
-      "width": 480,
-      "height": 800,
-      "format": "mono-1bpp-packed",
-      "layout": null
+    "arrivals": {
+      "stops": []
     },
     "weather": {
       "location": "London",
-      "key": "london-gb-2643743",
-      "design": "columns"
+      "key": "london-gb-2643743"
     },
     "notice_board": {
-      "postcode": "SE17 3LL",
-      "country": "GB",
-      "style": "hero"
-    },
-    "tfl": {
-      "stop_ids": ["490000077E", "940GZZLUOVL"],
-      "style": "hero"
-    },
-    "departures": {
-      "stops": [
-        {
-          "source": "tfl",
-          "id": "490000077E"
-        },
-        {
-          "source": "tfl",
-          "id": "940GZZLUOVL"
-        },
-        {
-          "source": "entur",
-          "id": "NSR:StopPlace:58381"
-        }
-      ],
-      "style": "hero"
+      "postcode": null,
+      "country": null
     },
     "spotify": {
-      "enabled": true,
-      "style": "hero"
-    },
-    "glowmarkt": {
-      "enabled": true
-    },
-    "developer": {
-      "enabled": true
-    },
-    "parcels": {
-      "enabled": true
+      "enabled": false
     },
     "apple_music": {
       "enabled": false
     },
-    "pairing_code": "ABC234"
+    "glowmarkt": {
+      "enabled": false
+    },
+    "developer": {
+      "enabled": false
+    },
+    "parcels": {
+      "enabled": false
+    },
+    "style": {
+      "skin": "day",
+      "colour": "forest"
+    },
+    "display": {
+      "sleep_minutes": 5
+    }
   },
   "config": {
     "device_id": "0a1b2c3d4e5f",
     "type": "touchscreen",
-    "touchscreen": {
-      "theme": "auto",
-      "theme_colour": "dynamic",
-      "screen_sleep_minutes": 15
-    },
+    "width": 1280,
+    "height": 800,
+    "pairing_code": null,
     "interval": 60,
-    "clock_format": "12h",
-    "language": "en",
-    "timezone": "Europe/London",
-    "style": "hero",
-    "screen": {
-      "orientation": "vertical",
-      "width": 480,
-      "height": 800,
-      "format": "mono-1bpp-packed",
-      "layout": null
-    },
-    "weather": {
-      "location": "London",
-      "key": "london-gb-2643743",
-      "design": "columns"
-    },
-    "notice_board": {
-      "postcode": "SE17 3LL",
-      "country": "GB",
-      "style": "hero"
-    },
-    "tfl": {
-      "stop_ids": ["490000077E", "940GZZLUOVL"],
-      "style": "hero"
-    },
-    "departures": {
+    "clock_format": "24h",
+    "language": "nb",
+    "timezone": "Europe/Oslo",
+    "arrivals": {
       "stops": [
-        {
-          "source": "tfl",
-          "id": "490000077E"
-        },
-        {
-          "source": "tfl",
-          "id": "940GZZLUOVL"
-        },
         {
           "source": "entur",
           "id": "NSR:StopPlace:58381"
         }
-      ],
-      "style": "hero"
+      ]
+    },
+    "weather": {
+      "location": "Oslo",
+      "key": "oslo-no-3143244"
+    },
+    "notice_board": {
+      "postcode": "0150",
+      "country": "NO"
     },
     "spotify": {
-      "enabled": true,
-      "style": "hero"
-    },
-    "glowmarkt": {
-      "enabled": true
-    },
-    "developer": {
-      "enabled": true
-    },
-    "parcels": {
       "enabled": true
     },
     "apple_music": {
       "enabled": false
     },
-    "pairing_code": null
+    "glowmarkt": {
+      "enabled": false
+    },
+    "developer": {
+      "enabled": false
+    },
+    "parcels": {
+      "enabled": false
+    },
+    "style": {
+      "skin": "auto",
+      "colour": "dynamic"
+    },
+    "display": {
+      "sleep_minutes": 15
+    }
+  },
+  "save": {
+    "device_id": "0a1b2c3d4e5f",
+    "type": "touchscreen",
+    "width": 1280,
+    "height": 800,
+    "pairing_code": null,
+    "interval": 60,
+    "clock_format": "24h",
+    "language": "nb",
+    "timezone": "Europe/Oslo",
+    "arrivals": {
+      "stops": [
+        {
+          "source": "entur",
+          "id": "NSR:StopPlace:58381"
+        }
+      ]
+    },
+    "weather": {
+      "location": "Oslo",
+      "key": "oslo-no-3143244"
+    },
+    "notice_board": {
+      "postcode": "0150",
+      "country": "NO"
+    },
+    "spotify": {
+      "enabled": true
+    },
+    "apple_music": {
+      "enabled": false
+    },
+    "glowmarkt": {
+      "enabled": false
+    },
+    "developer": {
+      "enabled": false
+    },
+    "parcels": {
+      "enabled": false
+    },
+    "style": {
+      "skin": "night",
+      "colour": "dynamic"
+    },
+    "display": {
+      "sleep_minutes": 30
+    }
   }
 }

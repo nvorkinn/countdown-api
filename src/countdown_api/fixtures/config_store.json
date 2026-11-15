@@ -1,5 +1,5 @@
 {
-  "about": "A screen's config in the store: the key the broker writes it under, and the value: the screen's config as the store contract's ConfigResponse, with no pairing code (null), which the render pool draws the screen from. It carries no key of any kind. `settings` is the device's settings in the broker's database, which its tests make the value from; the renderer reads the value with the same ConfigResponse model. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "about": "A screen's config in the store: the key the broker writes it under, and the value: the screen's config as the store contract's ConfigResponse (an EpaperConfig), with no pairing code (null), which the render pool draws the screen from. It carries no key of any kind. `settings` is the device's settings in the broker's database, which its tests make the value from; the renderer reads the value with the same ConfigResponse model. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
   "device_id": "a1b2c3d4e5f6",
   "key": "v1:config:a1b2c3d4e5f6",
   "settings": {
@@ -30,33 +30,16 @@
   },
   "value": {
     "device_id": "a1b2c3d4e5f6",
+    "type": "epaper",
+    "width": 480,
+    "height": 800,
+    "format": "mono-1bpp-packed",
+    "pairing_code": null,
     "interval": 60,
     "clock_format": "12h",
     "language": "en",
     "timezone": "Europe/London",
-    "style": "hero",
-    "screen": {
-      "orientation": "vertical",
-      "width": 480,
-      "height": 800,
-      "format": "mono-1bpp-packed",
-      "layout": null
-    },
-    "weather": {
-      "location": "London",
-      "key": "london-gb-2643743",
-      "design": "columns"
-    },
-    "notice_board": {
-      "postcode": "SE17 3LL",
-      "country": "GB",
-      "style": "hero"
-    },
-    "tfl": {
-      "stop_ids": ["490000077E", "940GZZLUOVL"],
-      "style": "hero"
-    },
-    "departures": {
+    "arrivals": {
       "stops": [
         {
           "source": "tfl",
@@ -70,12 +53,21 @@
           "source": "entur",
           "id": "NSR:StopPlace:58381"
         }
-      ],
-      "style": "hero"
+      ]
+    },
+    "weather": {
+      "location": "London",
+      "key": "london-gb-2643743"
+    },
+    "notice_board": {
+      "postcode": "SE17 3LL",
+      "country": "GB"
     },
     "spotify": {
-      "enabled": true,
-      "style": "hero"
+      "enabled": true
+    },
+    "apple_music": {
+      "enabled": false
     },
     "glowmarkt": {
       "enabled": true
@@ -86,9 +78,11 @@
     "parcels": {
       "enabled": true
     },
-    "apple_music": {
-      "enabled": false
-    },
-    "pairing_code": null
+    "style": {
+      "orientation": "vertical",
+      "drawing": "hero",
+      "weather": "columns",
+      "layout": null
+    }
   }
 }

@@ -42,16 +42,13 @@ class DepartureStop(BaseModel):
     )
 
 
-class Departures(BaseModel):
-    """The ``Departures`` object."""
+class Arrivals(BaseModel):
+    """The arrivals panel (bus, train and tram stops)."""
 
-    stops: list[DepartureStop]
-    style: Literal["classic", "hero", "grouped", "card"] = Field(
-        default="hero",
-        description=(
-            "How each stop's departures are drawn, the same for every source. Superseded by style; see tfl.style for "
-            "the values."
-        ),
+    model_config = ConfigDict(extra="forbid")
+
+    stops: list[DepartureStop] = Field(
+        description="Every stop whose departures the device shows, from any source, in the owner's order.",
     )
 
 
@@ -66,6 +63,16 @@ class Developer(BaseModel):
     )
 
 
+DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
+"""A device's id, 12 hex digits (six random bytes), as the broker registered it."""
+
+
+DeviceType = Literal["epaper", "touchscreen"]
+"""What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool
+draws, or a touchscreen, which draws itself from its config.
+"""
+
+
 class Glowmarkt(BaseModel):
     """The ``Glowmarkt`` object."""
 
@@ -78,25 +85,13 @@ class Glowmarkt(BaseModel):
 
 
 class NoticeBoard(BaseModel):
-    """The ``NoticeBoard`` object."""
+    """The notice board, of notices about the device's place."""
 
-    postcode: str | None
+    model_config = ConfigDict(extra="forbid")
+
+    postcode: str | None = Field(description="The place's postcode, or null for no local notices.")
     country: Literal["GB", "NO"] | None = Field(
-        default=None,
-        description=(
-            "The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional; without it a "
-            "postcode is taken to be British."
-        ),
-    )
-    style: Literal["airy", "hero", "card", "boxed"] = Field(
-        default="hero",
-        description=(
-            "How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-"
-            "caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); "
-            "boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send"
-            " it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws "
-            "boxed as card."
-        ),
+        description="The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.",
     )
 
 
@@ -111,238 +106,90 @@ class Parcels(BaseModel):
     )
 
 
-Layout = Literal[
-    "classic",
-    "masthead",
-    "column",
-    "lockscreen",
-    "timeline",
-    "board",
-    "pages",
-    "sidebar",
-    "focus",
-    "newspaper",
-    "track",
-    "ledger",
-    "queue",
-]
-"""A layout a screen can be drawn in (Screen's layout says which sizes have which)."""
-
-
-class Screen(BaseModel):
-    """The ``Screen`` object."""
-
-    orientation: Literal["horizontal", "vertical"]
-    width: int
-    height: int
-    format: Literal["mono-1bpp-packed", "png"] = Field(
-        description=(
-            "The format the screen takes its frame in, as it reported at registration. mono-1bpp-packed is the "
-            "e-paper's raw buffer, 800x480 at one bit a pixel, rows top to bottom, the leftmost pixel in a byte's high"
-            " bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame."
-        ),
-    )
-    layout: Layout | None = Field(
-        default=None,
-        description=(
-            "Which layout the screen is drawn in. Each size of screen has its own layouts, the first its default. A "
-            "1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices),"
-            " masthead (the clock and the weather in a black band across the top), column (the weather down a column "
-            "beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed "
-            "by its minute along a line down the middle), board (each route once, with its next three times) and pages"
-            " (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock "
-            "and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather "
-            "and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify "
-            "and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a "
-            "column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a "
-            "masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. Hung portrait,"
-            " both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each "
-            "route with its departures along a line of the next half hour), ledger (each route once, with the times "
-            "after the next under where it's going) and queue (every departure on a row of its own). A layout the "
-            "screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each "
-            "size's default."
-        ),
-    )
-
-
 class Spotify(BaseModel):
-    """The ``Spotify`` object."""
-
-    enabled: bool
-    style: Literal["classic", "airy", "hero", "card"] = Field(
-        default="hero",
-        description=(
-            "How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps labels like the "
-            "weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a "
-            "rounded card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the "
-            "original look, is retired; it is still accepted, so an older broker that sends it keeps validating, and "
-            "it is drawn as hero. Superseded by style."
-        ),
-    )
-
-
-class Tfl(BaseModel):
-    """The ``Tfl`` object."""
-
-    stop_ids: list[str]
-    style: Literal["classic", "hero", "grouped", "card"] = Field(
-        default="hero",
-        description=(
-            "How each stop's departures are drawn. hero makes the next departure big; grouped gives each route one row"
-            " with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a "
-            "broker that doesn't send it gets hero. classic, the original row per departure under a black header, is "
-            "retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as "
-            "hero. Superseded by style, where grouped is called airy."
-        ),
-    )
-
-
-class Touchscreen(BaseModel):
-    """The ``Touchscreen`` object.
-
-    A touchscreen's own settings, as its settings panel shows them, each set (to its default if
-    unchosen). The settings it shares with an e-paper screen (clock_format, language, timezone) are the
-    config's own.
-    """
+    """The Spotify area."""
 
     model_config = ConfigDict(extra="forbid")
 
-    theme: Literal["day", "auto", "night"] = Field(
+    enabled: bool = Field(
         description=(
-            "The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a "
-            "touchscreen that doesn't know its location shows day."
+            "Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills "
+            "with the account's Spotify link, so no token is sent here."
         ),
     )
-    theme_colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
-        description=(
-            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
-            " looks like forest without any."
-        ),
-    )
-    screen_sleep_minutes: Literal[0, 2, 5, 15, 30] = Field(
-        description=(
-            "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk "
-            "sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
-        ),
-    )
+
+
+WeatherKey = Annotated[str, Field(pattern="^[^\\s:]+$")]
+"""A weather key. For a place picked on the settings page it is the slug of its name, its country (xx
+for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a
+typed location, that text's slug. weather_keys.json has examples.
+"""
 
 
 class Weather(BaseModel):
-    """The ``Weather`` object."""
+    """The weather panel."""
 
-    location: str
-    key: str | None = Field(
-        default=None,
+    model_config = ConfigDict(extra="forbid")
+
+    location: str = Field(description="The place as the owner named it.")
+    key: WeatherKey = Field(
         description=(
-            "The key the place's weather is kept under in the store, which the renderer reads as v1:weather:<key>, "
-            "e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or the slug of location "
-            "for one saved before places were picked (london). Optional; a renderer that gets null (a broker that "
-            "predates it) reads the weather under location instead."
-        ),
-    )
-    design: Literal["columns", "timeline", "overview", "poster"] = Field(
-        default="columns",
-        description=(
-            "How the weather is drawn on an HD screen (1872x1404 hung portrait), where it spans the whole width and "
-            "has room for more than the 7.5\" screens' panel. columns puts the readings in tiles beside the conditions,"
-            " with the outlook under them; timeline has the coming twelve hours in a strip along the bottom; overview "
-            "shows now, tonight, tomorrow and the weekend side by side, with no tabs; poster sets the temperature very"
-            " big, with the readings in a black band. Other screens ignore it. Optional, so a broker that doesn't send"
-            " it gets columns."
+            "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for "
+            "none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed "
+            "location, that text's slug. weather_keys.json has examples."
         ),
     )
 
 
-class ConfigResponse(BaseModel):
-    """A device's config.
+class ConfigBase(BaseModel):
+    """The ``ConfigBase`` object.
 
-    It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of
-    v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type
-    touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.
+    What every device's config has (ConfigResponse), whatever its type: the flat fields and the shared
+    sections.
     """
 
-    device_id: str
-    type: Literal["epaper", "touchscreen"] = Field(
-        default="epaper",
+    device_id: DeviceId = Field(
+        description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
+    )
+    type: DeviceType = Field(
         description=(
-            "What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The "
-            "render pool draws only e-paper screens' frames (v1:render:screens lists no touchscreen)."
+            "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, "
+            "or a touchscreen, which draws itself from its config."
         ),
     )
-    touchscreen: Touchscreen | None = Field(
-        default=None,
-        description="A touchscreen's own settings, set for every touchscreen and for nothing else.",
+    width: Annotated[int, Field(gt=0)] = Field(
+        description="The device's screen width in pixels, as it reported at registration.",
+    )
+    height: Annotated[int, Field(gt=0)] = Field(
+        description="The device's screen height in pixels, as it reported at registration.",
+    )
+    pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] | None = Field(
+        description=(
+            "The code to show while no one has paired the device: six of A-Z and 2-9, less the look-alikes 0, O, 1, I "
+            "and L. Only v1:pairing:<device id> has one; null in v1:config:<device id>, and once it's paired."
+        ),
     )
     interval: Annotated[int, Field(gt=0)] = Field(description="Seconds between updates.")
     clock_format: Literal["12h", "24h"] = Field(
-        default="24h",
         description=(
             "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time "
-            "zones or log formats. Optional, so a broker that doesn't send it gets 24h."
+            "zones or log formats."
         ),
     )
     language: Literal["en", "nb"] = Field(
-        default="en",
-        description=(
-            "The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål). Optional, so a "
-            "broker that doesn't send it gets en."
-        ),
+        description="The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål).",
     )
     timezone: str = Field(
-        default="Europe/London",
-        description=(
-            "The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. Optional, so a "
-            "broker that doesn't send it gets Europe/London."
-        ),
+        description="The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today.",
     )
-    style: Literal["airy", "hero", "card"] | None = Field(
-        default=None,
-        description=(
-            "How every panel is drawn (the departures, Spotify and the notice board, and any panel added later), so "
-            "the screen has one look. airy has small-caps labels over a hairline, like the weather; hero has an icon "
-            "header over a heavy rule and makes the first item big; card puts each panel in a rounded card with a "
-            "black title bar. A renderer that reads it ignores tfl.style, departures.style, spotify.style and "
-            "notice_board.style, which a broker keeps sending for older renderers. Optional, so a broker that doesn't "
-            "send it leaves the renderer on those."
-        ),
-    )
-    screen: Screen
-    weather: Weather
-    notice_board: NoticeBoard
-    tfl: Tfl
-    departures: Departures | None = Field(
-        default=None,
-        description=(
-            "Every stop whose departures the screen shows, from any source, in the owner's order. A renderer that "
-            "reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it leaves the "
-            "renderer on tfl."
-        ),
-    )
-    spotify: Spotify
+    arrivals: Arrivals = Field(description="The arrivals panel (bus, train and tram stops).")
+    weather: Weather = Field(description="The weather panel.")
+    notice_board: NoticeBoard = Field(description="The notice board, of notices about the device's place.")
+    spotify: Spotify = Field(description="The Spotify area.")
+    apple_music: AppleMusic
     glowmarkt: Glowmarkt
-    developer: Developer | None = Field(
-        default=None,
-        description=(
-            "The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that doesn't send "
-            "it leaves the panel off."
-        ),
-    )
-    apple_music: AppleMusic | None = Field(
-        default=None,
-        description=(
-            "Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker that doesn't "
-            "send it leaves it off."
-        ),
-    )
-    parcels: Parcels | None = Field(
-        default=None,
-        description="The parcels panel and parcel notices. Optional, so a broker that doesn't send it leaves them off.",
-    )
-    pairing_code: str | None
-
-
-DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
-"""A device's id, 12 hex digits (six random bytes), as the broker registered it."""
+    developer: Developer
+    parcels: Parcels
 
 
 class DeviceRegistered(BaseModel):
@@ -355,17 +202,11 @@ class DeviceRegistered(BaseModel):
     )
 
 
-DeviceType = Literal["epaper", "touchscreen"]
-"""What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool
-draws, or a touchscreen, which draws itself from its config.
-"""
-
-
 class DeviceRegistration(BaseModel):
     """What POST /api/devices/register takes.
 
     Every device says its size; an e-paper screen also says the format it takes its frame in (its
-    config's screen), while a touchscreen draws itself, so says no format.
+    config's format), while a touchscreen draws itself, so says no format.
     """
 
     secret: Annotated[str, Field(min_length=16)] = Field(
@@ -385,8 +226,86 @@ class DeviceRegistration(BaseModel):
     height: Annotated[int, Field(gt=0)] = Field(description="The device's screen height, in pixels.")
     format: Literal["mono-1bpp-packed", "png"] | None = Field(
         default=None,
-        description="The format an e-paper screen takes its frame in, as its config's screen.format.",
+        description="The format an e-paper screen takes its frame in, as its config's format.",
     )
+
+
+Layout = Literal[
+    "classic",
+    "masthead",
+    "column",
+    "lockscreen",
+    "timeline",
+    "board",
+    "pages",
+    "sidebar",
+    "focus",
+    "newspaper",
+    "track",
+    "ledger",
+    "queue",
+]
+"""A layout an e-paper screen can be drawn in (EpaperStyle's layout says which sizes have which)."""
+
+
+class EpaperStyle(BaseModel):
+    """How an e-paper screen is drawn."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    orientation: Literal["horizontal", "vertical"] = Field(description="How the screen hangs; vertical is portrait.")
+    drawing: Literal["airy", "hero", "card"] = Field(
+        description=(
+            "How every panel is drawn, so the screen has one look. airy has small-caps labels over a hairline; hero "
+            "has an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded card"
+            " with a black title bar."
+        ),
+    )
+    weather: Literal["columns", "timeline", "overview", "poster"] = Field(
+        description=(
+            "How the weather is drawn on an HD screen (1872x1404 hung portrait), where it spans the whole width and "
+            "has room for more than the 7.5\" screens' panel. columns puts the readings in tiles beside the conditions,"
+            " with the outlook under them; timeline has the coming twelve hours in a strip along the bottom; overview "
+            "shows now, tonight, tomorrow and the weekend side by side, with no tabs; poster sets the temperature very"
+            " big, with the readings in a black band. Other screens ignore it."
+        ),
+    )
+    layout: Layout | None = Field(
+        description=(
+            "Which layout the screen is drawn in, or null for its size's default. Each size of screen has its own "
+            "layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then "
+            "the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top),"
+            " column (the weather down a column beside the stops), lockscreen (a big clock over a card for each "
+            "panel), timeline (each departure placed by its minute along a line down the middle), board (each route "
+            "once, with its next three times) and pages (the stops and the rest of the panels on two pages that take "
+            "turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by "
+            "side as big departure boards, the weather and the energy chart under them), column (the weather down a "
+            "column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure "
+            "huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the "
+            "weather and the notices in columns under a masthead) and pages (as portrait's, side by side in "
+            'landscape); the 7.5" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the '
+            "weather in brief over one stop, both big, as track (each route with its departures along a line of the "
+            "next half hour), ledger (each route once, with the times after the next under where it's going) and queue"
+            " (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default."
+        ),
+    )
+
+
+class EpaperConfig(ConfigBase):
+    """The ``EpaperConfig`` object.
+
+    An e-paper screen's config (ConfigResponse with type epaper), which the render pool draws its frames
+    from.
+    """
+
+    type: Literal["epaper"]
+    format: Literal["mono-1bpp-packed", "png"] = Field(
+        description=(
+            "The format the screen takes its frame in, as it reported at registration (FrameRecord's frame for "
+            "mono-1bpp-packed)."
+        ),
+    )
+    style: EpaperStyle = Field(description="How an e-paper screen is drawn.")
 
 
 class FrameRecord(BaseModel):
@@ -437,18 +356,6 @@ MusicTopLists = dict[str, MusicTopRange]
 
 Pace = Annotated[str, Field(pattern="^[0-9]+$")]
 """Seconds, as decimal text (what SET of an integer stores)."""
-
-
-class PairingConfig(ConfigResponse):
-    """The ``PairingConfig`` object.
-
-    The value of v1:pairing:<device id>: the device's config, as v1:config:<device id> would hold it,
-    with the code it is to show.
-    """
-
-    pairing_code: Annotated[str, Field(pattern="^[A-HJKMNP-Z2-9]{6}$")] = Field(
-        description="The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L.",
-    )
 
 
 ParcelStatus = Literal["ordered", "in_transit", "out_for_delivery", "delivered", "exception", "unknown"]
@@ -613,8 +520,56 @@ Subscription = list[Annotated[str, Field(min_length=1)]]
 """A subscription set's members, in no order. See `sources` for each source's."""
 
 
-WeatherKey = Annotated[str, Field(pattern="^[^\\s:]+$")]
-"""A weather key. For a place picked on the settings page it is the slug of its name, its country (xx
-for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a
-typed location, that text's slug. weather_keys.json has examples.
+class TouchscreenDisplay(BaseModel):
+    """A touchscreen's screen itself."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sleep_minutes: Literal[0, 2, 5, 15, 30] = Field(
+        description=(
+            "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk "
+            "sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
+        ),
+    )
+
+
+class TouchscreenStyle(BaseModel):
+    """How a touchscreen looks."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    skin: Literal["day", "auto", "night"] = Field(
+        description=(
+            "day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen"
+            " that doesn't know its location shows as day."
+        ),
+    )
+    colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
+        description=(
+            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
+            " looks like forest without any."
+        ),
+    )
+
+
+class TouchscreenConfig(ConfigBase):
+    """A touchscreen's config (ConfigResponse with type touchscreen).
+
+    It draws itself from it, and saves it from its own settings panel.
+    """
+
+    type: Literal["touchscreen"]
+    style: TouchscreenStyle = Field(description="How a touchscreen looks.")
+    display: TouchscreenDisplay = Field(description="A touchscreen's screen itself.")
+
+
+ConfigResponse = Annotated[EpaperConfig | TouchscreenConfig, Field(discriminator="type")]
+"""A device's config: the value of v1:config:<device id> (with no pairing code) and, with its
+pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and
+take. A few flat fields (who and what the device is, its size, and the settings every panel shares),
+then a section per panel, each its own schema, and `style`, which every type has but whose schema is
+the type's own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's
+(TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's,
+held on the server. A read-only field (readOnly) is the server's, or what the device said at
+registration, and isn't changed by a save.
 """

@@ -77,9 +77,10 @@ def test_every_example_is_some_keys_or_routes() -> None:
 
 
 def test_the_routes_are_what_they_were() -> None:
-    # The routes the devices run on today: a change to any of these is a new route, not an edit.
+    # The routes the devices run on.
     assert sorted(OPERATIONS) == [
-        ("/api/config", "get"),
+        ("/api/devices/config", "get"),
+        ("/api/devices/config", "put"),
         ("/api/devices/register", "post"),
     ]
 
@@ -130,3 +131,23 @@ def test_the_keys_are_what_they_were() -> None:
 def test_store_json_is_store_yaml() -> None:
     shipped = json.loads((ROOT / "src" / "countdown_api" / "store.json").read_text(encoding="utf-8"))
     assert shipped == contract()
+
+
+TAGGED = sorted(name for name, schema in DEFS.items() if "discriminator" in schema)
+
+
+@pytest.mark.parametrize("name", TAGGED)
+def test_each_tagged_union_maps_each_tag_to_its_member(name: str) -> None:
+    schema = DEFS[name]
+    tag = schema["discriminator"]["propertyName"]
+    members = [option["$ref"] for option in schema["oneOf"]]
+    assert sorted(schema["discriminator"]["mapping"].values()) == sorted(members)
+    for value, ref in schema["discriminator"]["mapping"].items():
+        assert DEFS[ref.removeprefix("#/$defs/")]["properties"][tag]["const"] == value
+
+
+@pytest.mark.parametrize("name", TAGGED)
+def test_each_tagged_union_is_a_pydantic_discriminated_union(name: str) -> None:
+    # openapi-codegen would write a plain union; generate.py writes these itself, picked by their tag.
+    metadata = getattr(models, name).__metadata__
+    assert [field.discriminator for field in metadata] == [DEFS[name]["discriminator"]["propertyName"]]

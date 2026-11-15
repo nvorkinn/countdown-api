@@ -58,7 +58,7 @@
         "device_id": "the device's id (DeviceId)."
       },
       "redis": "string",
-      "value": "PairingConfig",
+      "value": "ConfigResponse",
       "encoding": "json",
       "ttl_s": 600,
       "ttl": "the code's own expiry, ten minutes from when it was issued (set with PXAT to the millisecond). The broker deletes it sooner when the code is used, or the device paired, unpaired or forgotten.",
@@ -297,11 +297,11 @@
         "x-examples": ["touchscreen.json"]
       }
     },
-    "/api/config": {
+    "/api/devices/config": {
       "get": {
         "operationId": "getConfig",
         "summary": "The device's config.",
-        "description": "What a touchscreen polls: its config, as v1:config:<device id> holds it, with its touchscreen block. While no one has paired it, it's the pairing value instead (PairingConfig: the config with the code to show, which the broker issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The config is changed only on the settings site, and saved whole.",
+        "description": "The device's config, as v1:config:<device id> holds it (ConfigResponse); while no one has paired it, the pairing value instead (v1:pairing:<device id>: the config with the code to show, which the server issues afresh as each expires), as the render pool gets for an e-paper screen's pairing screen. The server is the one source of truth for it; the device keeps a copy of the last one it got for when the server can't be reached.",
         "security": [
           {
             "deviceSecret": []
@@ -322,7 +322,49 @@
             "description": "A missing or unknown secret."
           }
         },
-        "x-examples": ["touchscreen.json"]
+        "x-examples": ["touchscreen.json", "config_store.json"]
+      },
+      "put": {
+        "operationId": "putConfig",
+        "summary": "Save the device's config, whole.",
+        "description": "What a device with a settings panel of its own (a touchscreen) saves when its owner changes something there: the whole config, as it got it with the change made. The read-only fields (readOnly) are the server's or the device's registration's and can't be changed here: they're sent as they came, and anything else is a 400. Answers the config as saved, as GET does.",
+        "security": [
+          {
+            "deviceSecret": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/$defs/ConfigResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The config as saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/$defs/ConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A config the schema doesn't allow, or one that changes a read-only field."
+          },
+          "401": {
+            "description": "A missing or unknown secret."
+          },
+          "409": {
+            "description": "The device isn't paired yet, so there's no owner's config to save."
+          }
+        },
+        "x-examples": ["touchscreen.json", "config_store.json"]
       }
     }
   },
@@ -351,23 +393,6 @@
     "SubChanged": {
       "const": "",
       "description": "The nudge on v1:sub:changed carries nothing."
-    },
-    "PairingConfig": {
-      "description": "The value of v1:pairing:<device id>: the device's config, as v1:config:<device id> would hold it, with the code it is to show.",
-      "allOf": [
-        {
-          "$ref": "#/$defs/ConfigResponse"
-        }
-      ],
-      "properties": {
-        "pairing_code": {
-          "type": "string",
-          "pattern": "^[A-HJKMNP-Z2-9]{6}$",
-          "description": "The live code: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L."
-        }
-      },
-      "required": ["pairing_code"],
-      "type": "object"
     },
     "RenderScreens": {
       "type": "object",
@@ -683,179 +708,6 @@
       "pattern": "^[^\\s:]+$",
       "description": "A weather key. For a place picked on the settings page it is the slug of its name, its country (xx for none) and its Open-Meteo id, or just the country and id for a name with no Latin letters; for a typed location, that text's slug. weather_keys.json has examples."
     },
-    "ConfigResponse": {
-      "description": "A device's config. It is the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id> (PairingConfig), and what GET /api/config answers. A touchscreen (type touchscreen) has its own settings in `touchscreen`, and only a touchscreen has them.",
-      "if": {
-        "properties": {
-          "type": {
-            "const": "touchscreen"
-          }
-        },
-        "required": ["type"]
-      },
-      "then": {
-        "properties": {
-          "touchscreen": {
-            "$ref": "#/$defs/Touchscreen"
-          }
-        },
-        "required": ["touchscreen"]
-      },
-      "else": {
-        "properties": {
-          "touchscreen": {
-            "type": "null"
-          }
-        }
-      },
-      "properties": {
-        "device_id": {
-          "type": "string"
-        },
-        "type": {
-          "enum": ["epaper", "touchscreen"],
-          "default": "epaper",
-          "type": "string",
-          "description": "What kind of device it is (DeviceType). Optional, so a broker that doesn't send it gets epaper. The render pool draws only e-paper screens' frames (v1:render:screens lists no touchscreen)."
-        },
-        "touchscreen": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Touchscreen"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "A touchscreen's own settings, set for every touchscreen and for nothing else."
-        },
-        "interval": {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "description": "Seconds between updates."
-        },
-        "clock_format": {
-          "enum": ["12h", "24h"],
-          "default": "24h",
-          "type": "string",
-          "description": "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time zones or log formats. Optional, so a broker that doesn't send it gets 24h."
-        },
-        "language": {
-          "enum": ["en", "nb"],
-          "default": "en",
-          "type": "string",
-          "description": "The language of everything the screen shows, as a BCP 47 code (nb is Norwegian Bokmål). Optional, so a broker that doesn't send it gets en."
-        },
-        "timezone": {
-          "default": "Europe/London",
-          "type": "string",
-          "description": "The screen's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today. Optional, so a broker that doesn't send it gets Europe/London."
-        },
-        "style": {
-          "anyOf": [
-            {
-              "enum": ["airy", "hero", "card"],
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "How every panel is drawn (the departures, Spotify and the notice board, and any panel added later), so the screen has one look. airy has small-caps labels over a hairline, like the weather; hero has an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded card with a black title bar. A renderer that reads it ignores tfl.style, departures.style, spotify.style and notice_board.style, which a broker keeps sending for older renderers. Optional, so a broker that doesn't send it leaves the renderer on those."
-        },
-        "screen": {
-          "$ref": "#/$defs/Screen"
-        },
-        "weather": {
-          "$ref": "#/$defs/Weather"
-        },
-        "notice_board": {
-          "$ref": "#/$defs/NoticeBoard"
-        },
-        "tfl": {
-          "$ref": "#/$defs/Tfl"
-        },
-        "departures": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Departures"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Every stop whose departures the screen shows, from any source, in the owner's order. A renderer that reads it ignores tfl.stop_ids and tfl.style. Optional, so a broker that doesn't send it leaves the renderer on tfl."
-        },
-        "spotify": {
-          "$ref": "#/$defs/Spotify"
-        },
-        "glowmarkt": {
-          "$ref": "#/$defs/Glowmarkt"
-        },
-        "developer": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Developer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The developer panel (GitHub pull requests and builds, AI plans). Optional, so a broker that doesn't send it leaves the panel off."
-        },
-        "apple_music": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/AppleMusic"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Apple Music, shown in the Spotify area beside or instead of Spotify. Optional, so a broker that doesn't send it leaves it off."
-        },
-        "parcels": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Parcels"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The parcels panel and parcel notices. Optional, so a broker that doesn't send it leaves them off."
-        },
-        "pairing_code": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": [
-        "device_id",
-        "interval",
-        "screen",
-        "weather",
-        "notice_board",
-        "tfl",
-        "spotify",
-        "glowmarkt",
-        "pairing_code"
-      ],
-      "title": "ConfigResponse",
-      "type": "object"
-    },
     "DepartureStop": {
       "properties": {
         "source": {
@@ -870,25 +722,6 @@
       },
       "required": ["source", "id"],
       "title": "DepartureStop",
-      "type": "object"
-    },
-    "Departures": {
-      "properties": {
-        "stops": {
-          "items": {
-            "$ref": "#/$defs/DepartureStop"
-          },
-          "type": "array"
-        },
-        "style": {
-          "enum": ["classic", "hero", "grouped", "card"],
-          "default": "hero",
-          "type": "string",
-          "description": "How each stop's departures are drawn, the same for every source. Superseded by style; see tfl.style for the values."
-        }
-      },
-      "required": ["stops"],
-      "title": "Departures",
       "type": "object"
     },
     "AppleMusic": {
@@ -935,42 +768,6 @@
       "title": "Glowmarkt",
       "type": "object"
     },
-    "NoticeBoard": {
-      "properties": {
-        "postcode": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "country": {
-          "anyOf": [
-            {
-              "enum": ["GB", "NO"],
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The postcode's country (ISO 3166-1 alpha-2), which decides the local notices. Optional; without it a postcode is taken to be British."
-        },
-        "style": {
-          "enum": ["airy", "hero", "card", "boxed"],
-          "default": "hero",
-          "type": "string",
-          "description": "How the notice board is drawn. airy, hero and card match the Spotify styles of the same name (a small-caps label over a hairline; an icon header over a heavy rule; a rounded card with a black title bar); boxed puts it in a square box with a black title bar and a count. Optional, so a broker that doesn't send it gets hero. Superseded by style, which has no boxed; a renderer that reads this field alone draws boxed as card."
-        }
-      },
-      "required": ["postcode"],
-      "title": "NoticeBoard",
-      "type": "object"
-    },
     "Layout": {
       "enum": [
         "classic",
@@ -988,138 +785,15 @@
         "queue"
       ],
       "type": "string",
-      "description": "A layout a screen can be drawn in (Screen's layout says which sizes have which)."
-    },
-    "Screen": {
-      "properties": {
-        "orientation": {
-          "enum": ["horizontal", "vertical"],
-          "type": "string"
-        },
-        "width": {
-          "type": "integer"
-        },
-        "height": {
-          "type": "integer"
-        },
-        "format": {
-          "enum": ["mono-1bpp-packed", "png"],
-          "type": "string",
-          "description": "The format the screen takes its frame in, as it reported at registration. mono-1bpp-packed is the e-paper's raw buffer, 800x480 at one bit a pixel, rows top to bottom, the leftmost pixel in a byte's high bit and a set bit black (FrameRecord's frame); png is a PNG image of the frame."
-        },
-        "layout": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Layout"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Which layout the screen is drawn in. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. Optional, so a broker that doesn't send it gets each size's default."
-        }
-      },
-      "required": ["orientation", "width", "height", "format"],
-      "title": "Screen",
-      "type": "object"
-    },
-    "Spotify": {
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "style": {
-          "enum": ["classic", "airy", "hero", "card"],
-          "default": "hero",
-          "type": "string",
-          "description": "How the Spotify panel is drawn, now playing and top tracks alike. airy has small-caps labels like the weather; hero has an icon header and makes the top track big, like the hero arrivals; card puts it in a rounded card with a black title bar. Optional, so a broker that doesn't send it gets hero. classic, the original look, is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style."
-        }
-      },
-      "required": ["enabled"],
-      "title": "Spotify",
-      "type": "object"
-    },
-    "Tfl": {
-      "properties": {
-        "stop_ids": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "style": {
-          "enum": ["classic", "hero", "grouped", "card"],
-          "default": "hero",
-          "type": "string",
-          "description": "How each stop's departures are drawn. hero makes the next departure big; grouped gives each route one row with its next few times; card puts the stop in a rounded card with a column of minutes. Optional, so a broker that doesn't send it gets hero. classic, the original row per departure under a black header, is retired; it is still accepted, so an older broker that sends it keeps validating, and it is drawn as hero. Superseded by style, where grouped is called airy."
-        }
-      },
-      "required": ["stop_ids"],
-      "title": "Tfl",
-      "type": "object"
-    },
-    "Weather": {
-      "properties": {
-        "location": {
-          "type": "string"
-        },
-        "key": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The key the place's weather is kept under in the store, which the renderer reads as v1:weather:<key>, e.g. london-gb-2643743 for a picked place (its name, country and Open-Meteo id), or the slug of location for one saved before places were picked (london). Optional; a renderer that gets null (a broker that predates it) reads the weather under location instead."
-        },
-        "design": {
-          "enum": ["columns", "timeline", "overview", "poster"],
-          "default": "columns",
-          "type": "string",
-          "description": "How the weather is drawn on an HD screen (1872x1404 hung portrait), where it spans the whole width and has room for more than the 7.5\" screens' panel. columns puts the readings in tiles beside the conditions, with the outlook under them; timeline has the coming twelve hours in a strip along the bottom; overview shows now, tonight, tomorrow and the weekend side by side, with no tabs; poster sets the temperature very big, with the readings in a black band. Other screens ignore it. Optional, so a broker that doesn't send it gets columns."
-        }
-      },
-      "required": ["location"],
-      "title": "Weather",
-      "type": "object"
+      "description": "A layout an e-paper screen can be drawn in (EpaperStyle's layout says which sizes have which)."
     },
     "DeviceType": {
       "enum": ["epaper", "touchscreen"],
       "type": "string",
       "description": "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen, which draws itself from its config."
     },
-    "Touchscreen": {
-      "description": "A touchscreen's own settings, as its settings panel shows them, each set (to its default if unchosen). The settings it shares with an e-paper screen (clock_format, language, timezone) are the config's own.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "theme": {
-          "enum": ["day", "auto", "night"],
-          "default": "day",
-          "type": "string",
-          "description": "The touchscreen's skin. auto follows the sun at its location (day from sunrise to sunset), so a touchscreen that doesn't know its location shows day."
-        },
-        "theme_colour": {
-          "enum": ["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"],
-          "default": "forest",
-          "type": "string",
-          "description": "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any."
-        },
-        "screen_sleep_minutes": {
-          "enum": [0, 2, 5, 15, 30],
-          "default": 5,
-          "type": "integer",
-          "description": "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
-        }
-      },
-      "required": ["theme", "theme_colour", "screen_sleep_minutes"]
-    },
     "DeviceRegistration": {
-      "description": "What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's screen), while a touchscreen draws itself, so says no format.",
+      "description": "What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's format), while a touchscreen draws itself, so says no format.",
       "type": "object",
       "if": {
         "properties": {
@@ -1160,7 +834,7 @@
         "format": {
           "enum": ["mono-1bpp-packed", "png"],
           "type": "string",
-          "description": "The format an e-paper screen takes its frame in, as its config's screen.format."
+          "description": "The format an e-paper screen takes its frame in, as its config's format."
         }
       },
       "required": ["secret", "width", "height"]
@@ -1175,6 +849,311 @@
         }
       },
       "required": ["device_id"]
+    },
+    "ConfigResponse": {
+      "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and the settings every panel shares), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EpaperConfig"
+        },
+        {
+          "$ref": "#/$defs/TouchscreenConfig"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "type",
+        "mapping": {
+          "epaper": "#/$defs/EpaperConfig",
+          "touchscreen": "#/$defs/TouchscreenConfig"
+        }
+      }
+    },
+    "ConfigBase": {
+      "description": "What every device's config has (ConfigResponse), whatever its type: the flat fields and the shared sections.",
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "$ref": "#/$defs/DeviceId",
+          "readOnly": true
+        },
+        "type": {
+          "$ref": "#/$defs/DeviceType",
+          "readOnly": true
+        },
+        "width": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "readOnly": true,
+          "description": "The device's screen width in pixels, as it reported at registration."
+        },
+        "height": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "readOnly": true,
+          "description": "The device's screen height in pixels, as it reported at registration."
+        },
+        "pairing_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-HJKMNP-Z2-9]{6}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "description": "The code to show while no one has paired the device: six of A-Z and 2-9, less the look-alikes 0, O, 1, I and L. Only v1:pairing:<device id> has one; null in v1:config:<device id>, and once it's paired."
+        },
+        "interval": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Seconds between updates."
+        },
+        "clock_format": {
+          "enum": ["12h", "24h"],
+          "type": "string",
+          "description": "Application-wide format for user-facing clock times. Does not change machine timestamps, durations, time zones or log formats."
+        },
+        "language": {
+          "enum": ["en", "nb"],
+          "type": "string",
+          "description": "The language of everything the device shows, as a BCP 47 code (nb is Norwegian Bokmål)."
+        },
+        "timezone": {
+          "type": "string",
+          "description": "The device's IANA time zone, e.g. Europe/Oslo, for its clock and what counts as today."
+        },
+        "arrivals": {
+          "$ref": "#/$defs/Arrivals"
+        },
+        "weather": {
+          "$ref": "#/$defs/Weather"
+        },
+        "notice_board": {
+          "$ref": "#/$defs/NoticeBoard"
+        },
+        "spotify": {
+          "$ref": "#/$defs/Spotify"
+        },
+        "apple_music": {
+          "$ref": "#/$defs/AppleMusic"
+        },
+        "glowmarkt": {
+          "$ref": "#/$defs/Glowmarkt"
+        },
+        "developer": {
+          "$ref": "#/$defs/Developer"
+        },
+        "parcels": {
+          "$ref": "#/$defs/Parcels"
+        }
+      },
+      "required": [
+        "device_id",
+        "type",
+        "width",
+        "height",
+        "pairing_code",
+        "interval",
+        "clock_format",
+        "language",
+        "timezone",
+        "arrivals",
+        "weather",
+        "notice_board",
+        "spotify",
+        "apple_music",
+        "glowmarkt",
+        "developer",
+        "parcels"
+      ]
+    },
+    "EpaperConfig": {
+      "description": "An e-paper screen's config (ConfigResponse with type epaper), which the render pool draws its frames from.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/ConfigBase"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "epaper",
+          "readOnly": true
+        },
+        "format": {
+          "enum": ["mono-1bpp-packed", "png"],
+          "type": "string",
+          "readOnly": true,
+          "description": "The format the screen takes its frame in, as it reported at registration (FrameRecord's frame for mono-1bpp-packed)."
+        },
+        "style": {
+          "$ref": "#/$defs/EpaperStyle"
+        }
+      },
+      "required": ["type", "format", "style"]
+    },
+    "EpaperStyle": {
+      "description": "How an e-paper screen is drawn.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orientation": {
+          "enum": ["horizontal", "vertical"],
+          "type": "string",
+          "description": "How the screen hangs; vertical is portrait."
+        },
+        "drawing": {
+          "enum": ["airy", "hero", "card"],
+          "type": "string",
+          "description": "How every panel is drawn, so the screen has one look. airy has small-caps labels over a hairline; hero has an icon header over a heavy rule and makes the first item big; card puts each panel in a rounded card with a black title bar."
+        },
+        "weather": {
+          "enum": ["columns", "timeline", "overview", "poster"],
+          "type": "string",
+          "description": "How the weather is drawn on an HD screen (1872x1404 hung portrait), where it spans the whole width and has room for more than the 7.5\" screens' panel. columns puts the readings in tiles beside the conditions, with the outlook under them; timeline has the coming twelve hours in a strip along the bottom; overview shows now, tonight, tomorrow and the weekend side by side, with no tabs; poster sets the temperature very big, with the readings in a black band. Other screens ignore it."
+        },
+        "layout": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Layout"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Which layout the screen is drawn in, or null for its size's default. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5\" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default."
+        }
+      },
+      "required": ["orientation", "drawing", "weather", "layout"]
+    },
+    "TouchscreenConfig": {
+      "description": "A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings panel.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/ConfigBase"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "touchscreen",
+          "readOnly": true
+        },
+        "style": {
+          "$ref": "#/$defs/TouchscreenStyle"
+        },
+        "display": {
+          "$ref": "#/$defs/TouchscreenDisplay"
+        }
+      },
+      "required": ["type", "style", "display"]
+    },
+    "TouchscreenStyle": {
+      "description": "How a touchscreen looks.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skin": {
+          "enum": ["day", "auto", "night"],
+          "type": "string",
+          "description": "day or night, or auto to follow the sun at its location (day from sunrise to sunset), which a touchscreen that doesn't know its location shows as day."
+        },
+        "colour": {
+          "enum": ["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"],
+          "type": "string",
+          "description": "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any."
+        }
+      },
+      "required": ["skin", "colour"]
+    },
+    "TouchscreenDisplay": {
+      "description": "A touchscreen's screen itself.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sleep_minutes": {
+          "enum": [0, 2, 5, 15, 30],
+          "type": "integer",
+          "description": "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
+        }
+      },
+      "required": ["sleep_minutes"]
+    },
+    "Arrivals": {
+      "description": "The arrivals panel (bus, train and tram stops).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DepartureStop"
+          },
+          "description": "Every stop whose departures the device shows, from any source, in the owner's order."
+        }
+      },
+      "required": ["stops"]
+    },
+    "Weather": {
+      "description": "The weather panel.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "The place as the owner named it."
+        },
+        "key": {
+          "$ref": "#/$defs/WeatherKey",
+          "description": "The key its weather is kept under in the store, v1:weather:<key>."
+        }
+      },
+      "required": ["location", "key"]
+    },
+    "NoticeBoard": {
+      "description": "The notice board, of notices about the device's place.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "postcode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The place's postcode, or null for no local notices."
+        },
+        "country": {
+          "anyOf": [
+            {
+              "enum": ["GB", "NO"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none."
+        }
+      },
+      "required": ["postcode", "country"]
+    },
+    "Spotify": {
+      "description": "The Spotify area.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the device shows Spotify. Its data comes from the store, which the server's music provider fills with the account's Spotify link, so no token is sent here."
+        }
+      },
+      "required": ["enabled"]
     }
   }
 }
