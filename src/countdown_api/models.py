@@ -286,6 +286,102 @@ class DeviceArrivals(BaseModel):
     stops: list[StopArrivals]
 
 
+class StoredBackground(BaseModel):
+    """The ``StoredBackground`` object.
+
+    The value of v1:background:<weather key>: the AI-made photos behind a place's weather panel, one per
+    part of its day, for the place's local date.
+    """
+
+    location: str = Field(description="The weather key they were made for (WeatherKey).")
+    local_date: date = Field(description="The place's local date they are for.")
+    images: list[Background] = Field(
+        description=(
+            "Those made so far, in the order of `starts_at`. A screen shows the last whose `starts_at` has passed, and"
+            " before the first, the night image of the day before if it still has it."
+        ),
+    )
+
+
+class OpenMeteoForecast(BaseModel):
+    """The ``OpenMeteoForecast`` object.
+
+    Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under
+    the provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's
+    temperature_2m and the like). `current` has the conditions now (is_day among them), `hourly` and
+    `daily` parallel lists by `time` (daily has each day's sunrise and sunset), `current_units` the
+    units. A reader reads the sections with its own model.
+    """
+
+    utc_offset_seconds: int
+    current: dict[str, Any]
+    current_units: dict[str, Any]
+    hourly: dict[str, Any]
+    daily: dict[str, Any]
+
+
+class StoredForecast(BaseModel):
+    """The ``StoredForecast`` object.
+
+    The value of v1:weather:<weather key>: a place's Open-Meteo forecast, as fetched (timezone=auto, so
+    its times are the place's local time), in a thin wrapper.
+    """
+
+    fetched_at: datetime
+    location: str = Field(description="The weather key it was fetched for (WeatherKey).")
+    forecast: OpenMeteoForecast = Field(
+        description=(
+            "Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under the "
+            "provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's temperature_2m "
+            "and the like). `current` has the conditions now (is_day among them), `hourly` and `daily` parallel lists "
+            "by `time` (daily has each day's sunrise and sunset), `current_units` the units. A reader reads the "
+            "sections with its own model."
+        ),
+    )
+
+
+class DeviceWeather(BaseModel):
+    """The ``DeviceWeather`` object.
+
+    A device's weather (getWeather): its config's place, and the place's stored forecast as
+    v1:weather:<key> has it.
+    """
+
+    location: str = Field(description="The place as the owner named it (the config's weather.location).")
+    key: WeatherKey | None = Field(description="The config's weather.key; null while no place is set.")
+    forecast: StoredForecast | None = Field(
+        description="The forecast, or null with no place set or none stored for it (its provider is down, or new).",
+    )
+    background: StoredBackground | None = Field(
+        default=None,
+        description=(
+            "The place's backgrounds as v1:background:<key> has them, or null with no place set or none made yet. Each"
+            " image is at getBackgroundImage's /api/backgrounds/<digest>."
+        ),
+    )
+
+
+class DeviceFeedEventValueOption1(BaseModel):
+    """The ``DeviceFeedEventValueOption1`` object."""
+
+    event: Literal["weather"]
+    data: DeviceWeather = Field(
+        description=(
+            "A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> "
+            "has it."
+        ),
+    )
+
+
+class DeviceFeedEventValueOption2(BaseModel):
+    """The ``DeviceFeedEventValueOption2`` object."""
+
+    event: Literal["arrivals"]
+    data: DeviceArrivals = Field(
+        description="A device's live arrivals (getArrivals), for every stop in its config, in the owner's order.",
+    )
+
+
 class StoredBankHolidays(BaseModel):
     """The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK."""
 
@@ -398,6 +494,27 @@ class DeviceNotices(BaseModel):
     )
 
 
+class DeviceFeedEventValueOption3(BaseModel):
+    """The ``DeviceFeedEventValueOption3`` object."""
+
+    event: Literal["notices"]
+    data: DeviceNotices = Field(
+        description=(
+            "A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not"
+            " the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device "
+            "with no TfL stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK "
+            "one), as is one with nothing stored."
+        ),
+    )
+
+
+DeviceFeedEvent = DeviceFeedEventValueOption1 | DeviceFeedEventValueOption2 | DeviceFeedEventValueOption3
+"""One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a
+DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On
+the wire it is the event's `event:` line and its data as one `data:` line of JSON.
+"""
+
+
 class DeviceRegistered(BaseModel):
     """What POST /api/devices/register answers."""
 
@@ -433,81 +550,6 @@ class DeviceRegistration(BaseModel):
     format: Literal["mono-1bpp-packed", "png"] | None = Field(
         default=None,
         description="The format an e-paper screen takes its frame in, as its config's format.",
-    )
-
-
-class StoredBackground(BaseModel):
-    """The ``StoredBackground`` object.
-
-    The value of v1:background:<weather key>: the AI-made photos behind a place's weather panel, one per
-    part of its day, for the place's local date.
-    """
-
-    location: str = Field(description="The weather key they were made for (WeatherKey).")
-    local_date: date = Field(description="The place's local date they are for.")
-    images: list[Background] = Field(
-        description=(
-            "Those made so far, in the order of `starts_at`. A screen shows the last whose `starts_at` has passed, and"
-            " before the first, the night image of the day before if it still has it."
-        ),
-    )
-
-
-class OpenMeteoForecast(BaseModel):
-    """The ``OpenMeteoForecast`` object.
-
-    Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under
-    the provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's
-    temperature_2m and the like). `current` has the conditions now (is_day among them), `hourly` and
-    `daily` parallel lists by `time` (daily has each day's sunrise and sunset), `current_units` the
-    units. A reader reads the sections with its own model.
-    """
-
-    utc_offset_seconds: int
-    current: dict[str, Any]
-    current_units: dict[str, Any]
-    hourly: dict[str, Any]
-    daily: dict[str, Any]
-
-
-class StoredForecast(BaseModel):
-    """The ``StoredForecast`` object.
-
-    The value of v1:weather:<weather key>: a place's Open-Meteo forecast, as fetched (timezone=auto, so
-    its times are the place's local time), in a thin wrapper.
-    """
-
-    fetched_at: datetime
-    location: str = Field(description="The weather key it was fetched for (WeatherKey).")
-    forecast: OpenMeteoForecast = Field(
-        description=(
-            "Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under the "
-            "provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's temperature_2m "
-            "and the like). `current` has the conditions now (is_day among them), `hourly` and `daily` parallel lists "
-            "by `time` (daily has each day's sunrise and sunset), `current_units` the units. A reader reads the "
-            "sections with its own model."
-        ),
-    )
-
-
-class DeviceWeather(BaseModel):
-    """The ``DeviceWeather`` object.
-
-    A device's weather (getWeather): its config's place, and the place's stored forecast as
-    v1:weather:<key> has it.
-    """
-
-    location: str = Field(description="The place as the owner named it (the config's weather.location).")
-    key: WeatherKey | None = Field(description="The config's weather.key; null while no place is set.")
-    forecast: StoredForecast | None = Field(
-        description="The forecast, or null with no place set or none stored for it (its provider is down, or new).",
-    )
-    background: StoredBackground | None = Field(
-        default=None,
-        description=(
-            "The place's backgrounds as v1:background:<key> has them, or null with no place set or none made yet. Each"
-            " image is at getBackgroundImage's /api/backgrounds/<digest>."
-        ),
     )
 
 

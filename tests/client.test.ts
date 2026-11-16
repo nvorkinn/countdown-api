@@ -7,6 +7,7 @@ import {
   deviceSettingsPageUrl,
   getBackgroundImageUrl,
   getConfig,
+  getFeedUrl,
   putConfig,
   registerDevice,
   registerTouchscreenUrl,
@@ -99,4 +100,8 @@ test("an image's address is its digest on the devices' API", () => {
     getBackgroundImageUrl("https://api.example.com", { digest }).href,
     `https://api.example.com/api/backgrounds/${digest}`,
   );
+});
+
+test("the event stream is an address the device reads itself", () => {
+  assert.equal(getFeedUrl("https://api.example.com").href, "https://api.example.com/api/devices/feed");
 });

@@ -228,6 +228,7 @@ CLIENT_RUNTIME = """\
  *   query)`, `deviceSettingsPageUrl(base, path)`. A page's own form posts (POST /register) are the page's, not here.
  * - The images a screen loads itself (an `<img>` or CSS, with no secret): a URL builder too,
  *   `getBackgroundImageUrl(base, path)`.
+ * - An event stream, which a device reads itself with fetch and its secret: a URL builder, `getFeedUrl(base)`.
  */
 import type { operations } from "./store.js";
 
@@ -320,13 +321,10 @@ def _render_operation(path: str, method: str, operation: dict[str, Any]) -> str:
     op = f'operations["{name}"]'
     success = {status: response for status, response in operation["responses"].items() if status.startswith("2")}
     kinds = {kind for response in success.values() for kind in response.get("content", {})}
-    if kinds == {"text/html"}:
-        if method != "get":
-            return ""  # A page's own form posts it.
-        return _render_page(path, operation, op, f"The address of the page `GET {path}`, to send a browser to.")
-    if kinds and all(kind.startswith("image/") for kind in kinds) and method == "get":
-        how = f"The address of the image `GET {path}`, for an `<img>` or CSS to load."
+    if method == "get" and (how := _address_only(path, kinds)):
         return _render_page(path, operation, op, how)
+    if kinds == {"text/html"}:
+        return ""  # A page's own form posts it.
     if kinds - {"application/json"}:
         msg = f"{name}: a client.ts call answers JSON or a page, not {sorted(kinds)}"
         raise ValueError(msg)
@@ -362,6 +360,24 @@ def _render_operation(path: str, method: str, operation: dict[str, Any]) -> str:
         f"{_doc(operation, how)}export function {name}({', '.join(args)}): Promise<Result<{data}>> {{\n"
         f"  return request(client, {{ ...options, {', '.join(fields)} }});\n}}\n"
     )
+
+
+def _address_only(path: str, kinds: set[str]) -> str | None:
+    """Return the doc line of a GET route a caller loads itself (a page, an image, an event stream), else None.
+
+    client.ts gives such a route a URL builder, not a call: a browser opens a page, an `<img>` or CSS loads an image,
+    and a device reads an event stream with fetch itself (EventSource can't send its secret).
+    """
+    if kinds == {"text/html"}:
+        return f"The address of the page `GET {path}`, to send a browser to."
+    if kinds and all(kind.startswith("image/") for kind in kinds):
+        return f"The address of the image `GET {path}`, for an `<img>` or CSS to load."
+    if kinds == {"text/event-stream"}:
+        return (
+            f"The address of the event stream `GET {path}`, to read with fetch and the device's secret (Authorization),"
+            " which EventSource can't send."
+        )
+    return None
 
 
 def _render_page(path: str, operation: dict[str, Any], op: str, how: str) -> str:
