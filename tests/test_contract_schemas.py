@@ -82,11 +82,14 @@ def test_every_example_is_some_keys_or_routes() -> None:
 def test_the_routes_are_what_they_were() -> None:
     # The routes the devices run on.
     assert sorted(OPERATIONS) == [
+        ("/api/devices/arrivals", "get"),
         ("/api/devices/config", "get"),
         ("/api/devices/config", "put"),
         ("/api/devices/config/{section}", "put"),
+        ("/api/devices/notices", "get"),
         ("/api/devices/register", "post"),
         ("/api/devices/spotify/token", "get"),
+        ("/api/devices/weather", "get"),
         ("/api/places/search", "get"),
         ("/api/stops/search", "get"),
         ("/device/{device_id}", "get"),
@@ -103,7 +106,7 @@ def test_every_key_is_in_keys_py_with_its_ttl() -> None:
         expected = key["pattern"]
         for param in params:
             expected = expected.replace(f"{{{param}}}", f"<{param}>")
-        if not key.get("hash"):
+        if not key.get("hash") and not key.get("form"):
             assert built == expected
         for unit in ("S", "MS"):
             if f"ttl_{unit.lower()}" in key:
@@ -136,6 +139,19 @@ def test_the_keys_are_what_they_were() -> None:
     assert (keys.ENERGY_TTL_S, keys.SPOTIFY_TTL_S, keys.SPOTIFY_TOP_TTL_S) == (86_400, 180, 7_200)
     assert (keys.ALBUM_ART_TTL_S, keys.DEVELOPER_TTL_S, keys.PACE_TTL_S) == (300, 900, 60)
     assert (keys.PARCELS_TTL_S, keys.PARCELS_STATUS_TTL_S) == (43_200, 86_400)
+    # countdown's providers' data, which countdown wrote under these keys before they were the contract's.
+    assert keys.departures("490000123W") == "v1:departures:490000123W"
+    assert keys.departures("NSR:StopPlace:58381") == "v1:departures:NSR:StopPlace:58381"
+    assert keys.weather("london-gb-2643743") == "v1:weather:london-gb-2643743"
+    assert keys.tfl_line_status("940GZZLUKNG") == "v1:notices:tfl-lines:940GZZLUKNG"
+    assert keys.tfl_stations("940GZZLUKNG") == "v1:notices:tfl-stations:940GZZLUKNG"
+    assert keys.tfl_roads("SE17 3LL") == "v1:notices:tfl-roads:SE173LL"
+    assert keys.met_office("se17 3ll") == "v1:notices:met-office:SE173LL"
+    assert keys.met_office("0150") == "v1:notices:met-office:0150"
+    assert keys.BANK_HOLIDAYS == "v1:notices:bank-holidays"
+    assert (keys.DEPARTURES_TTL_S, keys.WEATHER_TTL_S, keys.TFL_LINE_STATUS_TTL_S) == (120, 1_800, 600)
+    assert (keys.TFL_STATIONS_TTL_S, keys.TFL_ROADS_TTL_S, keys.MET_OFFICE_TTL_S) == (1_800, 1_800, 1_800)
+    assert keys.BANK_HOLIDAYS_TTL_S == 604_800
 
 
 def test_store_json_is_store_yaml() -> None:

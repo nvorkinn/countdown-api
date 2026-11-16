@@ -1,0 +1,87 @@
+{
+  "about": "Three stops' departures as countdown's TfL and Entur providers store them under v1:departures:<stop id>: a London bus stop (its flag's letter), a Tube station and an Oslo stop place serving metro and tram (each departure's platform and mode). Captured from countdown's providers.",
+  "ttl_s": 120,
+  "stops": [
+    {
+      "key": "v1:departures:490000123W",
+      "value": {
+        "fetched_at": "2026-10-17T12:00:00Z",
+        "stop_id": "490000123W",
+        "name": "Elephant & Castle",
+        "mode": "bus",
+        "stop_letter": "W",
+        "modes": [],
+        "departures": [
+          {
+            "line": "171",
+            "destination": "Elephant & Castle",
+            "expected_at": "2026-10-17T12:01:00Z",
+            "platform": null,
+            "mode": null
+          },
+          {
+            "line": "12",
+            "destination": "Oxford Circus",
+            "expected_at": "2026-10-17T12:05:00Z",
+            "platform": null,
+            "mode": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "v1:departures:940GZZLUKNG",
+      "value": {
+        "fetched_at": "2026-10-17T12:00:00Z",
+        "stop_id": "940GZZLUKNG",
+        "name": "Kennington Underground Station",
+        "mode": "tube",
+        "stop_letter": null,
+        "modes": [],
+        "departures": [
+          {
+            "line": "Northern",
+            "destination": "Morden",
+            "expected_at": "2026-10-17T12:02:00Z",
+            "platform": null,
+            "mode": null
+          },
+          {
+            "line": "Northern",
+            "destination": "Edgware via Bank",
+            "expected_at": "2026-10-17T12:04:00Z",
+            "platform": null,
+            "mode": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "v1:departures:NSR:StopPlace:58381",
+      "value": {
+        "fetched_at": "2026-10-17T12:00:00Z",
+        "stop_id": "NSR:StopPlace:58381",
+        "name": "Majorstuen",
+        "mode": "metro",
+        "stop_letter": null,
+        "modes": ["metro", "tram"],
+        "departures": [
+          {
+            "line": "19",
+            "destination": "Ljabru",
+            "expected_at": "2026-10-17T12:03:00Z",
+            "platform": "A",
+            "mode": "tram"
+          },
+          {
+            "line": "5",
+            "destination": "Vestli",
+            "expected_at": "2026-10-17T12:07:00Z",
+            "platform": "2",
+            "mode": "metro"
+          }
+        ]
+      }
+    }
+  ]
+}

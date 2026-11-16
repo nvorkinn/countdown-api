@@ -348,3 +348,157 @@ def pace(source: str, item_id: str) -> str:
 
 # The TTL of `v1:pace:{source}:{item_id}`, in seconds.
 PACE_TTL_S = 60
+
+
+def departures(stop_id: str) -> str:
+    """Return the key `v1:departures:{stop_id}`.
+
+    A stop's next departures, soonest first, whichever country and mode. A stop with nothing due is still written, with
+    no departures, so "nothing due" isn't taken for "no data".
+
+    A Redis string of models.StopDepartures (json), with a TTL of 120 s.
+
+    Written by countdown's TfL and Entur providers, for every stop in v1:sub:tfl and v1:sub:entur. Read by the arrivals
+    panels, and the broker's getArrivals.
+
+    Example: countdown_api.fixtures, departures.json.
+    """
+    return f"v1:departures:{stop_id}"
+
+
+# What every `v1:departures:{stop_id}` key starts with, for SCAN and removeprefix().
+DEPARTURES_PREFIX = "v1:departures:"
+
+
+# The TTL of `v1:departures:{stop_id}`, in seconds.
+DEPARTURES_TTL_S = 120
+
+
+def weather(weather_key: str) -> str:
+    """Return the key `v1:weather:{weather_key}`.
+
+    A place's Open-Meteo forecast, as fetched: not the panel's pages, which the renderer works out from it when it
+    draws, so "now" and "tonight" are as of drawing.
+
+    A Redis string of models.StoredForecast (json), with a TTL of 1800 s.
+
+    Written by countdown's weather provider, for every key in v1:sub:weather. Read by the weather panel, and the
+    broker's getWeather.
+
+    Example: countdown_api.fixtures, weather.json.
+    """
+    return f"v1:weather:{weather_key}"
+
+
+# What every `v1:weather:{weather_key}` key starts with, for SCAN and removeprefix().
+WEATHER_PREFIX = "v1:weather:"
+
+
+# The TTL of `v1:weather:{weather_key}`, in seconds.
+WEATHER_TTL_S = 1800
+
+
+def tfl_line_status(stop_id: str) -> str:
+    """Return the key `v1:notices:tfl-lines:{stop_id}`.
+
+    The status of every line serving a TfL stop, Good Service too, as TfL's /Line/{ids}/Status answers it. A stop that
+    isn't a bus stop or Tube station is written with no lines.
+
+    A Redis string of models.StoredLineStatus (json), with a TTL of 600 s.
+
+    Written by countdown's TfL notices provider. Read by the notice board, and the broker's getNotices.
+
+    Example: countdown_api.fixtures, tfl_notices.json.
+    """
+    return f"v1:notices:tfl-lines:{stop_id}"
+
+
+# What every `v1:notices:tfl-lines:{stop_id}` key starts with, for SCAN and removeprefix().
+TFL_LINE_STATUS_PREFIX = "v1:notices:tfl-lines:"
+
+
+# The TTL of `v1:notices:tfl-lines:{stop_id}`, in seconds.
+TFL_LINE_STATUS_TTL_S = 600
+
+
+def tfl_stations(stop_id: str) -> str:
+    """Return the key `v1:notices:tfl-stations:{stop_id}`.
+
+    What's wrong at a TfL stop (lifts out of order, closed entrances...), as TfL's /StopPoint/{id}/Disruption answers
+    it, expired entries and all.
+
+    A Redis string of models.StoredStationDisruptions (json), with a TTL of 1800 s.
+
+    Written by countdown's TfL notices provider. Read by the notice board, and the broker's getNotices.
+
+    Example: countdown_api.fixtures, tfl_notices.json.
+    """
+    return f"v1:notices:tfl-stations:{stop_id}"
+
+
+# What every `v1:notices:tfl-stations:{stop_id}` key starts with, for SCAN and removeprefix().
+TFL_STATIONS_PREFIX = "v1:notices:tfl-stations:"
+
+
+# The TTL of `v1:notices:tfl-stations:{stop_id}`, in seconds.
+TFL_STATIONS_TTL_S = 1800
+
+
+def tfl_roads(postcode: str) -> str:
+    """Return the key `v1:notices:tfl-roads:{postcode}`.
+
+    The road disruptions TfL reports near the postcode's place. TfL only knows London's roads, so elsewhere it's always
+    empty.
+
+    A Redis string of models.StoredRoadDisruptions (json), with a TTL of 1800 s.
+
+    Written by countdown's TfL notices provider, for every UK postcode in v1:sub:postcode. Read by the notice board, and
+    the broker's getNotices.
+
+    Example: countdown_api.fixtures, tfl_notices.json.
+    """
+    return f"v1:notices:tfl-roads:{postcode.replace(' ', '').upper()}"
+
+
+# What every `v1:notices:tfl-roads:{postcode}` key starts with, for SCAN and removeprefix().
+TFL_ROADS_PREFIX = "v1:notices:tfl-roads:"
+
+
+# The TTL of `v1:notices:tfl-roads:{postcode}`, in seconds.
+TFL_ROADS_TTL_S = 1800
+
+
+def met_office(postcode: str) -> str:
+    """Return the key `v1:notices:met-office:{postcode}`.
+
+    The Met Office's weather warnings for the postcode's place: its warning region's RSS feed, its items as the feed has
+    them. Their severity, area and times are in the items' text; the notice board works them out when it draws.
+
+    A Redis string of models.StoredMetOfficeWarnings (json), with a TTL of 1800 s.
+
+    Written by countdown's Met Office provider, for every UK postcode in v1:sub:postcode. Read by the notice board, and
+    the broker's getNotices.
+
+    Example: countdown_api.fixtures, met_office.json.
+    """
+    return f"v1:notices:met-office:{postcode.replace(' ', '').upper()}"
+
+
+# What every `v1:notices:met-office:{postcode}` key starts with, for SCAN and removeprefix().
+MET_OFFICE_PREFIX = "v1:notices:met-office:"
+
+
+# The TTL of `v1:notices:met-office:{postcode}`, in seconds.
+MET_OFFICE_TTL_S = 1800
+
+
+# `v1:notices:bank-holidays`: gov.uk's bank holidays for every part of the UK (https://www.gov.uk/bank-holidays.json),
+# by its divisions.
+# A Redis string of models.StoredBankHolidays (json), with a TTL of 604800 s.
+# Written by countdown's bank holidays provider, with no subscription, as every UK device reads it. Read by the notice
+# board, and the broker's getNotices.
+# Example: countdown_api.fixtures, bank_holidays.json.
+BANK_HOLIDAYS = "v1:notices:bank-holidays"
+
+# The TTL of `v1:notices:bank-holidays`, in seconds.
+BANK_HOLIDAYS_TTL_S = 604800

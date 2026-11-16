@@ -36,7 +36,8 @@ sources:
 # `value` names the schema (in $defs) of what it holds: for a hash, its fields; for a set or a list, its members.
 # `encoding` is how that is written: json (a model's JSON), text, or bytes (raw, read with a client that doesn't decode
 # values). `written_by` and `read_by` say who, `examples` the files in src/countdown_api/fixtures that show it, and a
-# `hash` parameter is put in the key as that hash of it, in hex.
+# `hash` parameter is put in the key as that hash of it, in hex. A `form` parameter is put in the key in that form:
+# `place` is a postcode without its space, in capitals ("SE17 3LL" is SE173LL, "0150" stays 0150).
 keys:
   subscription:
     pattern: "v1:sub:{source}"
@@ -259,6 +260,107 @@ keys:
     written_by: any provider whose data is bursty (the provider runner, the broker's developer and music providers)
     read_by: the broker, which paces the screen's polls
     description: The seconds a provider wants the screen to poll at while what it fetched for `item_id` is bursty.
+
+  # The renderers' providers' data, which the broker serves a touchscreen too (getWeather, getArrivals, getNotices). A
+  # missing key means its provider is down, or hasn't got to it yet.
+  departures:
+    pattern: "v1:departures:{stop_id}"
+    params:
+      stop_id: the stop's id at its source (DepartureStop's id), TfL's and Entur's sharing the namespace.
+    redis: string
+    value: StopDepartures
+    encoding: json
+    ttl_s: 120
+    written_by: countdown's TfL and Entur providers, for every stop in v1:sub:tfl and v1:sub:entur
+    read_by: the arrivals panels, and the broker's getArrivals
+    examples: [departures.json]
+    description: >-
+      A stop's next departures, soonest first, whichever country and mode. A stop with nothing due is still written,
+      with no departures, so "nothing due" isn't taken for "no data".
+  weather:
+    pattern: "v1:weather:{weather_key}"
+    params:
+      weather_key: the place's weather key (WeatherKey), as the config has it in weather.key.
+    redis: string
+    value: StoredForecast
+    encoding: json
+    ttl_s: 1800
+    written_by: countdown's weather provider, for every key in v1:sub:weather
+    read_by: the weather panel, and the broker's getWeather
+    examples: [weather.json]
+    description: >-
+      A place's Open-Meteo forecast, as fetched: not the panel's pages, which the renderer works out from it when it
+      draws, so "now" and "tonight" are as of drawing.
+  tfl_line_status:
+    pattern: "v1:notices:tfl-lines:{stop_id}"
+    params:
+      stop_id: a TfL stop's NaPTAN id from v1:sub:tfl.
+    redis: string
+    value: StoredLineStatus
+    encoding: json
+    ttl_s: 600
+    written_by: countdown's TfL notices provider
+    read_by: the notice board, and the broker's getNotices
+    examples: [tfl_notices.json]
+    description: >-
+      The status of every line serving a TfL stop, Good Service too, as TfL's /Line/{ids}/Status answers it. A stop
+      that isn't a bus stop or Tube station is written with no lines.
+  tfl_stations:
+    pattern: "v1:notices:tfl-stations:{stop_id}"
+    params:
+      stop_id: a TfL stop's NaPTAN id from v1:sub:tfl.
+    redis: string
+    value: StoredStationDisruptions
+    encoding: json
+    ttl_s: 1800
+    written_by: countdown's TfL notices provider
+    read_by: the notice board, and the broker's getNotices
+    examples: [tfl_notices.json]
+    description: >-
+      What's wrong at a TfL stop (lifts out of order, closed entrances...), as TfL's /StopPoint/{id}/Disruption
+      answers it, expired entries and all.
+  tfl_roads:
+    pattern: "v1:notices:tfl-roads:{postcode}"
+    params:
+      postcode: a postcode from v1:sub:postcode, as the broker writes it ("SE17 3LL").
+    form: {postcode: place}
+    redis: string
+    value: StoredRoadDisruptions
+    encoding: json
+    ttl_s: 1800
+    written_by: countdown's TfL notices provider, for every UK postcode in v1:sub:postcode
+    read_by: the notice board, and the broker's getNotices
+    examples: [tfl_notices.json]
+    description: >-
+      The road disruptions TfL reports near the postcode's place. TfL only knows London's roads, so elsewhere it's
+      always empty.
+  met_office:
+    pattern: "v1:notices:met-office:{postcode}"
+    params:
+      postcode: a UK postcode from v1:sub:postcode, as the broker writes it ("SE17 3LL").
+    form: {postcode: place}
+    redis: string
+    value: StoredMetOfficeWarnings
+    encoding: json
+    ttl_s: 1800
+    written_by: countdown's Met Office provider, for every UK postcode in v1:sub:postcode
+    read_by: the notice board, and the broker's getNotices
+    examples: [met_office.json]
+    description: >-
+      The Met Office's weather warnings for the postcode's place: its warning region's RSS feed, its items as the
+      feed has them. Their severity, area and times are in the items' text; the notice board works them out when it
+      draws.
+  bank_holidays:
+    pattern: "v1:notices:bank-holidays"
+    redis: string
+    value: StoredBankHolidays
+    encoding: json
+    ttl_s: 604800
+    written_by: countdown's bank holidays provider, with no subscription, as every UK device reads it
+    read_by: the notice board, and the broker's getNotices
+    examples: [bank_holidays.json]
+    description: >-
+      gov.uk's bank holidays for every part of the UK (https://www.gov.uk/bank-holidays.json), by its divisions.
 
 # The Lua scripts both sides run. Each becomes a countdown_api.scripts.Script of the same name (upper case), carrying
 # the source byte for byte and its SHA1, which EVALSHA calls it by.
@@ -630,6 +732,79 @@ paths:
         '502':
           description: Spotify couldn't be reached, or refused to renew the token.
       x-examples: [touchscreen.json]
+  /api/devices/weather:
+    get:
+      operationId: getWeather
+      summary: The device's weather.
+      description: >-
+        The forecast for the device's weather place (its config's weather.key), as the store has it: current conditions
+        (is_day among them), the hourly forecast and each day's sunrise and sunset, in the place's local time. Read from
+        the store alone, so it's as fresh as the weather provider's last fetch (fetched_at); forecast is null while
+        there's none.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The device's weather.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceWeather'
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, so it has no config to read.
+        '503':
+          description: The store couldn't be reached; try again shortly.
+      x-examples: [device_panels.json]
+  /api/devices/arrivals:
+    get:
+      operationId: getArrivals
+      summary: The device's live arrivals.
+      description: >-
+        The next departures from each of the device's stops (its config's arrivals.stops), in the owner's order, as the
+        store has them: each stop's soonest first, with its expected time rather than seconds to go. A stop with nothing
+        stored is listed with null departures.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The device's live arrivals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceArrivals'
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, so it has no config to read.
+        '503':
+          description: The store couldn't be reached; try again shortly.
+      x-examples: [device_panels.json]
+  /api/devices/notices:
+    get:
+      operationId: getNotices
+      summary: The device's notices.
+      description: >-
+        What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions
+        there, TfL's road disruptions, the Met Office's warnings near its postcode and the UK's bank holidays. Each as
+        its provider stored it (DeviceNotices), not worded or judged as notices.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The device's notices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/DeviceNotices'
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, so it has no config to read.
+        '503':
+          description: The store couldn't be reached; try again shortly.
+      x-examples: [device_panels.json]
   # On the settings site (APP_HOST), not the devices' API (API_HOST): it's a page a person opens on the tablet, behind
   # the login, so it takes no device secret.
   /register:
@@ -1685,3 +1860,384 @@ $defs:
     - token_type
     - expires_in
     - scope
+  StopDepartures:
+    description: >-
+      The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the providers'
+      own shape (TfL's and Entur's answers mapped to one).
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      stop_id:
+        type: string
+        description: The stop's id at its source (DepartureStop's id).
+      name:
+        type: string
+        description: As the source names it ("Kennington Underground Station"); a reader shortens it as it likes.
+      mode:
+        type: string
+        description: >-
+          The source's own name for the stop's main mode: TfL's bus or tube; Entur's bus, tram, metro, rail, water...
+          (unknown for a stop that lists none).
+      stop_letter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: The letter on a London bus stop's flag ("W"), or an Entur quay's code ("2"); null elsewhere.
+      modes:
+        type: array
+        items:
+          type: string
+        default: []
+        description: Every mode the stop serves, its main one first, from Entur ([metro, tram]); empty from TfL.
+      departures:
+        type: array
+        items:
+          $ref: '#/$defs/Departure'
+        default: []
+        description: Soonest first; empty when nothing is due.
+    required:
+    - fetched_at
+    - stop_id
+    - name
+    - mode
+  Departure:
+    description: One vehicle due to leave a stop.
+    type: object
+    properties:
+      line:
+        type: string
+      destination:
+        type: string
+        description: TfL buses' destination (trimmed at the comma), the Tube's `towards`, Entur's front text.
+      expected_at:
+        type: string
+        format: date-time
+        description: When it's due, rather than seconds to go, as a stored value is read some time after it's fetched.
+      platform:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: The platform or stop pole where the source says (Entur's quay code); null from TfL.
+      mode:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: >-
+          Its mode where a stop serves several (Entur's metro or tram at Majorstuen); null from TfL, whose stops serve
+          one (the stop's `mode`).
+    required:
+    - line
+    - destination
+    - expected_at
+  StoredForecast:
+    description: >-
+      The value of v1:weather:<weather key>: a place's Open-Meteo forecast, as fetched (timezone=auto, so its times are
+      the place's local time), in a thin wrapper.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      location:
+        type: string
+        description: The weather key it was fetched for (WeatherKey).
+      forecast:
+        $ref: '#/$defs/OpenMeteoForecast'
+    required:
+    - fetched_at
+    - location
+    - forecast
+  OpenMeteoForecast:
+    description: >-
+      Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under the provider's
+      own field names (temperature, humidity, wind_speed... rather than Open-Meteo's temperature_2m and the like).
+      `current` has the conditions now (is_day among them), `hourly` and `daily` parallel lists by `time` (daily has
+      each day's sunrise and sunset), `current_units` the units. A reader reads the sections with its own model.
+    type: object
+    properties:
+      utc_offset_seconds:
+        type: integer
+      current:
+        type: object
+      current_units:
+        type: object
+      hourly:
+        type: object
+      daily:
+        type: object
+    required:
+    - utc_offset_seconds
+    - current
+    - current_units
+    - hourly
+    - daily
+  StoredLineStatus:
+    description: >-
+      The value of v1:notices:tfl-lines:<stop id>: the lines serving a TfL stop, in the order TfL lists them there,
+      each TfL's Line with its lineStatuses (severity, description, reason, validityPeriods) under TfL's own names.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      stop_id:
+        type: string
+      lines:
+        type: array
+        items:
+          type: object
+    required:
+    - fetched_at
+    - stop_id
+    - lines
+  StoredStationDisruptions:
+    description: >-
+      The value of v1:notices:tfl-stations:<stop id>: TfL's DisruptedPoints at the stop, under TfL's own names.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      stop_id:
+        type: string
+      disruptions:
+        type: array
+        items:
+          type: object
+    required:
+    - fetched_at
+    - stop_id
+    - disruptions
+  StoredRoadDisruptions:
+    description: >-
+      The value of v1:notices:tfl-roads:<place>: TfL's RoadDisruptions near the postcode's place, under TfL's own
+      names.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      postcode:
+        type: string
+        description: The postcode as the broker subscribed it ("SE17 3LL").
+      disruptions:
+        type: array
+        items:
+          type: object
+    required:
+    - fetched_at
+    - postcode
+    - disruptions
+  StoredMetOfficeWarnings:
+    description: >-
+      The value of v1:notices:met-office:<place>: the warnings feed of the Met Office region the postcode is in, as it
+      was at fetched_at.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      postcode:
+        type: string
+        description: The postcode it's for, as the broker subscribed it ("SE17 3LL").
+      region:
+        type: string
+        description: The Met Office warning region whose feed it is ("se"), or UK for the whole of the UK's.
+      items:
+        type: array
+        items:
+          $ref: '#/$defs/MetOfficeFeedItem'
+        description: The feed's items in its order; empty when there are no warnings.
+    required:
+    - fetched_at
+    - postcode
+    - region
+    - items
+  MetOfficeFeedItem:
+    description: One item of the Met Office's warnings feed, its elements' text as the feed has it ("" for one it lacks).
+    type: object
+    properties:
+      title:
+        type: string
+        default: ''
+        description: The warning's colour, kind and region ("Amber warning of wind affecting London & South East").
+      description:
+        type: string
+        default: ''
+        description: >-
+          Where and when ("...: Lambeth, Southwark valid from 0600 Fri 25 Sep to 2100 Fri 25 Sep").
+      link:
+        type: string
+        default: ''
+        description: The warning's page on the Met Office's site.
+      pub_date:
+        type: string
+        default: ''
+        description: When it was published, as the feed writes it (RFC 822, "Thu, 24 Sep 2026 10:30:00 GMT").
+  StoredBankHolidays:
+    description: The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      divisions:
+        type: object
+        propertyNames:
+          enum:
+          - england-and-wales
+          - scotland
+          - northern-ireland
+        additionalProperties:
+          $ref: '#/$defs/BankHolidayDivision'
+        description: By gov.uk's name for each part of the UK; England and Wales share one.
+    required:
+    - fetched_at
+    - divisions
+  BankHolidayDivision:
+    description: One part of the UK's bank holidays.
+    type: object
+    properties:
+      events:
+        type: array
+        items:
+          $ref: '#/$defs/BankHoliday'
+    required:
+    - events
+  BankHoliday:
+    description: One of gov.uk's bank holidays.
+    type: object
+    properties:
+      title:
+        type: string
+      date:
+        type: string
+        format: date
+      notes:
+        type: string
+        default: ''
+        description: Such as "Substitute day"; empty for most.
+    required:
+    - title
+    - date
+  DeviceWeather:
+    description: >-
+      A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> has it.
+    type: object
+    properties:
+      location:
+        type: string
+        description: The place as the owner named it (the config's weather.location).
+      key:
+        anyOf:
+        - $ref: '#/$defs/WeatherKey'
+        - type: 'null'
+        description: The config's weather.key; null while no place is set.
+      forecast:
+        anyOf:
+        - $ref: '#/$defs/StoredForecast'
+        - type: 'null'
+        description: The forecast, or null with no place set or none stored for it (its provider is down, or new).
+    required:
+    - location
+    - key
+    - forecast
+  DeviceArrivals:
+    description: A device's live arrivals (getArrivals), for every stop in its config, in the owner's order.
+    type: object
+    properties:
+      stops:
+        type: array
+        items:
+          $ref: '#/$defs/StopArrivals'
+    required:
+    - stops
+  StopArrivals:
+    description: One of a device's stops, and its departures as v1:departures:<stop id> has them.
+    type: object
+    properties:
+      source:
+        enum:
+        - tfl
+        - entur
+        type: string
+      id:
+        type: string
+      departures:
+        anyOf:
+        - $ref: '#/$defs/StopDepartures'
+        - type: 'null'
+        description: The stop's departures, or null with none stored (its provider is down, or the stop is new).
+    required:
+    - source
+    - id
+    - departures
+  DeviceNotices:
+    description: >-
+      A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the
+      notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL
+      stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK one), as is one
+      with nothing stored.
+    type: object
+    properties:
+      postcode:
+        anyOf:
+        - type: string
+        - type: 'null'
+        description: The config's notice_board.postcode.
+      country:
+        anyOf:
+        - enum:
+          - 'GB'
+          - 'NO'
+          type: string
+        - type: 'null'
+        description: The config's notice_board.country.
+      tfl_stops:
+        type: array
+        items:
+          $ref: '#/$defs/TflStopNotices'
+        description: Each of the device's TfL stops, in the owner's order.
+      tfl_roads:
+        anyOf:
+        - $ref: '#/$defs/StoredRoadDisruptions'
+        - type: 'null'
+      met_office:
+        anyOf:
+        - $ref: '#/$defs/StoredMetOfficeWarnings'
+        - type: 'null'
+      bank_holidays:
+        anyOf:
+        - $ref: '#/$defs/StoredBankHolidays'
+        - type: 'null'
+        description: Every part of the UK's; the postcode's place says which applies.
+    required:
+    - postcode
+    - country
+    - tfl_stops
+    - tfl_roads
+    - met_office
+    - bank_holidays
+  TflStopNotices:
+    description: A TfL stop's line statuses and station disruptions, each null with none stored.
+    type: object
+    properties:
+      stop_id:
+        type: string
+      lines:
+        anyOf:
+        - $ref: '#/$defs/StoredLineStatus'
+        - type: 'null'
+      stations:
+        anyOf:
+        - $ref: '#/$defs/StoredStationDisruptions'
+        - type: 'null'
+    required:
+    - stop_id
+    - lines
+    - stations

@@ -329,3 +329,103 @@ def test_registrations_take_only_whats_allowed() -> None:
 def test_a_config_with_no_weather_place_has_no_weather_key() -> None:
     config = check("ConfigResponse", {**CONFIG["value"], "weather": {"location": "", "key": None}})
     assert config.weather.key is None
+
+
+# --- countdown's providers' data, and the routes that serve it to a touchscreen ---------------------------------------
+
+PANELS = fixtures.load("device_panels.json")
+
+
+def test_departures_are_each_stops_under_its_key() -> None:
+    example = fixtures.load("departures.json")
+    assert example["ttl_s"] == keys.DEPARTURES_TTL_S
+    for stop in example["stops"]:
+        departures = check("StopDepartures", stop["value"])
+        assert stop["key"] == keys.departures(departures.stop_id)
+        times = [departure.expected_at for departure in departures.departures]
+        assert times == sorted(times)  # soonest first
+    sources = {stop["value"]["stop_id"].startswith("NSR:") for stop in example["stops"]}
+    assert sources == {True, False}  # TfL's and Entur's, in one shape
+
+
+def test_weather_is_a_places_forecast_under_its_weather_key() -> None:
+    example = fixtures.load("weather.json")
+    assert example["key"] == keys.weather(example["weather_key"])
+    assert example["ttl_s"] == keys.WEATHER_TTL_S
+    stored = check("StoredForecast", example["value"])
+    check_schema("WeatherKey", example["weather_key"])
+    assert stored.location == example["weather_key"]
+    # What a touchscreen needs from it: now (day or night), the next hours, and sunrise and sunset.
+    assert isinstance(stored.forecast.current["is_day"], bool)
+    assert stored.forecast.hourly["time"]
+    assert stored.forecast.daily["sunrise"]
+
+
+def test_tfl_notices_are_tfls_answers_under_their_keys() -> None:
+    example = fixtures.load("tfl_notices.json")
+    stop_id, postcode = example["stop_id"], example["postcode"]
+    for kind, builder, schema in (
+        ("lines", keys.tfl_line_status, "StoredLineStatus"),
+        ("stations", keys.tfl_stations, "StoredStationDisruptions"),
+    ):
+        assert example[kind]["key"] == builder(stop_id)
+        assert check(schema, example[kind]["value"]).stop_id == stop_id
+    assert example["roads"]["key"] == keys.tfl_roads(postcode)
+    assert check("StoredRoadDisruptions", example["roads"]["value"]).postcode == postcode
+    lines = check("StoredLineStatus", example["lines"]["value"]).lines
+    assert lines[0]["lineStatuses"][0]["statusSeverityDescription"]  # TfL's own names
+    ttls = (example["lines"]["ttl_s"], example["stations"]["ttl_s"], example["roads"]["ttl_s"])
+    assert ttls == (keys.TFL_LINE_STATUS_TTL_S, keys.TFL_STATIONS_TTL_S, keys.TFL_ROADS_TTL_S)
+
+
+def test_met_office_warnings_are_the_regions_feed_under_the_postcodes_place() -> None:
+    example = fixtures.load("met_office.json")
+    assert example["key"] == keys.met_office(example["postcode"])
+    assert example["ttl_s"] == keys.MET_OFFICE_TTL_S
+    stored = check("StoredMetOfficeWarnings", example["value"])
+    assert stored.postcode == example["postcode"]
+    assert stored.items[0].title.startswith(("Yellow", "Amber", "Red"))
+
+
+def test_bank_holidays_are_every_part_of_the_uks() -> None:
+    example = fixtures.load("bank_holidays.json")
+    assert example["key"] == keys.BANK_HOLIDAYS
+    assert example["ttl_s"] == keys.BANK_HOLIDAYS_TTL_S
+    stored = check("StoredBankHolidays", example["value"])
+    assert set(stored.divisions) == {"england-and-wales", "scotland", "northern-ireland"}
+
+
+def test_the_panels_examples_are_a_paired_touchscreens() -> None:
+    config = check("ConfigResponse", PANELS["config"])
+    assert isinstance(config, models.TouchscreenConfig)
+    assert config.device_id == PANELS["device_id"]
+
+
+def test_get_weather_answers_the_configs_place_and_its_stored_forecast() -> None:
+    weather = check("DeviceWeather", PANELS["weather"])
+    place = PANELS["config"]["weather"]
+    assert (weather.location, weather.key) == (place["location"], place["key"])
+    assert PANELS["weather"]["forecast"] == fixtures.load("weather.json")["value"]
+
+
+def test_get_arrivals_answers_each_configured_stop_in_order_with_what_is_stored() -> None:
+    arrivals = check("DeviceArrivals", PANELS["arrivals"])
+    assert [(stop.source, stop.id) for stop in arrivals.stops] == [
+        (stop["source"], stop["id"]) for stop in PANELS["config"]["arrivals"]["stops"]
+    ]
+    stored = {stop["value"]["stop_id"]: stop["value"] for stop in fixtures.load("departures.json")["stops"]}
+    for stop in PANELS["arrivals"]["stops"]:
+        assert stop["departures"] == stored.get(stop["id"])
+
+
+def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postcode() -> None:
+    notices = check("DeviceNotices", PANELS["notices"])
+    tfl = fixtures.load("tfl_notices.json")
+    assert notices.postcode == PANELS["config"]["notice_board"]["postcode"]
+    tfl_stops = [stop["id"] for stop in PANELS["config"]["arrivals"]["stops"] if stop["source"] == "tfl"]
+    assert [stop.stop_id for stop in notices.tfl_stops] == tfl_stops
+    assert PANELS["notices"]["tfl_stops"][0]["lines"] == tfl["lines"]["value"]
+    assert PANELS["notices"]["tfl_stops"][1] == {"stop_id": tfl_stops[1], "lines": None, "stations": None}
+    assert PANELS["notices"]["tfl_roads"] == tfl["roads"]["value"]
+    assert PANELS["notices"]["met_office"] == fixtures.load("met_office.json")["value"]
+    assert PANELS["notices"]["bank_holidays"] == fixtures.load("bank_holidays.json")["value"]

@@ -31,12 +31,22 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:parcels:<device id>` | string, JSON | `ParcelList` | 43,200 s | the parcel provider | the parcels panel and notices |
 | `v1:parcels-status:<device id>` | string | `ParcelsLinkStatus` | 86,400 s | the parcel provider | the broker |
 | `v1:pace:<source>:<id>` | string | `Pace` (seconds) | 60 s | any bursty provider | the broker |
+| `v1:departures:<stop id>` | string, JSON | `StopDepartures` | 120 s | countdown's TfL and Entur providers | the arrivals panels, the broker's `getArrivals` |
+| `v1:weather:<weather key>` | string, JSON | `StoredForecast` | 1,800 s | countdown's weather provider | the weather panel, the broker's `getWeather` |
+| `v1:notices:tfl-lines:<stop id>` | string, JSON | `StoredLineStatus` | 600 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
+| `v1:notices:tfl-stations:<stop id>` | string, JSON | `StoredStationDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
+| `v1:notices:tfl-roads:<place>` | string, JSON | `StoredRoadDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
+| `v1:notices:met-office:<place>` | string, JSON | `StoredMetOfficeWarnings` | 1,800 s | countdown's Met Office provider | the notice board, the broker's `getNotices` |
+| `v1:notices:bank-holidays` | string, JSON | `StoredBankHolidays` | 604,800 s | countdown's bank holidays provider | the notice board, the broker's `getNotices` |
 
 `store.yaml` says more about each (its `keys`), and about the subscription sources (`sources`). The schemas (its
 `$defs`) are JSON Schema 2020-12. The values that are the upstream service's own answer (Glowmarkt's readings,
 Spotify's queue and top lists, the GitHub summary) are pinned as their wrapper, with the answer itself left open: the
-renderer reads those with its own models of the service's answers. Keys only one side uses (the providers' data for
-the renderers, the render lease) aren't here: they are that side's own.
+renderer reads those with its own models of the service's answers; so are TfL's answers in the TfL notices and
+Open-Meteo's forecast in the weather. A `<place>` is a postcode without its space, in capitals (`SE173LL`): the key
+builders take the postcode as the broker writes it (`SE17 3LL`) and make the place themselves. Keys only one side
+uses (the render lease, and countdown's other providers' data: floods, Entur's situations, MET Norway's warnings, the
+postcodes' places) aren't here: they are that side's own, until the other side reads them too.
 
 The enqueue script, [`lua/enqueue.lua`](lua/enqueue.lua), is the one way anything queues a render: `SET` the queued
 flag `NX` with its TTL, and only if that set it, `LPUSH` the device id. Every consumer runs it from here, byte for byte, so
@@ -53,6 +63,9 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/stops/search` | `q` | `StopSearchResult[]` | London's and Norway's stops, for a stop picker |
 | `GET /api/places/search` | `q` | `PlaceSearchResult[]` | towns and cities (Open-Meteo), for the weather picker |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
+| `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`) |
+| `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
+| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, bank holidays), as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 
@@ -63,7 +76,7 @@ ones for the device their `device_id` query names. Both searches answer the same
 `name`, `subtitle`, `indent`) with a `value` that is what picking it saves, in the config's own shape.
 The routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as
 its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), and the reference lists them.
-`touchscreen.json` and `config_store.json` are their examples.
+`touchscreen.json`, `config_store.json` and `device_panels.json` are their examples.
 
 For TypeScript, `client.ts` has a function per route, named by its `operationId`, so a caller never writes a path:
 `getConfig(client)`, `putConfig(client, config, { headers: { "If-Match": etag } })` and so on for the devices' API

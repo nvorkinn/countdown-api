@@ -187,6 +187,42 @@ export function getSpotifyToken(
 }
 
 /**
+ * The device's weather.
+ *
+ * `GET /api/devices/weather`, with the device's secret.
+ */
+export function getWeather(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getWeather"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/weather", secret: true, json: true });
+}
+
+/**
+ * The device's live arrivals.
+ *
+ * `GET /api/devices/arrivals`, with the device's secret.
+ */
+export function getArrivals(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getArrivals"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/arrivals", secret: true, json: true });
+}
+
+/**
+ * The device's notices.
+ *
+ * `GET /api/devices/notices`, with the device's secret.
+ */
+export function getNotices(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getNotices"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/notices", secret: true, json: true });
+}
+
+/**
  * Register a touchscreen and make the person signed in on it its owner.
  *
  * The address of the page `GET /register`, to send a browser to.
