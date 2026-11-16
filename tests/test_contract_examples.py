@@ -361,6 +361,30 @@ def test_weather_is_a_places_forecast_under_its_weather_key() -> None:
     assert stored.forecast.daily["sunrise"]
 
 
+def test_backgrounds_are_a_places_day_under_its_weather_key() -> None:
+    example = fixtures.load("background.json")
+    assert example["key"] == keys.background(example["weather_key"])
+    assert example["ttl_s"] == keys.BACKGROUND_TTL_S
+    stored = check("StoredBackground", example["value"])
+    assert stored.location == example["weather_key"]
+    starts = [image.starts_at for image in stored.images]
+    assert starts == sorted(starts)  # in the order they start showing
+    assert [image.phase for image in stored.images] == ["dawn", "day", "dusk", "night"]
+
+
+def test_a_background_image_is_its_jpeg_under_its_sha256() -> None:
+    example = fixtures.load("background.json")
+    image = fixtures.read_bytes(example["image"]["file"])
+    assert image.startswith(b"\xff\xd8\xff")
+    digest = hashlib.sha256(image).hexdigest()
+    check_schema("BackgroundDigest", digest)
+    assert example["image"]["key"] == keys.background_image(digest)
+    assert example["image"]["ttl_s"] == keys.BACKGROUND_IMAGE_TTL_S
+    assert example["image"]["url"] == f"/api/backgrounds/{digest}"
+    assert digest in {image["digest"] for image in example["value"]["images"]}
+    assert TypeAdapter(models.BackgroundImage).validate_python(image) == image
+
+
 def test_tfl_notices_are_tfls_answers_under_their_keys() -> None:
     example = fixtures.load("tfl_notices.json")
     stop_id, postcode = example["stop_id"], example["postcode"]
@@ -406,6 +430,12 @@ def test_get_weather_answers_the_configs_place_and_its_stored_forecast() -> None
     place = PANELS["config"]["weather"]
     assert (weather.location, weather.key) == (place["location"], place["key"])
     assert PANELS["weather"]["forecast"] == fixtures.load("weather.json")["value"]
+    assert PANELS["weather"]["background"] == fixtures.load("background.json")["value"]
+
+
+def test_get_weather_without_a_background_is_still_a_device_weather() -> None:
+    weather = {key: value for key, value in PANELS["weather"].items() if key != "background"}
+    assert check("DeviceWeather", weather).background is None
 
 
 def test_get_arrivals_answers_each_configured_stop_in_order_with_what_is_stored() -> None:

@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
   type Client,
   deviceSettingsPageUrl,
+  getBackgroundImageUrl,
   getConfig,
   putConfig,
   registerDevice,
@@ -90,4 +91,12 @@ test("a page's address takes its path and query parameters", () => {
     "https://example.com/device/a1b2%2Fc3?embed=1",
   );
   assert.equal(deviceSettingsPageUrl("https://example.com", { device_id: "a1b2c3d4e5f6" }).search, "");
+});
+
+test("an image's address is its digest on the devices' API", () => {
+  const digest = "ab".repeat(32);
+  assert.equal(
+    getBackgroundImageUrl("https://api.example.com", { digest }).href,
+    `https://api.example.com/api/backgrounds/${digest}`,
+  );
 });

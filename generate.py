@@ -18,8 +18,8 @@ store.yaml is the one source. From it this writes:
   routes' `paths` and `operations`.
 - client.ts: a typed function per route, named by its operationId, so a TypeScript caller never writes a path: a call
   (`getConfig(client)`) for each route of the devices' API, and a URL builder (`registerTouchscreenUrl(base, query)`)
-  for each settings-site page a device sends a browser to. Typed by store.d.ts's `operations`; plain fetch, nothing to
-  install.
+  for each settings-site page a device sends a browser to, and for each image a screen loads itself. Typed by
+  store.d.ts's `operations`; plain fetch, nothing to install.
 - store.json: store.yaml as JSON, for anything that reads the contract without PyYAML.
 - __init__.py.
 
@@ -226,6 +226,8 @@ CLIENT_RUNTIME = """\
  *   takes the device's secret sends `client.secret` as `Authorization: Bearer`.
  * - The settings site's pages (HTML), which a device sends a browser to: a URL builder, `registerTouchscreenUrl(base,
  *   query)`, `deviceSettingsPageUrl(base, path)`. A page's own form posts (POST /register) are the page's, not here.
+ * - The images a screen loads itself (an `<img>` or CSS, with no secret): a URL builder too,
+ *   `getBackgroundImageUrl(base, path)`.
  */
 import type { operations } from "./store.js";
 
@@ -302,7 +304,7 @@ _HTTP_METHODS = ("get", "put", "post", "delete", "patch")
 
 
 def render_client(contract: dict[str, Any]) -> str:
-    """Return client.ts: CLIENT_RUNTIME, then a call per JSON route and a URL builder per page a browser goes to."""
+    """Return client.ts: CLIENT_RUNTIME, then a call per JSON route and a URL builder per page or image."""
     parts = ["// noinspection JSUnusedGlobalSymbols", f"// {HEADER.removeprefix('# ')}", CLIENT_RUNTIME]
     parts.extend(
         _render_operation(path, method, item[method])
@@ -321,7 +323,10 @@ def _render_operation(path: str, method: str, operation: dict[str, Any]) -> str:
     if kinds == {"text/html"}:
         if method != "get":
             return ""  # A page's own form posts it.
-        return _render_page(path, operation, op)
+        return _render_page(path, operation, op, f"The address of the page `GET {path}`, to send a browser to.")
+    if kinds and all(kind.startswith("image/") for kind in kinds) and method == "get":
+        how = f"The address of the image `GET {path}`, for an `<img>` or CSS to load."
+        return _render_page(path, operation, op, how)
     if kinds - {"application/json"}:
         msg = f"{name}: a client.ts call answers JSON or a page, not {sorted(kinds)}"
         raise ValueError(msg)
@@ -359,7 +364,7 @@ def _render_operation(path: str, method: str, operation: dict[str, Any]) -> str:
     )
 
 
-def _render_page(path: str, operation: dict[str, Any], op: str) -> str:
+def _render_page(path: str, operation: dict[str, Any], op: str, how: str) -> str:
     params = _params(operation)
     args = ["baseUrl: string | URL"]
     if "path" in params:
@@ -370,7 +375,6 @@ def _render_page(path: str, operation: dict[str, Any], op: str) -> str:
         args.append(f'query: NonNullable<{op}["parameters"]["query"]>{optional}')
         query = "query"
     name = operation["operationId"]
-    how = f"The address of the page `GET {path}`, to send a browser to."
     return (
         f"{_doc(operation, how)}export function {name}Url({', '.join(args)}): URL {{\n"
         f"  return url(baseUrl, {_path_expression(path)}, {query});\n}}\n"

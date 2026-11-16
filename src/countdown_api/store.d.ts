@@ -190,6 +190,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/backgrounds/{digest}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A weather panel background.
+     * @description A background's JPEG (v1:background-image:<digest>), by the SHA-256 that getWeather's background names it by. The same digest is always the same bytes, so it's answered with Cache-Control immutable and a year's max-age.
+     */
+    get: operations["getBackgroundImage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/register": {
     parameters: {
       query?: never;
@@ -772,6 +792,44 @@ export interface components {
        */
       pub_date: string;
     };
+    /** @description The value of v1:background:<weather key>: the AI-made photos behind a place's weather panel, one per part of its day, for the place's local date. */
+    StoredBackground: {
+      /** @description The weather key they were made for (WeatherKey). */
+      location: string;
+      /**
+       * Format: date
+       * @description The place's local date they are for.
+       */
+      local_date: string;
+      /** @description Those made so far, in the order of `starts_at`. A screen shows the last whose `starts_at` has passed, and before the first, the night image of the day before if it still has it. */
+      images: components["schemas"]["Background"][];
+    };
+    /** @description One part of the day's background. */
+    Background: {
+      phase: components["schemas"]["BackgroundPhase"];
+      /**
+       * Format: date-time
+       * @description When it starts showing, with its offset: dawn 30 minutes before sunrise, day 90 minutes after it, dusk an hour before sunset and night 45 minutes after it, from the forecast's daily sunrise and sunset.
+       */
+      starts_at: string;
+      digest: components["schemas"]["BackgroundDigest"];
+      /** Format: date-time */
+      made_at: string;
+      /** @description True when generating failed and this is one of the curated pictures instead, so the screen can tell and the provider can try again. */
+      fallback: boolean;
+    };
+    /**
+     * @description The part of the day a background is lit for.
+     * @enum {string}
+     */
+    BackgroundPhase: "dawn" | "day" | "dusk" | "night";
+    /** @description A background image's SHA-256, in lower-case hex, which names it in its key and its address. */
+    BackgroundDigest: string;
+    /**
+     * Format: binary
+     * @description A background image file's own bytes (a JPEG).
+     */
+    BackgroundImage: string;
     /** @description The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK. */
     StoredBankHolidays: {
       /** Format: date-time */
@@ -804,6 +862,11 @@ export interface components {
       key: components["schemas"]["WeatherKey"] | null;
       /** @description The forecast, or null with no place set or none stored for it (its provider is down, or new). */
       forecast: components["schemas"]["StoredForecast"] | null;
+      /**
+       * @description The place's backgrounds as v1:background:<key> has them, or null with no place set or none made yet. Each image is at getBackgroundImage's /api/backgrounds/<digest>.
+       * @default null
+       */
+      background: components["schemas"]["StoredBackground"] | null;
     };
     /** @description A device's live arrivals (getArrivals), for every stop in its config, in the owner's order. */
     DeviceArrivals: {
@@ -904,6 +967,11 @@ export type StoredStationDisruptions = components["schemas"]["StoredStationDisru
 export type StoredRoadDisruptions = components["schemas"]["StoredRoadDisruptions"];
 export type StoredMetOfficeWarnings = components["schemas"]["StoredMetOfficeWarnings"];
 export type MetOfficeFeedItem = components["schemas"]["MetOfficeFeedItem"];
+export type StoredBackground = components["schemas"]["StoredBackground"];
+export type Background = components["schemas"]["Background"];
+export type BackgroundPhase = components["schemas"]["BackgroundPhase"];
+export type BackgroundDigest = components["schemas"]["BackgroundDigest"];
+export type BackgroundImage = components["schemas"]["BackgroundImage"];
 export type StoredBankHolidays = components["schemas"]["StoredBankHolidays"];
 export type BankHolidayDivision = components["schemas"]["BankHolidayDivision"];
 export type BankHoliday = components["schemas"]["BankHoliday"];
@@ -1437,6 +1505,35 @@ export interface operations {
       };
       /** @description The store couldn't be reached; try again shortly. */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getBackgroundImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        digest: components["schemas"]["BackgroundDigest"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The image. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "image/jpeg": components["schemas"]["BackgroundImage"];
+        };
+      };
+      /** @description No such image, or it has expired. */
+      404: {
         headers: {
           [name: string]: unknown;
         };

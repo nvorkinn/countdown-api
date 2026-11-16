@@ -50,6 +50,40 @@ class Arrivals(BaseModel):
     )
 
 
+BackgroundDigest = Annotated[str, Field(pattern="^[0-9a-f]{64}$")]
+"""A background image's SHA-256, in lower-case hex, which names it in its key and its address."""
+
+
+BackgroundPhase = Literal["dawn", "day", "dusk", "night"]
+"""The part of the day a background is lit for."""
+
+
+class Background(BaseModel):
+    """One part of the day's background."""
+
+    phase: BackgroundPhase = Field(description="The part of the day a background is lit for.")
+    starts_at: datetime = Field(
+        description=(
+            "When it starts showing, with its offset: dawn 30 minutes before sunrise, day 90 minutes after it, dusk an"
+            " hour before sunset and night 45 minutes after it, from the forecast's daily sunrise and sunset."
+        ),
+    )
+    digest: BackgroundDigest = Field(
+        description="A background image's SHA-256, in lower-case hex, which names it in its key and its address.",
+    )
+    made_at: datetime
+    fallback: bool = Field(
+        description=(
+            "True when generating failed and this is one of the curated pictures instead, so the screen can tell and "
+            "the provider can try again."
+        ),
+    )
+
+
+BackgroundImage = bytes
+"""A background image file's own bytes (a JPEG)."""
+
+
 class BankHoliday(BaseModel):
     """One of gov.uk's bank holidays."""
 
@@ -391,6 +425,23 @@ class DeviceRegistration(BaseModel):
     )
 
 
+class StoredBackground(BaseModel):
+    """The ``StoredBackground`` object.
+
+    The value of v1:background:<weather key>: the AI-made photos behind a place's weather panel, one per
+    part of its day, for the place's local date.
+    """
+
+    location: str = Field(description="The weather key they were made for (WeatherKey).")
+    local_date: date = Field(description="The place's local date they are for.")
+    images: list[Background] = Field(
+        description=(
+            "Those made so far, in the order of `starts_at`. A screen shows the last whose `starts_at` has passed, and"
+            " before the first, the night image of the day before if it still has it."
+        ),
+    )
+
+
 class OpenMeteoForecast(BaseModel):
     """The ``OpenMeteoForecast`` object.
 
@@ -439,6 +490,13 @@ class DeviceWeather(BaseModel):
     key: WeatherKey | None = Field(description="The config's weather.key; null while no place is set.")
     forecast: StoredForecast | None = Field(
         description="The forecast, or null with no place set or none stored for it (its provider is down, or new).",
+    )
+    background: StoredBackground | None = Field(
+        default=None,
+        description=(
+            "The place's backgrounds as v1:background:<key> has them, or null with no place set or none made yet. Each"
+            " image is at getBackgroundImage's /api/backgrounds/<digest>."
+        ),
     )
 
 

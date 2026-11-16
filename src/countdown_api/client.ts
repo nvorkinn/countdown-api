@@ -8,6 +8,8 @@
  *   takes the device's secret sends `client.secret` as `Authorization: Bearer`.
  * - The settings site's pages (HTML), which a device sends a browser to: a URL builder, `registerTouchscreenUrl(base,
  *   query)`, `deviceSettingsPageUrl(base, path)`. A page's own form posts (POST /register) are the page's, not here.
+ * - The images a screen loads itself (an `<img>` or CSS, with no secret): a URL builder too,
+ *   `getBackgroundImageUrl(base, path)`.
  */
 import type { operations } from "./store.js";
 
@@ -220,6 +222,18 @@ export function getNotices(
   options: RequestOptions = {},
 ): Promise<Result<operations["getNotices"]["responses"][200]["content"]["application/json"]>> {
   return request(client, { ...options, method: "GET", path: "/api/devices/notices", secret: true, json: true });
+}
+
+/**
+ * A weather panel background.
+ *
+ * The address of the image `GET /api/backgrounds/{digest}`, for an `<img>` or CSS to load.
+ */
+export function getBackgroundImageUrl(
+  baseUrl: string | URL,
+  path: operations["getBackgroundImage"]["parameters"]["path"],
+): URL {
+  return url(baseUrl, `/api/backgrounds/${encodeURIComponent(path.digest)}`, {});
 }
 
 /**
