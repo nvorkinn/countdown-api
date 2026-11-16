@@ -73,7 +73,8 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 
 All but the registrations and the backgrounds take the device's secret as `Authorization: Bearer <secret>`
-(`securitySchemes.deviceSecret`);`/register` takes the person's login instead, on the settings site rather than the devices' API.
+(`securitySchemes.deviceSecret`);
+`/register` takes the person's login instead, on the settings site rather than the devices' API.
 The config and search routes also work on the settings site with the person's login instead of a secret, the config
 ones for the device their `device_id` query names. Both searches answer the same result shape (`SearchResult`: `id`,
 `name`, `subtitle`, `indent`) with a `value` that is what picking it saves, in the config's own shape.
