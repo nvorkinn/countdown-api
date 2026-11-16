@@ -429,15 +429,17 @@
               "line": "Northern",
               "destination": "Morden",
               "expected_at": "2026-10-17T12:02:00Z",
-              "platform": null,
-              "mode": null
+              "platform": "Southbound - Platform 2",
+              "mode": null,
+              "vehicle_id": "031"
             },
             {
               "line": "Northern",
               "destination": "Edgware via Bank",
               "expected_at": "2026-10-17T12:04:00Z",
-              "platform": null,
-              "mode": null
+              "platform": "Northbound - Platform 1",
+              "mode": null,
+              "vehicle_id": "057"
             }
           ]
         }
@@ -458,14 +460,16 @@
               "destination": "Elephant & Castle",
               "expected_at": "2026-10-17T12:01:00Z",
               "platform": null,
-              "mode": null
+              "mode": null,
+              "vehicle_id": "LTZ1234"
             },
             {
               "line": "12",
               "destination": "Oxford Circus",
               "expected_at": "2026-10-17T12:05:00Z",
               "platform": null,
-              "mode": null
+              "mode": null,
+              "vehicle_id": "LX11AVC"
             }
           ]
         }
@@ -486,14 +490,16 @@
               "destination": "Ljabru",
               "expected_at": "2026-10-17T12:03:00Z",
               "platform": "A",
-              "mode": "tram"
+              "mode": "tram",
+              "vehicle_id": null
             },
             {
               "line": "5",
               "destination": "Vestli",
               "expected_at": "2026-10-17T12:07:00Z",
               "platform": "2",
-              "mode": "metro"
+              "mode": "metro",
+              "vehicle_id": null
             }
           ]
         }
