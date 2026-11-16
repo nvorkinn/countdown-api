@@ -478,6 +478,7 @@ def _render_key(name: str, key: dict[str, Any]) -> list[str]:
     pattern = key["pattern"]
     params = _PARAM.findall(pattern)
     hashed = key.get("hash", {})
+    forms = key.get("form", {})
     about = _about(key)
     lines: list[str] = []
     if not params:
@@ -494,14 +495,7 @@ def _render_key(name: str, key: dict[str, Any]) -> list[str]:
         lines.append('    """')
         rendered = pattern
         for param in params:
-            if hashed.get(param) == "sha1":
-                value = f"hashlib.sha1({param}.encode(), usedforsecurity=False).hexdigest()"
-            elif param in hashed:
-                msg = f"{name}: unknown hash {hashed[param]!r} for {param}"
-                raise ValueError(msg)
-            else:
-                value = param
-            rendered = rendered.replace(f"{{{param}}}", f"{{{value}}}")
+            rendered = rendered.replace(f"{{{param}}}", f"{{{_param_value(name, param, hashed, forms)}}}")
         lines.append(f'    return f"{rendered}"')
         if len(params) == 1 and pattern.endswith(f"{{{params[0]}}}") and not hashed:
             lines.extend(["", ""])
@@ -513,6 +507,21 @@ def _render_key(name: str, key: dict[str, Any]) -> list[str]:
             lines.extend(_comment(f"The TTL of `{pattern}`, in {'seconds' if unit == 's' else 'milliseconds'}."))
             lines.append(f"{_constant(name)}_TTL_{unit.upper()} = {key[f'ttl_{unit}']!r}")
     return lines
+
+
+def _param_value(name: str, param: str, hashed: dict[str, str], forms: dict[str, str]) -> str:
+    """Return the expression that puts `param` in its key: as it is, as its `hash`, or in its `form`."""
+    if param in hashed:
+        if hashed[param] == "sha1":
+            return f"hashlib.sha1({param}.encode(), usedforsecurity=False).hexdigest()"
+        msg = f"{name}: unknown hash {hashed[param]!r} for {param}"
+        raise ValueError(msg)
+    if param in forms:
+        if forms[param] == "place":
+            return f'{param}.replace(" ", "").upper()'
+        msg = f"{name}: unknown form {forms[param]!r} for {param}"
+        raise ValueError(msg)
+    return param
 
 
 def _about(key: dict[str, Any]) -> list[str]:

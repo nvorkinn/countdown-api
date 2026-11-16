@@ -1,0 +1,119 @@
+{
+  "about": "What countdown's TfL notices provider stores for Kennington Underground Station and the postcode SE17 3LL: the status of the lines at the stop (v1:notices:tfl-lines:<stop id>), the disruptions there (v1:notices:tfl-stations:<stop id>) and the road disruptions near the postcode (v1:notices:tfl-roads:<place>), each under TfL's own names. Captured from countdown's provider.",
+  "stop_id": "940GZZLUKNG",
+  "postcode": "SE17 3LL",
+  "lines": {
+    "key": "v1:notices:tfl-lines:940GZZLUKNG",
+    "value": {
+      "fetched_at": "2026-09-25T12:00:00Z",
+      "stop_id": "940GZZLUKNG",
+      "lines": [
+        {
+          "id": "northern",
+          "name": "Northern",
+          "modeName": "tube",
+          "lineStatuses": [
+            {
+              "statusSeverity": 6,
+              "statusSeverityDescription": "Severe Delays",
+              "reason": "Northern Line: Severe delays between Kennington and Morden due to an earlier signal failure at Clapham Common. GOOD SERVICE on the rest of the line.",
+              "validityPeriods": [
+                {
+                  "fromDate": "2026-09-25T09:00:00Z",
+                  "toDate": "2026-09-25T21:00:00Z"
+                }
+              ]
+            },
+            {
+              "statusSeverity": 5,
+              "statusSeverityDescription": "Part Closure",
+              "reason": "NORTHERN LINE: Until Sunday 4 October, no service between Kennington and Battersea Power Station. Replacement buses operate.",
+              "validityPeriods": [
+                {
+                  "fromDate": "2026-09-20T12:00:00Z",
+                  "toDate": "2026-10-04T12:00:00Z"
+                }
+              ]
+            },
+            {
+              "statusSeverity": 3,
+              "statusSeverityDescription": "Part Suspended",
+              "reason": "Northern line: Saturday 3 October, no service between Camden Town and Edgware.",
+              "validityPeriods": [
+                {
+                  "fromDate": "2026-10-03T12:00:00Z",
+                  "toDate": "2026-10-04T12:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "ttl_s": 600
+  },
+  "stations": {
+    "key": "v1:notices:tfl-stations:940GZZLUKNG",
+    "value": {
+      "fetched_at": "2026-09-25T12:00:00Z",
+      "stop_id": "940GZZLUKNG",
+      "disruptions": [
+        {
+          "commonName": "Kennington Underground Station",
+          "description": "KENNINGTON UNDERGROUND STATION: The southbound Charing Cross branch platform is closed for cleaning.",
+          "toDate": "2026-09-25T14:00:00Z"
+        },
+        {
+          "commonName": "Kennington Underground Station",
+          "description": "Kennington station: The southbound Charing Cross branch platform is closed for cleaning.",
+          "toDate": "2026-09-26T12:00:00Z"
+        },
+        {
+          "commonName": "Kennington Underground Station",
+          "description": "KENNINGTON UNDERGROUND STATION: The lift to the Bank branch is out of service.",
+          "toDate": "2026-09-25T11:00:00Z"
+        },
+        {
+          "commonName": "Kennington Underground Station",
+          "description": "Kennington: No step-free access to the platforms.",
+          "toDate": null
+        }
+      ]
+    },
+    "ttl_s": 1800
+  },
+  "roads": {
+    "key": "v1:notices:tfl-roads:SE173LL",
+    "value": {
+      "fetched_at": "2026-09-25T12:00:00Z",
+      "postcode": "SE17 3LL",
+      "disruptions": [
+        {
+          "id": "TIMS-1",
+          "severity": "Severe",
+          "category": "Collisions",
+          "comments": "[A3] Kennington Park Road (SE11) (Lambeth) - Northbound closed at Kennington Cross after a collision.",
+          "point": "[-0.1055,51.4851]",
+          "endDateTime": "2026-09-25T15:00:00Z"
+        },
+        {
+          "id": "TIMS-2",
+          "severity": "Serious",
+          "category": "Works",
+          "comments": "[A202] Camberwell New Road (SE5) (Lambeth) - Lane restrictions for gas main repairs.",
+          "point": "[-0.1010,51.4790]",
+          "endDateTime": null
+        },
+        {
+          "id": "TIMS-5",
+          "severity": "Moderate",
+          "category": "Works",
+          "comments": "[A23] Kennington Road (SE11) (Lambeth) - Footway works.",
+          "point": "[-0.1100,51.4900]",
+          "endDateTime": null
+        }
+      ]
+    },
+    "ttl_s": 1800
+  }
+}

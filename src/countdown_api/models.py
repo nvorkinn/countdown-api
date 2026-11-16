@@ -50,6 +50,20 @@ class Arrivals(BaseModel):
     )
 
 
+class BankHoliday(BaseModel):
+    """One of gov.uk's bank holidays."""
+
+    title: str
+    date: date
+    notes: str = Field(default="", description='Such as "Substitute day"; empty for most.')
+
+
+class BankHolidayDivision(BaseModel):
+    """One part of the UK's bank holidays."""
+
+    events: list[BankHoliday]
+
+
 DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
@@ -145,6 +159,29 @@ only then. getConfig answers it, and a save sends it back as If-Match.
 """
 
 
+class Departure(BaseModel):
+    """One vehicle due to leave a stop."""
+
+    line: str
+    destination: str = Field(
+        description="TfL buses' destination (trimmed at the comma), the Tube's `towards`, Entur's front text.",
+    )
+    expected_at: datetime = Field(
+        description="When it's due, rather than seconds to go, as a stored value is read some time after it's fetched.",
+    )
+    platform: str | None = Field(
+        default=None,
+        description="The platform or stop pole where the source says (Entur's quay code); null from TfL.",
+    )
+    mode: str | None = Field(
+        default=None,
+        description=(
+            "Its mode where a stop serves several (Entur's metro or tram at Majorstuen); null from TfL, whose stops "
+            "serve one (the stop's `mode`)."
+        ),
+    )
+
+
 class Developer(BaseModel):
     """The ``Developer`` object."""
 
@@ -153,6 +190,166 @@ class Developer(BaseModel):
             "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer"
             " provider fills with the GitHub token it holds, so no token is sent here."
         ),
+    )
+
+
+class StopDepartures(BaseModel):
+    """The ``StopDepartures`` object.
+
+    The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the
+    providers' own shape (TfL's and Entur's answers mapped to one).
+    """
+
+    fetched_at: datetime
+    stop_id: str = Field(description="The stop's id at its source (DepartureStop's id).")
+    name: str = Field(
+        description='As the source names it ("Kennington Underground Station"); a reader shortens it as it likes.',
+    )
+    mode: str = Field(
+        description=(
+            "The source's own name for the stop's main mode: TfL's bus or tube; Entur's bus, tram, metro, rail, "
+            "water... (unknown for a stop that lists none)."
+        ),
+    )
+    stop_letter: str | None = Field(
+        default=None,
+        description='The letter on a London bus stop\'s flag ("W"), or an Entur quay\'s code ("2"); null elsewhere.',
+    )
+    modes: list[str] | None = Field(
+        default=None,
+        description="Every mode the stop serves, its main one first, from Entur ([metro, tram]); empty from TfL.",
+    )
+    departures: list[Departure] | None = Field(default=None, description="Soonest first; empty when nothing is due.")
+
+
+class StopArrivals(BaseModel):
+    """One of a device's stops, and its departures as v1:departures:<stop id> has them."""
+
+    source: Literal["tfl", "entur"]
+    id: str
+    departures: StopDepartures | None = Field(
+        description="The stop's departures, or null with none stored (its provider is down, or the stop is new).",
+    )
+
+
+class DeviceArrivals(BaseModel):
+    """The ``DeviceArrivals`` object.
+
+    A device's live arrivals (getArrivals), for every stop in its config, in the owner's order.
+    """
+
+    stops: list[StopArrivals]
+
+
+class StoredBankHolidays(BaseModel):
+    """The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK."""
+
+    fetched_at: datetime
+    divisions: dict[str, BankHolidayDivision] = Field(
+        description="By gov.uk's name for each part of the UK; England and Wales share one.",
+    )
+
+
+class MetOfficeFeedItem(BaseModel):
+    """The ``MetOfficeFeedItem`` object.
+
+    One item of the Met Office's warnings feed, its elements' text as the feed has it ("" for one it
+    lacks).
+    """
+
+    title: str = Field(
+        default="",
+        description='The warning\'s colour, kind and region ("Amber warning of wind affecting London & South East").',
+    )
+    description: str = Field(
+        default="",
+        description='Where and when ("...: Lambeth, Southwark valid from 0600 Fri 25 Sep to 2100 Fri 25 Sep").',
+    )
+    link: str = Field(default="", description="The warning's page on the Met Office's site.")
+    pub_date: str = Field(
+        default="",
+        description='When it was published, as the feed writes it (RFC 822, "Thu, 24 Sep 2026 10:30:00 GMT").',
+    )
+
+
+class StoredMetOfficeWarnings(BaseModel):
+    """The ``StoredMetOfficeWarnings`` object.
+
+    The value of v1:notices:met-office:<place>: the warnings feed of the Met Office region the postcode
+    is in, as it was at fetched_at.
+    """
+
+    fetched_at: datetime
+    postcode: str = Field(description='The postcode it\'s for, as the broker subscribed it ("SE17 3LL").')
+    region: str = Field(
+        description='The Met Office warning region whose feed it is ("se"), or UK for the whole of the UK\'s.',
+    )
+    items: list[MetOfficeFeedItem] = Field(
+        description="The feed's items in its order; empty when there are no warnings.",
+    )
+
+
+class StoredRoadDisruptions(BaseModel):
+    """The ``StoredRoadDisruptions`` object.
+
+    The value of v1:notices:tfl-roads:<place>: TfL's RoadDisruptions near the postcode's place, under
+    TfL's own names.
+    """
+
+    fetched_at: datetime
+    postcode: str = Field(description='The postcode as the broker subscribed it ("SE17 3LL").')
+    disruptions: list[dict[str, Any]]
+
+
+class StoredLineStatus(BaseModel):
+    """The ``StoredLineStatus`` object.
+
+    The value of v1:notices:tfl-lines:<stop id>: the lines serving a TfL stop, in the order TfL lists
+    them there, each TfL's Line with its lineStatuses (severity, description, reason, validityPeriods)
+    under TfL's own names.
+    """
+
+    fetched_at: datetime
+    stop_id: str
+    lines: list[dict[str, Any]]
+
+
+class StoredStationDisruptions(BaseModel):
+    """The ``StoredStationDisruptions`` object.
+
+    The value of v1:notices:tfl-stations:<stop id>: TfL's DisruptedPoints at the stop, under TfL's own
+    names.
+    """
+
+    fetched_at: datetime
+    stop_id: str
+    disruptions: list[dict[str, Any]]
+
+
+class TflStopNotices(BaseModel):
+    """A TfL stop's line statuses and station disruptions, each null with none stored."""
+
+    stop_id: str
+    lines: StoredLineStatus | None
+    stations: StoredStationDisruptions | None
+
+
+class DeviceNotices(BaseModel):
+    """The ``DeviceNotices`` object.
+
+    A device's notices (getNotices), as the store has them: what the notice board makes its notices
+    from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's
+    for a device with no TfL stops; the Met Office's, TfL's roads and the bank holidays for one whose
+    postcode isn't a UK one), as is one with nothing stored.
+    """
+
+    postcode: str | None = Field(description="The config's notice_board.postcode.")
+    country: Literal["GB", "NO"] | None = Field(description="The config's notice_board.country.")
+    tfl_stops: list[TflStopNotices] = Field(description="Each of the device's TfL stops, in the owner's order.")
+    tfl_roads: StoredRoadDisruptions | None
+    met_office: StoredMetOfficeWarnings | None
+    bank_holidays: StoredBankHolidays | None = Field(
+        description="Every part of the UK's; the postcode's place says which applies.",
     )
 
 
@@ -191,6 +388,57 @@ class DeviceRegistration(BaseModel):
     format: Literal["mono-1bpp-packed", "png"] | None = Field(
         default=None,
         description="The format an e-paper screen takes its frame in, as its config's format.",
+    )
+
+
+class OpenMeteoForecast(BaseModel):
+    """The ``OpenMeteoForecast`` object.
+
+    Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under
+    the provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's
+    temperature_2m and the like). `current` has the conditions now (is_day among them), `hourly` and
+    `daily` parallel lists by `time` (daily has each day's sunrise and sunset), `current_units` the
+    units. A reader reads the sections with its own model.
+    """
+
+    utc_offset_seconds: int
+    current: dict[str, Any]
+    current_units: dict[str, Any]
+    hourly: dict[str, Any]
+    daily: dict[str, Any]
+
+
+class StoredForecast(BaseModel):
+    """The ``StoredForecast`` object.
+
+    The value of v1:weather:<weather key>: a place's Open-Meteo forecast, as fetched (timezone=auto, so
+    its times are the place's local time), in a thin wrapper.
+    """
+
+    fetched_at: datetime
+    location: str = Field(description="The weather key it was fetched for (WeatherKey).")
+    forecast: OpenMeteoForecast = Field(
+        description=(
+            "Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under the "
+            "provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's temperature_2m "
+            "and the like). `current` has the conditions now (is_day among them), `hourly` and `daily` parallel lists "
+            "by `time` (daily has each day's sunrise and sunset), `current_units` the units. A reader reads the "
+            "sections with its own model."
+        ),
+    )
+
+
+class DeviceWeather(BaseModel):
+    """The ``DeviceWeather`` object.
+
+    A device's weather (getWeather): its config's place, and the place's stored forecast as
+    v1:weather:<key> has it.
+    """
+
+    location: str = Field(description="The place as the owner named it (the config's weather.location).")
+    key: WeatherKey | None = Field(description="The config's weather.key; null while no place is set.")
+    forecast: StoredForecast | None = Field(
+        description="The forecast, or null with no place set or none stored for it (its provider is down, or new).",
     )
 
 

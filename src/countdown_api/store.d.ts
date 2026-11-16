@@ -130,6 +130,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/weather": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's weather.
+     * @description The forecast for the device's weather place (its config's weather.key), as the store has it: current conditions (is_day among them), the hourly forecast and each day's sunrise and sunset, in the place's local time. Read from the store alone, so it's as fresh as the weather provider's last fetch (fetched_at); forecast is null while there's none.
+     */
+    get: operations["getWeather"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/arrivals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's live arrivals.
+     * @description The next departures from each of the device's stops (its config's arrivals.stops), in the owner's order, as the store has them: each stop's soonest first, with its expected time rather than seconds to go. A stop with nothing stored is listed with null departures.
+     */
+    get: operations["getArrivals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/notices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's notices.
+     * @description What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions there, TfL's road disruptions, the Met Office's warnings near its postcode and the UK's bank holidays. Each as its provider stored it (DeviceNotices), not worded or judged as notices.
+     */
+    get: operations["getNotices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/register": {
     parameters: {
       query?: never;
@@ -593,6 +653,189 @@ export interface components {
       /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
       scope: string;
     };
+    /** @description The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the providers' own shape (TfL's and Entur's answers mapped to one). */
+    StopDepartures: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description The stop's id at its source (DepartureStop's id). */
+      stop_id: string;
+      /** @description As the source names it ("Kennington Underground Station"); a reader shortens it as it likes. */
+      name: string;
+      /** @description The source's own name for the stop's main mode: TfL's bus or tube; Entur's bus, tram, metro, rail, water... (unknown for a stop that lists none). */
+      mode: string;
+      /**
+       * @description The letter on a London bus stop's flag ("W"), or an Entur quay's code ("2"); null elsewhere.
+       * @default null
+       */
+      stop_letter: string | null;
+      /**
+       * @description Every mode the stop serves, its main one first, from Entur ([metro, tram]); empty from TfL.
+       * @default []
+       */
+      modes: string[];
+      /**
+       * @description Soonest first; empty when nothing is due.
+       * @default []
+       */
+      departures: components["schemas"]["Departure"][];
+    };
+    /** @description One vehicle due to leave a stop. */
+    Departure: {
+      line: string;
+      /** @description TfL buses' destination (trimmed at the comma), the Tube's `towards`, Entur's front text. */
+      destination: string;
+      /**
+       * Format: date-time
+       * @description When it's due, rather than seconds to go, as a stored value is read some time after it's fetched.
+       */
+      expected_at: string;
+      /**
+       * @description The platform or stop pole where the source says (Entur's quay code); null from TfL.
+       * @default null
+       */
+      platform: string | null;
+      /**
+       * @description Its mode where a stop serves several (Entur's metro or tram at Majorstuen); null from TfL, whose stops serve one (the stop's `mode`).
+       * @default null
+       */
+      mode: string | null;
+    };
+    /** @description The value of v1:weather:<weather key>: a place's Open-Meteo forecast, as fetched (timezone=auto, so its times are the place's local time), in a thin wrapper. */
+    StoredForecast: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description The weather key it was fetched for (WeatherKey). */
+      location: string;
+      forecast: components["schemas"]["OpenMeteoForecast"];
+    };
+    /** @description Open-Meteo's forecast answer as the weather provider parsed and wrote it: its sections, each under the provider's own field names (temperature, humidity, wind_speed... rather than Open-Meteo's temperature_2m and the like). `current` has the conditions now (is_day among them), `hourly` and `daily` parallel lists by `time` (daily has each day's sunrise and sunset), `current_units` the units. A reader reads the sections with its own model. */
+    OpenMeteoForecast: {
+      utc_offset_seconds: number;
+      current: Record<string, never>;
+      current_units: Record<string, never>;
+      hourly: Record<string, never>;
+      daily: Record<string, never>;
+    };
+    /** @description The value of v1:notices:tfl-lines:<stop id>: the lines serving a TfL stop, in the order TfL lists them there, each TfL's Line with its lineStatuses (severity, description, reason, validityPeriods) under TfL's own names. */
+    StoredLineStatus: {
+      /** Format: date-time */
+      fetched_at: string;
+      stop_id: string;
+      lines: Record<string, never>[];
+    };
+    /** @description The value of v1:notices:tfl-stations:<stop id>: TfL's DisruptedPoints at the stop, under TfL's own names. */
+    StoredStationDisruptions: {
+      /** Format: date-time */
+      fetched_at: string;
+      stop_id: string;
+      disruptions: Record<string, never>[];
+    };
+    /** @description The value of v1:notices:tfl-roads:<place>: TfL's RoadDisruptions near the postcode's place, under TfL's own names. */
+    StoredRoadDisruptions: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description The postcode as the broker subscribed it ("SE17 3LL"). */
+      postcode: string;
+      disruptions: Record<string, never>[];
+    };
+    /** @description The value of v1:notices:met-office:<place>: the warnings feed of the Met Office region the postcode is in, as it was at fetched_at. */
+    StoredMetOfficeWarnings: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description The postcode it's for, as the broker subscribed it ("SE17 3LL"). */
+      postcode: string;
+      /** @description The Met Office warning region whose feed it is ("se"), or UK for the whole of the UK's. */
+      region: string;
+      /** @description The feed's items in its order; empty when there are no warnings. */
+      items: components["schemas"]["MetOfficeFeedItem"][];
+    };
+    /** @description One item of the Met Office's warnings feed, its elements' text as the feed has it ("" for one it lacks). */
+    MetOfficeFeedItem: {
+      /**
+       * @description The warning's colour, kind and region ("Amber warning of wind affecting London & South East").
+       * @default
+       */
+      title: string;
+      /**
+       * @description Where and when ("...: Lambeth, Southwark valid from 0600 Fri 25 Sep to 2100 Fri 25 Sep").
+       * @default
+       */
+      description: string;
+      /**
+       * @description The warning's page on the Met Office's site.
+       * @default
+       */
+      link: string;
+      /**
+       * @description When it was published, as the feed writes it (RFC 822, "Thu, 24 Sep 2026 10:30:00 GMT").
+       * @default
+       */
+      pub_date: string;
+    };
+    /** @description The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK. */
+    StoredBankHolidays: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description By gov.uk's name for each part of the UK; England and Wales share one. */
+      divisions: {
+        [key: string]: components["schemas"]["BankHolidayDivision"];
+      };
+    };
+    /** @description One part of the UK's bank holidays. */
+    BankHolidayDivision: {
+      events: components["schemas"]["BankHoliday"][];
+    };
+    /** @description One of gov.uk's bank holidays. */
+    BankHoliday: {
+      title: string;
+      /** Format: date */
+      date: string;
+      /**
+       * @description Such as "Substitute day"; empty for most.
+       * @default
+       */
+      notes: string;
+    };
+    /** @description A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> has it. */
+    DeviceWeather: {
+      /** @description The place as the owner named it (the config's weather.location). */
+      location: string;
+      /** @description The config's weather.key; null while no place is set. */
+      key: components["schemas"]["WeatherKey"] | null;
+      /** @description The forecast, or null with no place set or none stored for it (its provider is down, or new). */
+      forecast: components["schemas"]["StoredForecast"] | null;
+    };
+    /** @description A device's live arrivals (getArrivals), for every stop in its config, in the owner's order. */
+    DeviceArrivals: {
+      stops: components["schemas"]["StopArrivals"][];
+    };
+    /** @description One of a device's stops, and its departures as v1:departures:<stop id> has them. */
+    StopArrivals: {
+      /** @enum {string} */
+      source: "tfl" | "entur";
+      id: string;
+      /** @description The stop's departures, or null with none stored (its provider is down, or the stop is new). */
+      departures: components["schemas"]["StopDepartures"] | null;
+    };
+    /** @description A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK one), as is one with nothing stored. */
+    DeviceNotices: {
+      /** @description The config's notice_board.postcode. */
+      postcode: string | null;
+      /** @description The config's notice_board.country. */
+      country: ("GB" | "NO") | null;
+      /** @description Each of the device's TfL stops, in the owner's order. */
+      tfl_stops: components["schemas"]["TflStopNotices"][];
+      tfl_roads: components["schemas"]["StoredRoadDisruptions"] | null;
+      met_office: components["schemas"]["StoredMetOfficeWarnings"] | null;
+      /** @description Every part of the UK's; the postcode's place says which applies. */
+      bank_holidays: components["schemas"]["StoredBankHolidays"] | null;
+    };
+    /** @description A TfL stop's line statuses and station disruptions, each null with none stored. */
+    TflStopNotices: {
+      stop_id: string;
+      lines: components["schemas"]["StoredLineStatus"] | null;
+      stations: components["schemas"]["StoredStationDisruptions"] | null;
+    };
   };
   responses: never;
   parameters: never;
@@ -652,6 +895,23 @@ export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
+export type StopDepartures = components["schemas"]["StopDepartures"];
+export type Departure = components["schemas"]["Departure"];
+export type StoredForecast = components["schemas"]["StoredForecast"];
+export type OpenMeteoForecast = components["schemas"]["OpenMeteoForecast"];
+export type StoredLineStatus = components["schemas"]["StoredLineStatus"];
+export type StoredStationDisruptions = components["schemas"]["StoredStationDisruptions"];
+export type StoredRoadDisruptions = components["schemas"]["StoredRoadDisruptions"];
+export type StoredMetOfficeWarnings = components["schemas"]["StoredMetOfficeWarnings"];
+export type MetOfficeFeedItem = components["schemas"]["MetOfficeFeedItem"];
+export type StoredBankHolidays = components["schemas"]["StoredBankHolidays"];
+export type BankHolidayDivision = components["schemas"]["BankHolidayDivision"];
+export type BankHoliday = components["schemas"]["BankHoliday"];
+export type DeviceWeather = components["schemas"]["DeviceWeather"];
+export type DeviceArrivals = components["schemas"]["DeviceArrivals"];
+export type StopArrivals = components["schemas"]["StopArrivals"];
+export type DeviceNotices = components["schemas"]["DeviceNotices"];
+export type TflStopNotices = components["schemas"]["TflStopNotices"];
 export type $defs = Record<string, never>;
 export interface operations {
   registerDevice: {
@@ -1054,6 +1314,129 @@ export interface operations {
       };
       /** @description Spotify couldn't be reached, or refused to renew the token. */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getWeather: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The device's weather. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceWeather"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no config to read. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The store couldn't be reached; try again shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getArrivals: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The device's live arrivals. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceArrivals"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no config to read. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The store couldn't be reached; try again shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getNotices: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The device's notices. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceNotices"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no config to read. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The store couldn't be reached; try again shortly. */
+      503: {
         headers: {
           [name: string]: unknown;
         };
