@@ -5,7 +5,7 @@
     "repos": 9,
     "open_prs": 3,
     "review_requests": 1,
-    "failing": ["auth-broker"],
+    "failing": ["countdown-server"],
     "releases": [
       {
         "repo": "countdown",
