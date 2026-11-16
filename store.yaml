@@ -1977,7 +1977,17 @@ $defs:
         - type: string
         - type: 'null'
         default: null
-        description: The platform or stop pole where the source says (Entur's quay code); null from TfL.
+        description: >-
+          The platform or stop pole where the source says: Entur's quay code, TfL's platformName for a Tube train
+          ("Northbound - Platform 1"); null for a TfL bus.
+      vehicle_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: >-
+          The source's id for the vehicle, the same from one fetch to the next, so a screen can follow it as predictions
+          reorder: TfL's vehicleId (a bus's registration, a train's set number); null where the source has none (Entur).
       mode:
         anyOf:
         - type: string

@@ -710,10 +710,15 @@ export interface components {
        */
       expected_at: string;
       /**
-       * @description The platform or stop pole where the source says (Entur's quay code); null from TfL.
+       * @description The platform or stop pole where the source says: Entur's quay code, TfL's platformName for a Tube train ("Northbound - Platform 1"); null for a TfL bus.
        * @default null
        */
       platform: string | null;
+      /**
+       * @description The source's id for the vehicle, the same from one fetch to the next, so a screen can follow it as predictions reorder: TfL's vehicleId (a bus's registration, a train's set number); null where the source has none (Entur).
+       * @default null
+       */
+      vehicle_id: string | null;
       /**
        * @description Its mode where a stop serves several (Entur's metro or tram at Majorstuen); null from TfL, whose stops serve one (the stop's `mode`).
        * @default null
