@@ -1,5 +1,5 @@
 {
-  "about": "A London touchscreen's config, and what getWeather, getArrivals and getNotices answer it from the store's values in weather.json, departures.json, tfl_notices.json, met_office.json and bank_holidays.json. Its bus stop 490000123W has no notices stored, so its lines and stations are null.",
+  "about": "A London touchscreen's config, and what getWeather, getArrivals and getNotices answer it from the store's values in weather.json, background.json, departures.json, tfl_notices.json, met_office.json and bank_holidays.json. Its bus stop 490000123W has no notices stored, so its lines and stations are null.",
   "device_id": "0a1b2c3d4e60",
   "config": {
     "device_id": "0a1b2c3d4e60",
@@ -376,6 +376,40 @@
           "wind_direction_dominant": [225.0, 225.0, 225.0, 225.0, 225.0, 225.0, 225.0, 225.0]
         }
       }
+    },
+    "background": {
+      "location": "london-gb-2643743",
+      "local_date": "2026-01-15",
+      "images": [
+        {
+          "phase": "dawn",
+          "starts_at": "2026-01-15T07:31:00+00:00",
+          "digest": "8326e09ce4e90a419a510ed74895cf6713f2fb42b0b3ffc126527ec2b9e95872",
+          "made_at": "2026-01-15T06:46:12Z",
+          "fallback": false
+        },
+        {
+          "phase": "day",
+          "starts_at": "2026-01-15T09:31:00+00:00",
+          "digest": "944c27e5b97ab7793e4b6e9ff29384890ece0c7c04d2e2bf81c5f763469cc66b",
+          "made_at": "2026-01-15T08:46:40Z",
+          "fallback": false
+        },
+        {
+          "phase": "dusk",
+          "starts_at": "2026-01-15T15:20:00+00:00",
+          "digest": "29aef83195b27118a6c6b0780fc7dafe2d4daccd3eb82ecce12708f954f265b8",
+          "made_at": "2026-01-15T14:35:03Z",
+          "fallback": true
+        },
+        {
+          "phase": "night",
+          "starts_at": "2026-01-15T17:05:00+00:00",
+          "digest": "8c365814bd20bc9b712c0696e9fe7299f5827db7251db539e6de8a2dcc29c3a9",
+          "made_at": "2026-01-15T16:20:27Z",
+          "fallback": false
+        }
+      ]
     }
   },
   "arrivals": {

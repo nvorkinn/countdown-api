@@ -291,6 +291,36 @@ keys:
     description: >-
       A place's Open-Meteo forecast, as fetched: not the panel's pages, which the renderer works out from it when it
       draws, so "now" and "tonight" are as of drawing.
+  background:
+    pattern: "v1:background:{weather_key}"
+    params:
+      weather_key: the place's weather key (WeatherKey), as the config has it in weather.key.
+    redis: string
+    value: StoredBackground
+    encoding: json
+    ttl_s: 172800
+    ttl: renewed with each image written to it.
+    written_by: the broker's background provider, for every key in v1:sub:weather
+    read_by: the broker's getWeather
+    examples: [background.json]
+    description: >-
+      A place's backgrounds for the weather panel: one AI-made photo per part of the day (dawn, day, dusk, night),
+      each made shortly before its part starts from the forecast for that hour, so the list fills in through the day.
+      Every screen on the same weather key shows the same pictures.
+  background_image:
+    pattern: "v1:background-image:{digest}"
+    params:
+      digest: the image's SHA-256 (BackgroundDigest), in lower-case hex.
+    redis: string
+    value: BackgroundImage
+    encoding: bytes
+    ttl_s: 172800
+    written_by: the broker's background provider, beside v1:background:<weather key>
+    read_by: the broker's getBackgroundImage
+    examples: [background.json, background.jpg]
+    description: >-
+      A background's own bytes (a JPEG), by its SHA-256, so its address names the picture and not the place, and
+      never changes for the same bytes.
   tfl_line_status:
     pattern: "v1:notices:tfl-lines:{stop_id}"
     params:
@@ -805,6 +835,32 @@ paths:
         '503':
           description: The store couldn't be reached; try again shortly.
       x-examples: [device_panels.json]
+  # No secret: a screen loads it as a plain image (an <img> or a CSS background), which can't send one. Its address is
+  # the picture's own SHA-256, so it says nothing about the device or its place.
+  /api/backgrounds/{digest}:
+    get:
+      operationId: getBackgroundImage
+      summary: A weather panel background.
+      description: >-
+        A background's JPEG (v1:background-image:<digest>), by the SHA-256 that getWeather's background names it by.
+        The same digest is always the same bytes, so it's answered with Cache-Control immutable and a year's max-age.
+      security: []
+      parameters:
+      - name: digest
+        in: path
+        required: true
+        schema:
+          $ref: '#/$defs/BackgroundDigest'
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/jpeg:
+              schema:
+                $ref: '#/$defs/BackgroundImage'
+        '404':
+          description: No such image, or it has expired.
+      x-examples: [background.json]
   # On the settings site (APP_HOST), not the devices' API (API_HOST): it's a page a person opens on the tablet, behind
   # the login, so it takes no device secret.
   /register:
@@ -2079,6 +2135,70 @@ $defs:
         type: string
         default: ''
         description: When it was published, as the feed writes it (RFC 822, "Thu, 24 Sep 2026 10:30:00 GMT").
+  StoredBackground:
+    description: >-
+      The value of v1:background:<weather key>: the AI-made photos behind a place's weather panel, one per part of its
+      day, for the place's local date.
+    type: object
+    properties:
+      location:
+        type: string
+        description: The weather key they were made for (WeatherKey).
+      local_date:
+        type: string
+        format: date
+        description: The place's local date they are for.
+      images:
+        type: array
+        items:
+          $ref: '#/$defs/Background'
+        description: >-
+          Those made so far, in the order of `starts_at`. A screen shows the last whose `starts_at` has passed, and before the
+          first, the night image of the day before if it still has it.
+    required:
+    - location
+    - local_date
+    - images
+  Background:
+    description: One part of the day's background.
+    type: object
+    properties:
+      phase:
+        $ref: '#/$defs/BackgroundPhase'
+      starts_at:
+        type: string
+        format: date-time
+        description: >-
+          When it starts showing, with its offset: dawn 30 minutes before sunrise, day 90 minutes after it, dusk an
+          hour before sunset and night 45 minutes after it, from the forecast's daily sunrise and sunset.
+      digest:
+        $ref: '#/$defs/BackgroundDigest'
+      made_at:
+        type: string
+        format: date-time
+      fallback:
+        type: boolean
+        description: >-
+          True when generating failed and this is one of the curated pictures instead, so the screen can tell and the
+          provider can try again.
+    required:
+    - phase
+    - starts_at
+    - digest
+    - made_at
+    - fallback
+  BackgroundPhase:
+    type: string
+    enum: [dawn, day, dusk, night]
+    description: The part of the day a background is lit for.
+  BackgroundDigest:
+    type: string
+    pattern: ^[0-9a-f]{64}$
+    description: A background image's SHA-256, in lower-case hex, which names it in its key and its address.
+  BackgroundImage:
+    type: string
+    format: binary
+    description: A background image file's own bytes (a JPEG).
   StoredBankHolidays:
     description: The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK.
     type: object
@@ -2143,6 +2263,14 @@ $defs:
         - $ref: '#/$defs/StoredForecast'
         - type: 'null'
         description: The forecast, or null with no place set or none stored for it (its provider is down, or new).
+      background:
+        anyOf:
+        - $ref: '#/$defs/StoredBackground'
+        - type: 'null'
+        default: null
+        description: >-
+          The place's backgrounds as v1:background:<key> has them, or null with no place set or none made yet. Each
+          image is at getBackgroundImage's /api/backgrounds/<digest>.
     required:
     - location
     - key

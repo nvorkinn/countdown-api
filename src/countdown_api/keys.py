@@ -398,6 +398,54 @@ WEATHER_PREFIX = "v1:weather:"
 WEATHER_TTL_S = 1800
 
 
+def background(weather_key: str) -> str:
+    """Return the key `v1:background:{weather_key}`.
+
+    A place's backgrounds for the weather panel: one AI-made photo per part of the day (dawn, day, dusk, night), each
+    made shortly before its part starts from the forecast for that hour, so the list fills in through the day. Every
+    screen on the same weather key shows the same pictures.
+
+    A Redis string of models.StoredBackground (json), with a TTL of 172800 s: renewed with each image written to it.
+
+    Written by the broker's background provider, for every key in v1:sub:weather. Read by the broker's getWeather.
+
+    Example: countdown_api.fixtures, background.json.
+    """
+    return f"v1:background:{weather_key}"
+
+
+# What every `v1:background:{weather_key}` key starts with, for SCAN and removeprefix().
+BACKGROUND_PREFIX = "v1:background:"
+
+
+# The TTL of `v1:background:{weather_key}`, in seconds.
+BACKGROUND_TTL_S = 172800
+
+
+def background_image(digest: str) -> str:
+    """Return the key `v1:background-image:{digest}`.
+
+    A background's own bytes (a JPEG), by its SHA-256, so its address names the picture and not the place, and never
+    changes for the same bytes.
+
+    A Redis string of models.BackgroundImage (bytes), with a TTL of 172800 s.
+
+    Written by the broker's background provider, beside v1:background:<weather key>. Read by the broker's
+    getBackgroundImage.
+
+    Example: countdown_api.fixtures, background.json, background.jpg.
+    """
+    return f"v1:background-image:{digest}"
+
+
+# What every `v1:background-image:{digest}` key starts with, for SCAN and removeprefix().
+BACKGROUND_IMAGE_PREFIX = "v1:background-image:"
+
+
+# The TTL of `v1:background-image:{digest}`, in seconds.
+BACKGROUND_IMAGE_TTL_S = 172800
+
+
 def tfl_line_status(stop_id: str) -> str:
     """Return the key `v1:notices:tfl-lines:{stop_id}`.
 
