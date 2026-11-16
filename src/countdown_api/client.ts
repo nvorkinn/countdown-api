@@ -10,6 +10,7 @@
  *   query)`, `deviceSettingsPageUrl(base, path)`. A page's own form posts (POST /register) are the page's, not here.
  * - The images a screen loads itself (an `<img>` or CSS, with no secret): a URL builder too,
  *   `getBackgroundImageUrl(base, path)`.
+ * - An event stream, which a device reads itself with fetch and its secret: a URL builder, `getFeedUrl(base)`.
  */
 import type { operations } from "./store.js";
 
@@ -222,6 +223,15 @@ export function getNotices(
   options: RequestOptions = {},
 ): Promise<Result<operations["getNotices"]["responses"][200]["content"]["application/json"]>> {
   return request(client, { ...options, method: "GET", path: "/api/devices/notices", secret: true, json: true });
+}
+
+/**
+ * The device's weather, arrivals and notices, live.
+ *
+ * The address of the event stream `GET /api/devices/feed`, to read with fetch and the device's secret (Authorization), which EventSource can't send.
+ */
+export function getFeedUrl(baseUrl: string | URL): URL {
+  return url(baseUrl, "/api/devices/feed", {});
 }
 
 /**

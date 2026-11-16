@@ -190,6 +190,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/feed": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's weather, arrivals and notices, live.
+     * @description A server-sent event stream (text/event-stream) of what getWeather, getArrivals and getNotices answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`) whose data is that route's answer as JSON (DeviceFeedEvent), all three as the stream opens and then each again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes down, and the device opens it again (its `retry` field says after how long). It takes the device's secret in the Authorization header like every route, so a device reads it with fetch rather than EventSource, which can't send one.
+     */
+    get: operations["getFeed"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/backgrounds/{digest}": {
     parameters: {
       query?: never;
@@ -854,6 +874,23 @@ export interface components {
        */
       notes: string;
     };
+    /** @description One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON. */
+    DeviceFeedEvent:
+      | {
+          /** @constant */
+          event: "weather";
+          data: components["schemas"]["DeviceWeather"];
+        }
+      | {
+          /** @constant */
+          event: "arrivals";
+          data: components["schemas"]["DeviceArrivals"];
+        }
+      | {
+          /** @constant */
+          event: "notices";
+          data: components["schemas"]["DeviceNotices"];
+        };
     /** @description A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> has it. */
     DeviceWeather: {
       /** @description The place as the owner named it (the config's weather.location). */
@@ -975,6 +1012,7 @@ export type BackgroundImage = components["schemas"]["BackgroundImage"];
 export type StoredBankHolidays = components["schemas"]["StoredBankHolidays"];
 export type BankHolidayDivision = components["schemas"]["BankHolidayDivision"];
 export type BankHoliday = components["schemas"]["BankHoliday"];
+export type DeviceFeedEvent = components["schemas"]["DeviceFeedEvent"];
 export type DeviceWeather = components["schemas"]["DeviceWeather"];
 export type DeviceArrivals = components["schemas"]["DeviceArrivals"];
 export type StopArrivals = components["schemas"]["StopArrivals"];
@@ -1487,6 +1525,47 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DeviceNotices"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no config to read. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The store couldn't be reached; try again shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getFeed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The stream. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/event-stream": components["schemas"]["DeviceFeedEvent"];
         };
       };
       /** @description A missing or unknown secret. */

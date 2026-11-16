@@ -957,6 +957,39 @@
         "x-examples": ["device_panels.json"]
       }
     },
+    "/api/devices/feed": {
+      "get": {
+        "operationId": "getFeed",
+        "summary": "The device's weather, arrivals and notices, live.",
+        "description": "A server-sent event stream (text/event-stream) of what getWeather, getArrivals and getNotices answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`) whose data is that route's answer as JSON (DeviceFeedEvent), all three as the stream opens and then each again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes down, and the device opens it again (its `retry` field says after how long). It takes the device's secret in the Authorization header like every route, so a device reads it with fetch rather than EventSource, which can't send one.",
+        "security": [
+          {
+            "deviceSecret": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stream.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/$defs/DeviceFeedEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A missing or unknown secret."
+          },
+          "409": {
+            "description": "The device isn't paired yet, so it has no config to read."
+          },
+          "503": {
+            "description": "The store couldn't be reached; try again shortly."
+          }
+        }
+      }
+    },
     "/api/backgrounds/{digest}": {
       "get": {
         "operationId": "getBackgroundImage",
@@ -2480,6 +2513,47 @@
         }
       },
       "required": ["title", "date"]
+    },
+    "DeviceFeedEvent": {
+      "description": "One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "const": "weather"
+            },
+            "data": {
+              "$ref": "#/$defs/DeviceWeather"
+            }
+          },
+          "required": ["event", "data"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "const": "arrivals"
+            },
+            "data": {
+              "$ref": "#/$defs/DeviceArrivals"
+            }
+          },
+          "required": ["event", "data"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "const": "notices"
+            },
+            "data": {
+              "$ref": "#/$defs/DeviceNotices"
+            }
+          },
+          "required": ["event", "data"]
+        }
+      ]
     },
     "DeviceWeather": {
       "description": "A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> has it.",
