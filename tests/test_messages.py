@@ -3,9 +3,12 @@
 import re
 
 import pytest
-from pyicumessageformat import Parser
 
 from countdown_api import messages
+
+# A consumer runs these tests too, from its own checkout of this repository, without this repository's dev group:
+# there they are skipped, as the schema checks are without jsonschema (contract_helpers.check_schema).
+Parser = pytest.importorskip("pyicumessageformat").Parser
 
 FILES = {name: messages.load(name) for name in messages.names()}
 MESSAGES = {message_id: message for file in FILES.values() for message_id, message in file.items()}
