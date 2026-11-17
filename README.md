@@ -38,6 +38,7 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:notices:tfl-lines:<stop id>` | string, JSON | `StoredLineStatus` | 600 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
 | `v1:notices:tfl-stations:<stop id>` | string, JSON | `StoredStationDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
 | `v1:notices:tfl-roads:<place>` | string, JSON | `StoredRoadDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
+| `v1:notices:tfl-network` | string, JSON | `StoredNetworkStatus` | 600 s | countdown's TfL notices provider | the broker's `getNotices` |
 | `v1:notices:met-office:<place>` | string, JSON | `StoredMetOfficeWarnings` | 1,800 s | countdown's Met Office provider | the notice board, the broker's `getNotices` |
 | `v1:notices:bank-holidays` | string, JSON | `StoredBankHolidays` | 604,800 s | countdown's bank holidays provider | the notice board, the broker's `getNotices` |
 
@@ -68,7 +69,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a JPEG (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
 | `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
-| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, bank holidays), as each provider stored it |
+| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, bank holidays) and every Tube line's status, as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 

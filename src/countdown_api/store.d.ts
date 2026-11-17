@@ -768,6 +768,12 @@ export interface components {
       stop_id: string;
       lines: Record<string, never>[];
     };
+    /** @description The value of v1:notices:tfl-network: every Tube line and the Elizabeth line, in TfL's order, each TfL's Line with its lineStatuses (severity, description, reason, validityPeriods) under TfL's own names. */
+    StoredNetworkStatus: {
+      /** Format: date-time */
+      fetched_at: string;
+      lines: Record<string, never>[];
+    };
     /** @description The value of v1:notices:tfl-stations:<stop id>: TfL's DisruptedPoints at the stop, under TfL's own names. */
     StoredStationDisruptions: {
       /** Format: date-time */
@@ -934,6 +940,8 @@ export interface components {
       met_office: components["schemas"]["StoredMetOfficeWarnings"] | null;
       /** @description Every part of the UK's; the postcode's place says which applies. */
       bank_holidays: components["schemas"]["StoredBankHolidays"] | null;
+      /** @description Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null for any other, or with none stored. */
+      tfl_network: components["schemas"]["StoredNetworkStatus"] | null;
     };
     /** @description A TfL stop's line statuses and station disruptions, each null with none stored. */
     TflStopNotices: {
@@ -1005,6 +1013,7 @@ export type Departure = components["schemas"]["Departure"];
 export type StoredForecast = components["schemas"]["StoredForecast"];
 export type OpenMeteoForecast = components["schemas"]["OpenMeteoForecast"];
 export type StoredLineStatus = components["schemas"]["StoredLineStatus"];
+export type StoredNetworkStatus = components["schemas"]["StoredNetworkStatus"];
 export type StoredStationDisruptions = components["schemas"]["StoredStationDisruptions"];
 export type StoredRoadDisruptions = components["schemas"]["StoredRoadDisruptions"];
 export type StoredMetOfficeWarnings = components["schemas"]["StoredMetOfficeWarnings"];
