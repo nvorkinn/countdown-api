@@ -849,6 +849,15 @@ export interface components {
       /** @description True when generating failed and this is one of the curated pictures instead, so the screen can tell and the provider can try again. */
       fallback: boolean;
     };
+    /** @description The value of v1:background-place:<weather key>: a place the paired touchscreens show, as the background provider needs it. */
+    BackgroundPlace: {
+      /** @description What to call the place in a picture's prompt: its full label as picked on the settings page ("London, England, United Kingdom"), else its name, else the location as typed. */
+      name: string;
+      /** @description Its two-letter country code ("GB"), or null when it has none (a typed location, not yet placed). */
+      country: string | null;
+      /** @description The postcodes of the notice boards of the touchscreens showing the place, in the broker's canonical form ("SE17 3LL"), sorted; empty when none has one. Never logged. */
+      postcodes: string[];
+    };
     /**
      * @description The part of the day a background is lit for.
      * @enum {string}
@@ -1020,6 +1029,7 @@ export type StoredMetOfficeWarnings = components["schemas"]["StoredMetOfficeWarn
 export type MetOfficeFeedItem = components["schemas"]["MetOfficeFeedItem"];
 export type StoredBackground = components["schemas"]["StoredBackground"];
 export type Background = components["schemas"]["Background"];
+export type BackgroundPlace = components["schemas"]["BackgroundPlace"];
 export type BackgroundPhase = components["schemas"]["BackgroundPhase"];
 export type BackgroundDigest = components["schemas"]["BackgroundDigest"];
 export type BackgroundImage = components["schemas"]["BackgroundImage"];

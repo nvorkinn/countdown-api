@@ -30,6 +30,10 @@ sources:
     The notice board's place: every screen's postcode in the broker's canonical form ("SW1A 1AA", or "0150" for a
     Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings,
     roads). Never logged.
+  background: >-
+    Weather keys (WeatherKey) of the places the paired touchscreens show, a subset of `weather`'s: the places the
+    background provider makes pictures for. An e-paper screen draws no background, so its place isn't here. Each
+    member has a v1:background-place:<key> beside it, written in the same transaction.
 
 # Every key and channel that crosses the boundary. Each becomes a builder (or, with no parameter, a constant) of the
 # same name in countdown_api.keys; a TTL becomes <NAME>_TTL_S or <NAME>_TTL_MS there. `redis` is the Redis type;
@@ -300,7 +304,7 @@ keys:
     encoding: json
     ttl_s: 172800
     ttl: renewed with each image written to it.
-    written_by: the broker's background provider, for every key in v1:sub:weather
+    written_by: countdown's background provider, for every key in v1:sub:background
     read_by: the broker's getWeather
     examples: [background.json]
     description: >-
@@ -315,12 +319,28 @@ keys:
     value: BackgroundImage
     encoding: bytes
     ttl_s: 172800
-    written_by: the broker's background provider, beside v1:background:<weather key>
+    written_by: countdown's background provider, beside v1:background:<weather key>
     read_by: the broker's getBackgroundImage
     examples: [background.json, background.jpg]
     description: >-
       A background's own bytes (a JPEG), by its SHA-256, so its address names the picture and not the place, and
       never changes for the same bytes.
+  background_place:
+    pattern: "v1:background-place:{weather_key}"
+    params:
+      weather_key: the place's weather key (WeatherKey), a member of v1:sub:background.
+    redis: string
+    value: BackgroundPlace
+    encoding: json
+    written_by: >-
+      the broker, with the subscriptions and in their transaction, for every member of v1:sub:background; it deletes
+      those of the members that left
+    read_by: countdown's background provider
+    examples: [background_place.json]
+    description: >-
+      What the background provider needs to know of a place that its weather key doesn't say: what to call it in a
+      picture's prompt, its country, and the postcodes of the notice boards of the touchscreens showing it, whose
+      weather warnings the picture may show. A member of v1:sub:background with none is left out until it has one.
   tfl_line_status:
     pattern: "v1:notices:tfl-lines:{stop_id}"
     params:
@@ -2254,6 +2274,35 @@ $defs:
     - digest
     - made_at
     - fallback
+  BackgroundPlace:
+    description: >-
+      The value of v1:background-place:<weather key>: a place the paired touchscreens show, as the background provider
+      needs it.
+    type: object
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: >-
+          What to call the place in a picture's prompt: its full label as picked on the settings page ("London,
+          England, United Kingdom"), else its name, else the location as typed.
+      country:
+        type: [string, 'null']
+        pattern: ^[A-Z]{2}$
+        description: Its two-letter country code ("GB"), or null when it has none (a typed location, not yet placed).
+      postcodes:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+        description: >-
+          The postcodes of the notice boards of the touchscreens showing the place, in the broker's canonical form
+          ("SE17 3LL"), sorted; empty when none has one. Never logged.
+    required:
+    - name
+    - country
+    - postcodes
   BackgroundPhase:
     type: string
     enum: [dawn, day, dusk, night]

@@ -1,0 +1,12 @@
+{
+  "about": "A place the background provider makes pictures for: the weather place of touchscreen.json's device, once it's paired, as the broker writes it under v1:background-place:<weather key> beside its member of v1:sub:background (subscriptions.json has the set). The broker's tests check what it writes against this, and the background provider's tests read it. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "device": "touchscreen.json",
+  "weather_key": "oslo-no-3143244",
+  "set": "v1:sub:background",
+  "key": "v1:background-place:oslo-no-3143244",
+  "value": {
+    "name": "Oslo, Norway",
+    "country": "NO",
+    "postcodes": ["0150"]
+  }
+}

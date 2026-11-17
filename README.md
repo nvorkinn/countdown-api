@@ -33,8 +33,9 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:pace:<source>:<id>` | string | `Pace` (seconds) | 60 s | any bursty provider | the broker |
 | `v1:departures:<stop id>` | string, JSON | `StopDepartures` | 120 s | countdown's TfL and Entur providers | the arrivals panels, the broker's `getArrivals` |
 | `v1:weather:<weather key>` | string, JSON | `StoredForecast` | 1,800 s | countdown's weather provider | the weather panel, the broker's `getWeather` |
-| `v1:background:<weather key>` | string, JSON | `StoredBackground` | 172,800 s | the broker's background provider | the broker's `getWeather` |
-| `v1:background-image:<sha256>` | string, bytes | `BackgroundImage` | 172,800 s | the broker's background provider | the broker's `getBackgroundImage` |
+| `v1:background:<weather key>` | string, JSON | `StoredBackground` | 172,800 s | countdown's background provider | the broker's `getWeather` |
+| `v1:background-image:<sha256>` | string, bytes | `BackgroundImage` | 172,800 s | countdown's background provider | the broker's `getBackgroundImage` |
+| `v1:background-place:<weather key>` | string, JSON | `BackgroundPlace` | none | the broker, with the subscriptions | countdown's background provider |
 | `v1:notices:tfl-lines:<stop id>` | string, JSON | `StoredLineStatus` | 600 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
 | `v1:notices:tfl-stations:<stop id>` | string, JSON | `StoredStationDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
 | `v1:notices:tfl-roads:<place>` | string, JSON | `StoredRoadDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
