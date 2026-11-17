@@ -645,10 +645,15 @@ export interface components {
        */
       skin: "day" | "auto" | "night";
       /**
-       * @description The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and looks like forest without any.
+       * @description The colour, in both skins; violet's play button is a gradient. dynamic is the old dynamic: true, over forest.
        * @enum {string}
        */
-      colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "dynamic";
+      colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "violet" | "dynamic";
+      /**
+       * @description Whether the day skin's colours follow the album art while music plays, fading back to the colour once it has stopped for a while.
+       * @default false
+       */
+      dynamic: boolean;
     };
     /** @description A touchscreen's screen itself. */
     TouchscreenDisplay: {

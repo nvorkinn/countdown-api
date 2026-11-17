@@ -33,7 +33,8 @@
     },
     "style": {
       "skin": "auto",
-      "colour": "dynamic"
+      "colour": "violet",
+      "dynamic": true
     },
     "display": {
       "sleep_minutes": 15
