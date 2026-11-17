@@ -84,6 +84,30 @@ BackgroundImage = bytes
 """A background image file's own bytes (a JPEG)."""
 
 
+class BackgroundPlace(BaseModel):
+    """The ``BackgroundPlace`` object.
+
+    The value of v1:background-place:<weather key>: a place the paired touchscreens show, as the
+    background provider needs it.
+    """
+
+    name: Annotated[str, Field(min_length=1)] = Field(
+        description=(
+            "What to call the place in a picture's prompt: its full label as picked on the settings page (\"London, "
+            'England, United Kingdom"), else its name, else the location as typed.'
+        ),
+    )
+    country: Annotated[str, Field(pattern="^[A-Z]{2}$")] | None = Field(
+        description='Its two-letter country code ("GB"), or null when it has none (a typed location, not yet placed).',
+    )
+    postcodes: list[Annotated[str, Field(min_length=1)]] = Field(
+        description=(
+            "The postcodes of the notice boards of the touchscreens showing the place, in the broker's canonical form "
+            '("SE17 3LL"), sorted; empty when none has one. Never logged.'
+        ),
+    )
+
+
 class BankHoliday(BaseModel):
     """One of gov.uk's bank holidays."""
 

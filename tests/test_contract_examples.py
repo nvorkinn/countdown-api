@@ -162,7 +162,7 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
         check("Subscription", members)
     assert example["channel"] == keys.SUB_CHANGED
     check("SubChanged", example["message"])
-    assert example["devices"] == ["config_store.json", "pairing_key.json"]
+    assert example["devices"] == ["config_store.json", "pairing_key.json", "touchscreen.json"]
     # What each device's config says it wants is in its source's set.
     sets = example["sets"]
     for value in (CONFIG["value"], PAIRING["value"]):
@@ -172,6 +172,14 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
             assert stop["id"] in sets[keys.subscription(stop["source"])]
         for source, section in ((keys.SPOTIFY, "spotify"), (keys.DEVELOPER, "developer"), (keys.PARCEL, "parcels")):
             assert (value["device_id"] in sets[keys.subscription(source)]) == value[section]["enabled"]
+    # The touchscreen wants what the e-paper screens already do, and its place's backgrounds, which only it has.
+    touchscreen = fixtures.load("touchscreen.json")["config"]
+    assert touchscreen["weather"]["key"] in sets[keys.subscription(keys.WEATHER)]
+    assert touchscreen["notice_board"]["postcode"] in sets[keys.subscription(keys.POSTCODE)]
+    for stop in touchscreen["arrivals"]["stops"]:
+        assert stop["id"] in sets[keys.subscription(stop["source"])]
+    assert sets[keys.subscription(keys.BACKGROUND)] == [touchscreen["weather"]["key"]]
+    assert set(sets[keys.subscription(keys.BACKGROUND)]) <= set(sets[keys.subscription(keys.WEATHER)])
 
 
 TOUCHSCREEN = fixtures.load("touchscreen.json")
@@ -383,6 +391,24 @@ def test_a_background_image_is_its_jpeg_under_its_sha256() -> None:
     assert example["image"]["url"] == f"/api/backgrounds/{digest}"
     assert digest in {image["digest"] for image in example["value"]["images"]}
     assert TypeAdapter(models.BackgroundImage).validate_python(image) == image
+
+
+def test_a_background_place_is_a_touchscreens_place_beside_its_subscription() -> None:
+    example = fixtures.load("background_place.json")
+    touchscreen = fixtures.load(example["device"])["config"]
+    assert example["weather_key"] == touchscreen["weather"]["key"]
+    check_schema("WeatherKey", example["weather_key"])
+    assert example["set"] == keys.subscription(keys.BACKGROUND)
+    assert example["weather_key"] in fixtures.load("subscriptions.json")["sets"][example["set"]]
+    assert example["key"] == keys.background_place(example["weather_key"])
+    assert "ttl_s" not in example  # kept until its place leaves the set
+    place = check("BackgroundPlace", example["value"])
+    assert place.country == touchscreen["notice_board"]["country"]
+    assert place.postcodes == [touchscreen["notice_board"]["postcode"]]
+    # A typed location that isn't placed yet has no country.
+    assert check("BackgroundPlace", {"name": "london", "country": None, "postcodes": []}).country is None
+    with pytest.raises(ValidationError):
+        check_model("BackgroundPlace", {"name": "London"})
 
 
 def test_tfl_notices_are_tfls_answers_under_their_keys() -> None:

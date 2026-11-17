@@ -31,7 +31,11 @@ PARCEL = "parcel"
 # a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads).
 # Never logged.
 POSTCODE = "postcode"
-SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE)
+# background: Weather keys (WeatherKey) of the places the paired touchscreens show, a subset of `weather`'s: the places
+# the background provider makes pictures for. An e-paper screen draws no background, so its place isn't here. Each
+# member has a v1:background-place:<key> beside it, written in the same transaction.
+BACKGROUND = "background"
+SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND)
 
 
 def subscription(source: str) -> str:
@@ -407,7 +411,7 @@ def background(weather_key: str) -> str:
 
     A Redis string of models.StoredBackground (json), with a TTL of 172800 s: renewed with each image written to it.
 
-    Written by the broker's background provider, for every key in v1:sub:weather. Read by the broker's getWeather.
+    Written by countdown's background provider, for every key in v1:sub:background. Read by the broker's getWeather.
 
     Example: countdown_api.fixtures, background.json.
     """
@@ -430,7 +434,7 @@ def background_image(digest: str) -> str:
 
     A Redis string of models.BackgroundImage (bytes), with a TTL of 172800 s.
 
-    Written by the broker's background provider, beside v1:background:<weather key>. Read by the broker's
+    Written by countdown's background provider, beside v1:background:<weather key>. Read by the broker's
     getBackgroundImage.
 
     Example: countdown_api.fixtures, background.json, background.jpg.
@@ -444,6 +448,27 @@ BACKGROUND_IMAGE_PREFIX = "v1:background-image:"
 
 # The TTL of `v1:background-image:{digest}`, in seconds.
 BACKGROUND_IMAGE_TTL_S = 172800
+
+
+def background_place(weather_key: str) -> str:
+    """Return the key `v1:background-place:{weather_key}`.
+
+    What the background provider needs to know of a place that its weather key doesn't say: what to call it in a
+    picture's prompt, its country, and the postcodes of the notice boards of the touchscreens showing it, whose weather
+    warnings the picture may show. A member of v1:sub:background with none is left out until it has one.
+
+    A Redis string of models.BackgroundPlace (json), with no TTL.
+
+    Written by the broker, with the subscriptions and in their transaction, for every member of v1:sub:background; it
+    deletes those of the members that left. Read by countdown's background provider.
+
+    Example: countdown_api.fixtures, background_place.json.
+    """
+    return f"v1:background-place:{weather_key}"
+
+
+# What every `v1:background-place:{weather_key}` key starts with, for SCAN and removeprefix().
+BACKGROUND_PLACE_PREFIX = "v1:background-place:"
 
 
 def tfl_line_status(stop_id: str) -> str:

@@ -135,7 +135,18 @@ def test_the_keys_are_what_they_were() -> None:
     assert keys.parcels_status(device) == "v1:parcels-status:a1b2c3d4e5f6"
     assert keys.pace(keys.DEVELOPER, device) == "v1:pace:developer:a1b2c3d4e5f6"
     assert keys.album_art("https://i.scdn.co/image/ab01300") == "v1:art:f0c75b31e316838c7115ebf3205ef753eb4a0353"
-    assert keys.SOURCES == ("tfl", "entur", "weather", "glow", "spotify", "developer", "parcel", "postcode")
+    assert keys.SOURCES == (
+        "tfl",
+        "entur",
+        "weather",
+        "glow",
+        "spotify",
+        "developer",
+        "parcel",
+        "postcode",
+        "background",
+    )
+    assert keys.background_place("london-gb-2643743") == "v1:background-place:london-gb-2643743"
     assert keys.CONFIG_PREFIX == "v1:config:"
     assert (keys.PAIRING_TTL_S, keys.FRAME_TTL_S, keys.RENDER_QUEUED_TTL_MS) == (600, 86_400, 60_000)
     assert (keys.ENERGY_TTL_S, keys.SPOTIFY_TTL_S, keys.SPOTIFY_TOP_TTL_S) == (86_400, 180, 7_200)
