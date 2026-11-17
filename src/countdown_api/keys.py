@@ -35,7 +35,11 @@ POSTCODE = "postcode"
 # the background provider makes pictures for. An e-paper screen draws no background, so its place isn't here. Each
 # member has a v1:background-place:<key> beside it, written in the same transaction.
 BACKGROUND = "background"
-SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND)
+# board: Device ids of the paired touchscreens: the devices the notice board provider composes a notice board for
+# (v1:notice-board:<device id>), from their configs (v1:config:<device id>). An e-paper screen's notices are worded by
+# the render pool as it draws, so it isn't here.
+BOARD = "board"
+SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND, BOARD)
 
 
 def subscription(source: str) -> str:
@@ -469,6 +473,32 @@ def background_place(weather_key: str) -> str:
 
 # What every `v1:background-place:{weather_key}` key starts with, for SCAN and removeprefix().
 BACKGROUND_PLACE_PREFIX = "v1:background-place:"
+
+
+def notice_board(device_id: str) -> str:
+    """Return the key `v1:notice-board:{device_id}`.
+
+    A touchscreen's notice board, composed: every notice that applies to the device now, worded, in the order to show
+    them. Made from the same stored sources and by the same code as an e-paper screen's board, so both say the same
+    things; a device only shows it. A device with nothing to say has an empty list, so "no notices" isn't taken for "no
+    data".
+
+    A Redis string of models.StoredNoticeBoard (json), with a TTL of 300 s.
+
+    Written by countdown's notice board provider, every minute, for every id in v1:sub:board. Read by the broker's
+    getNoticeBoard and getFeed.
+
+    Example: countdown_api.fixtures, notice_board.json.
+    """
+    return f"v1:notice-board:{device_id}"
+
+
+# What every `v1:notice-board:{device_id}` key starts with, for SCAN and removeprefix().
+NOTICE_BOARD_PREFIX = "v1:notice-board:"
+
+
+# The TTL of `v1:notice-board:{device_id}`, in seconds.
+NOTICE_BOARD_TTL_S = 300
 
 
 def tfl_line_status(stop_id: str) -> str:

@@ -190,6 +190,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/notice-board": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's notice board, composed.
+     * @description The device's notices as the notice board provider composed them (v1:notice-board:<device id>): worded, each with a title and a short line beside its full text, and in the order to show them. The device shows them as they are, leaving out any whose `valid_until` has passed. Null with none stored: a device that isn't a touchscreen, or whose board's provider is down.
+     */
+    get: operations["getNoticeBoard"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/feed": {
     parameters: {
       query?: never;
@@ -199,7 +219,7 @@ export interface paths {
     };
     /**
      * The device's weather, arrivals and notices, live.
-     * @description A server-sent event stream (text/event-stream) of what getWeather, getArrivals and getNotices answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`) whose data is that route's answer as JSON (DeviceFeedEvent), all three as the stream opens and then each again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes down, and the device opens it again (its `retry` field says after how long). It takes the device's secret in the Authorization header like every route, so a device reads it with fetch rather than EventSource, which can't send one.
+     * @description A server-sent event stream (text/event-stream) of what getWeather, getArrivals, getNotices and getNoticeBoard answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`, `notice_board`) whose data is that route's answer as JSON (DeviceFeedEvent), all four as the stream opens and then each again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes down, and the device opens it again (its `retry` field says after how long). It takes the device's secret in the Authorization header like every route, so a device reads it with fetch rather than EventSource, which can't send one.
      */
     get: operations["getFeed"];
     put?: never;
@@ -894,7 +914,7 @@ export interface components {
        */
       notes: string;
     };
-    /** @description One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON. */
+    /** @description One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals, `notices` with a DeviceNotices or `notice_board` with a DeviceNoticeBoard, each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON. */
     DeviceFeedEvent:
       | {
           /** @constant */
@@ -910,7 +930,65 @@ export interface components {
           /** @constant */
           event: "notices";
           data: components["schemas"]["DeviceNotices"];
+        }
+      | {
+          /** @constant */
+          event: "notice_board";
+          data: components["schemas"]["DeviceNoticeBoard"];
         };
+    /** @description A device's composed notice board (getNoticeBoard), as v1:notice-board:<device id> has it. */
+    DeviceNoticeBoard: {
+      /** @description The board, or null with none stored. */
+      board: components["schemas"]["StoredNoticeBoard"] | null;
+    };
+    /** @description The value of v1:notice-board:<device id>: the notices that applied to the device when it was composed, worded and in the order to show them. */
+    StoredNoticeBoard: {
+      /**
+       * Format: date-time
+       * @description When it was composed, which its wording is as of ("Today", "Tomorrow").
+       */
+      composed_at: string;
+      device_id: components["schemas"]["DeviceId"];
+      /** @description In the order to show them: the worst first (`severity`), and within a severity in the sources' order. Planned works come last, for whatever room the others leave. */
+      notices: components["schemas"]["BoardNotice"][];
+    };
+    /** @description One notice on a composed notice board, in two forms: short (`title` over `summary`, for a row with a bold heading) and long (`text`, one line that stands alone). Both are plain text, in the device's language and clock format, as of the board's `composed_at`. */
+    BoardNotice: {
+      /** @description Names the notice from one composition to the next, so a device can keep a row (and what it has open) when the board is composed again: the same while what the notice is about is the same, even as its wording moves ("Tomorrow" becoming "Today"). */
+      id: string;
+      kind: components["schemas"]["BoardNoticeKind"];
+      severity: components["schemas"]["BoardNoticeSeverity"];
+      /** @description A few words that say what it is ("Northern line: Severe delays", "Upcoming bank holiday"). */
+      title: string;
+      /** @description One short line under the title ("Kennington to Morden, signal failure", "Fri 25 Dec, Christmas Day"); empty when the title says it all. A provider's own prose (TfL's, Entur's) is shortened to it. */
+      summary: string;
+      /** @description The long form: one line that says it whole without the title ("Severe delays between Kennington and Morden due to an earlier signal failure at Clapham Common."), as an e-paper screen's board shows it after its tag. */
+      text: string;
+      /** @description The provider's own full text, as it came (TfL's reason, the Met Office's description, Entur's summary and description), for a device to show in full when asked; null for a notice with none (a holiday, the clocks). */
+      detail: string | null;
+      /** @description When it stops applying, if known. A device leaves it out after this, without waiting for the next composition. */
+      valid_until: string | null;
+    };
+    /**
+     * @description What a notice is about, for its icon: delays or a suspension on a line (delays), planned works (closure), something at a station or stop (station), a road incident (roads), a weather warning (weather), a flood warning (flood), a bank or public holiday (holiday), the clocks changing (clock), a parcel (parcel), or the developer panel's (developer).
+     * @enum {string}
+     */
+    BoardNoticeKind:
+      | "delays"
+      | "closure"
+      | "station"
+      | "roads"
+      | "weather"
+      | "flood"
+      | "holiday"
+      | "clock"
+      | "parcel"
+      | "developer";
+    /**
+     * @description How much a notice matters, worst first: severe (a red weather warning, a severe flood warning, a line suspended), warning (an amber warning, a flood warning, severe delays), info (a yellow warning, a flood alert, a station's notices), reminder (something coming up: a holiday, the clocks changing) and planned (engineering works, shown only in the room the others leave).
+     * @enum {string}
+     */
+    BoardNoticeSeverity: "severe" | "warning" | "info" | "reminder" | "planned";
     /** @description A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> has it. */
     DeviceWeather: {
       /** @description The place as the owner named it (the config's weather.location). */
@@ -1037,6 +1115,11 @@ export type StoredBankHolidays = components["schemas"]["StoredBankHolidays"];
 export type BankHolidayDivision = components["schemas"]["BankHolidayDivision"];
 export type BankHoliday = components["schemas"]["BankHoliday"];
 export type DeviceFeedEvent = components["schemas"]["DeviceFeedEvent"];
+export type DeviceNoticeBoard = components["schemas"]["DeviceNoticeBoard"];
+export type StoredNoticeBoard = components["schemas"]["StoredNoticeBoard"];
+export type BoardNotice = components["schemas"]["BoardNotice"];
+export type BoardNoticeKind = components["schemas"]["BoardNoticeKind"];
+export type BoardNoticeSeverity = components["schemas"]["BoardNoticeSeverity"];
 export type DeviceWeather = components["schemas"]["DeviceWeather"];
 export type DeviceArrivals = components["schemas"]["DeviceArrivals"];
 export type StopArrivals = components["schemas"]["StopArrivals"];
@@ -1549,6 +1632,47 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DeviceNotices"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no config to read. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The store couldn't be reached; try again shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getNoticeBoard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The device's notice board. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceNoticeBoard"];
         };
       };
       /** @description A missing or unknown secret. */

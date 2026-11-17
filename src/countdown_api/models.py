@@ -122,6 +122,86 @@ class BankHolidayDivision(BaseModel):
     events: list[BankHoliday]
 
 
+BoardNoticeKind = Literal[
+    "delays", "closure", "station", "roads", "weather", "flood", "holiday", "clock", "parcel", "developer"
+]
+"""What a notice is about, for its icon: delays or a suspension on a line (delays), planned works
+(closure), something at a station or stop (station), a road incident (roads), a weather warning
+(weather), a flood warning (flood), a bank or public holiday (holiday), the clocks changing (clock),
+a parcel (parcel), or the developer panel's (developer).
+"""
+
+
+BoardNoticeSeverity = Literal["severe", "warning", "info", "reminder", "planned"]
+"""How much a notice matters, worst first: severe (a red weather warning, a severe flood warning, a
+line suspended), warning (an amber warning, a flood warning, severe delays), info (a yellow warning,
+a flood alert, a station's notices), reminder (something coming up: a holiday, the clocks changing)
+and planned (engineering works, shown only in the room the others leave).
+"""
+
+
+class BoardNotice(BaseModel):
+    """The ``BoardNotice`` object.
+
+    One notice on a composed notice board, in two forms: short (`title` over `summary`, for a row with a
+    bold heading) and long (`text`, one line that stands alone). Both are plain text, in the device's
+    language and clock format, as of the board's `composed_at`.
+    """
+
+    id: Annotated[str, Field(pattern="^[0-9a-f]{16}$")] = Field(
+        description=(
+            "Names the notice from one composition to the next, so a device can keep a row (and what it has open) when"
+            " the board is composed again: the same while what the notice is about is the same, even as its wording "
+            'moves ("Tomorrow" becoming "Today").'
+        ),
+    )
+    kind: BoardNoticeKind = Field(
+        description=(
+            "What a notice is about, for its icon: delays or a suspension on a line (delays), planned works (closure),"
+            " something at a station or stop (station), a road incident (roads), a weather warning (weather), a flood "
+            "warning (flood), a bank or public holiday (holiday), the clocks changing (clock), a parcel (parcel), or "
+            "the developer panel's (developer)."
+        ),
+    )
+    severity: BoardNoticeSeverity = Field(
+        description=(
+            "How much a notice matters, worst first: severe (a red weather warning, a severe flood warning, a line "
+            "suspended), warning (an amber warning, a flood warning, severe delays), info (a yellow warning, a flood "
+            "alert, a station's notices), reminder (something coming up: a holiday, the clocks changing) and planned "
+            "(engineering works, shown only in the room the others leave)."
+        ),
+    )
+    title: Annotated[str, Field(min_length=1, max_length=32)] = Field(
+        description='A few words that say what it is ("Northern line: Severe delays", "Upcoming bank holiday").',
+    )
+    summary: Annotated[str, Field(max_length=64)] = Field(
+        description=(
+            'One short line under the title ("Kennington to Morden, signal failure", "Fri 25 Dec, Christmas Day"); '
+            "empty when the title says it all. A provider's own prose (TfL's, Entur's) is shortened to it."
+        ),
+    )
+    text: Annotated[str, Field(min_length=1)] = Field(
+        description=(
+            'The long form: one line that says it whole without the title ("Severe delays between Kennington and '
+            "Morden due to an earlier signal failure at Clapham Common.\"), as an e-paper screen's board shows it after"
+            " its tag."
+        ),
+    )
+    detail: str | None = Field(
+        description=(
+            "The provider's own full text, as it came (TfL's reason, the Met Office's description, Entur's summary and"
+            " description), for a device to show in full when asked; null for a notice with none (a holiday, the "
+            "clocks)."
+        ),
+    )
+    valid_until: datetime | None = Field(
+        description=(
+            "When it stops applying, if known. A device leaves it out after this, without waiting for the next "
+            "composition."
+        ),
+    )
+
+
 DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
@@ -550,10 +630,55 @@ class DeviceFeedEventValueOption3(BaseModel):
     )
 
 
-DeviceFeedEvent = DeviceFeedEventValueOption1 | DeviceFeedEventValueOption2 | DeviceFeedEventValueOption3
+class StoredNoticeBoard(BaseModel):
+    """The ``StoredNoticeBoard`` object.
+
+    The value of v1:notice-board:<device id>: the notices that applied to the device when it was
+    composed, worded and in the order to show them.
+    """
+
+    composed_at: datetime = Field(
+        description='When it was composed, which its wording is as of ("Today", "Tomorrow").',
+    )
+    device_id: DeviceId = Field(
+        description="A device's id, 12 hex digits (six random bytes), as the broker registered it.",
+    )
+    notices: list[BoardNotice] = Field(
+        description=(
+            "In the order to show them: the worst first (`severity`), and within a severity in the sources' order. "
+            "Planned works come last, for whatever room the others leave."
+        ),
+    )
+
+
+class DeviceNoticeBoard(BaseModel):
+    """The ``DeviceNoticeBoard`` object.
+
+    A device's composed notice board (getNoticeBoard), as v1:notice-board:<device id> has it.
+    """
+
+    board: StoredNoticeBoard | None = Field(description="The board, or null with none stored.")
+
+
+class DeviceFeedEventValueOption4(BaseModel):
+    """The ``DeviceFeedEventValueOption4`` object."""
+
+    event: Literal["notice_board"]
+    data: DeviceNoticeBoard = Field(
+        description="A device's composed notice board (getNoticeBoard), as v1:notice-board:<device id> has it.",
+    )
+
+
+DeviceFeedEvent = (
+    DeviceFeedEventValueOption1
+    | DeviceFeedEventValueOption2
+    | DeviceFeedEventValueOption3
+    | DeviceFeedEventValueOption4
+)
 """One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a
-DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On
-the wire it is the event's `event:` line and its data as one `data:` line of JSON.
+DeviceArrivals, `notices` with a DeviceNotices or `notice_board` with a DeviceNoticeBoard, each what
+that route would answer at the time. On the wire it is the event's `event:` line and its data as one
+`data:` line of JSON.
 """
 
 

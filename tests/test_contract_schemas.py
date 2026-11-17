@@ -88,6 +88,7 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/config", "put"),
         ("/api/devices/config/{section}", "put"),
         ("/api/devices/feed", "get"),
+        ("/api/devices/notice-board", "get"),
         ("/api/devices/notices", "get"),
         ("/api/devices/register", "post"),
         ("/api/devices/spotify/token", "get"),
@@ -145,7 +146,10 @@ def test_the_keys_are_what_they_were() -> None:
         "parcel",
         "postcode",
         "background",
+        "board",
     )
+    assert keys.notice_board(device) == "v1:notice-board:a1b2c3d4e5f6"
+    assert keys.NOTICE_BOARD_TTL_S == 300
     assert keys.background_place("london-gb-2643743") == "v1:background-place:london-gb-2643743"
     assert keys.CONFIG_PREFIX == "v1:config:"
     assert (keys.PAIRING_TTL_S, keys.FRAME_TTL_S, keys.RENDER_QUEUED_TTL_MS) == (600, 86_400, 60_000)

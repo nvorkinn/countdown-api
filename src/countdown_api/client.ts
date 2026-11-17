@@ -226,6 +226,18 @@ export function getNotices(
 }
 
 /**
+ * The device's notice board, composed.
+ *
+ * `GET /api/devices/notice-board`, with the device's secret.
+ */
+export function getNoticeBoard(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getNoticeBoard"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/notice-board", secret: true, json: true });
+}
+
+/**
  * The device's weather, arrivals and notices, live.
  *
  * The address of the event stream `GET /api/devices/feed`, to read with fetch and the device's secret (Authorization), which EventSource can't send.

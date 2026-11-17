@@ -180,6 +180,8 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
         assert stop["id"] in sets[keys.subscription(stop["source"])]
     assert sets[keys.subscription(keys.BACKGROUND)] == [touchscreen["weather"]["key"]]
     assert set(sets[keys.subscription(keys.BACKGROUND)]) <= set(sets[keys.subscription(keys.WEATHER)])
+    # Its notice board is composed for it, which an e-paper screen's isn't.
+    assert sets[keys.subscription(keys.BOARD)] == [touchscreen["device_id"]]
 
 
 TOUCHSCREEN = fixtures.load("touchscreen.json")
@@ -409,6 +411,53 @@ def test_a_background_place_is_a_touchscreens_place_beside_its_subscription() ->
     assert check("BackgroundPlace", {"name": "london", "country": None, "postcodes": []}).country is None
     with pytest.raises(ValidationError):
         check_model("BackgroundPlace", {"name": "London"})
+
+
+def test_a_notice_board_is_a_devices_notices_worded_and_in_order() -> None:
+    example = fixtures.load("notice_board.json")
+    assert example["key"] == keys.notice_board(example["device_id"])
+    assert example["ttl_s"] == keys.NOTICE_BOARD_TTL_S
+    assert example["set"] == keys.subscription(keys.BOARD)
+    check_schema("DeviceId", example["device_id"])
+    board = check("StoredNoticeBoard", example["value"])
+    assert board.device_id == example["device_id"] == PANELS["device_id"]
+    # Worst first, the planned works last.
+    order = contract()["$defs"]["BoardNoticeSeverity"]["enum"]
+    ranks = [order.index(notice.severity) for notice in board.notices]
+    assert ranks == sorted(ranks)
+    assert order[-1] == "planned"
+    assert len({notice.id for notice in board.notices}) == len(board.notices)
+    # None has ended by the time it was composed, and the provider's own text is what the store's examples have.
+    assert all(notice.valid_until is None or notice.valid_until > board.composed_at for notice in board.notices)
+    tfl = fixtures.load("tfl_notices.json")
+    reasons = {status["reason"] for line in tfl["lines"]["value"]["lines"] for status in line["lineStatuses"]}
+    warnings = {item["description"] for item in fixtures.load("met_office.json")["value"]["items"]}
+    for notice in board.notices:
+        if notice.kind in {"delays", "closure"}:
+            assert notice.detail in reasons
+        if notice.kind == "weather":
+            assert notice.detail in warnings
+    # Every kind and severity is one a device has an icon and a rank for.
+    assert {notice.kind for notice in board.notices} <= set(contract()["$defs"]["BoardNoticeKind"]["enum"])
+
+
+def test_a_notice_is_short_and_long_and_a_title_or_summary_too_long_is_refused() -> None:
+    notice = fixtures.load("notice_board.json")["value"]["notices"][0]
+    check("BoardNotice", notice | {"summary": "", "detail": None, "valid_until": None})
+    for field, limit in (("title", 32), ("summary", 64)):
+        with pytest.raises(ValidationError):
+            check_model("BoardNotice", notice | {field: "x" * (limit + 1)})
+    with pytest.raises(ValidationError):
+        check_model("BoardNotice", notice | {"kind": "bins"})
+
+
+def test_get_notice_board_answers_the_stored_board_or_null() -> None:
+    answer = check("DeviceNoticeBoard", PANELS["notice_board"])
+    assert PANELS["notice_board"]["board"] == fixtures.load("notice_board.json")["value"]
+    assert answer.board is not None
+    assert check("DeviceNoticeBoard", {"board": None}).board is None
+    # getFeed sends it as its own event, beside the three it had.
+    check_schema("DeviceFeedEvent", {"event": "notice_board", "data": PANELS["notice_board"]})
 
 
 def test_tfl_notices_are_tfls_answers_under_their_keys() -> None:

@@ -1,0 +1,73 @@
+{
+  "about": "The notice board of device_panels.json's London touchscreen as the notice board provider composes it at noon on 2026-09-25 from the store's values in tfl_notices.json and met_office.json (no bank holiday is within a month), under v1:notice-board:<device id>: each notice worded, short (title and summary) and long (text), with the provider's own text as its detail, worst first and the planned works last. The titles and summaries of TfL's are a model's shortening of TfL's reason. Its id is a member of v1:sub:board. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "device_id": "0a1b2c3d4e60",
+  "set": "v1:sub:board",
+  "key": "v1:notice-board:0a1b2c3d4e60",
+  "ttl_s": 300,
+  "value": {
+    "composed_at": "2026-09-25T12:00:00Z",
+    "device_id": "0a1b2c3d4e60",
+    "notices": [
+      {
+        "id": "5f0c1d7a2b9e4c31",
+        "kind": "delays",
+        "severity": "warning",
+        "title": "Northern line: Severe delays",
+        "summary": "Kennington to Morden, signal failure at Clapham Common",
+        "text": "Severe delays between Kennington and Morden due to an earlier signal failure at Clapham Common.",
+        "detail": "Northern Line: Severe delays between Kennington and Morden due to an earlier signal failure at Clapham Common. GOOD SERVICE on the rest of the line.",
+        "valid_until": "2026-09-25T21:00:00Z"
+      },
+      {
+        "id": "a81e3c5d7f902b46",
+        "kind": "roads",
+        "severity": "warning",
+        "title": "Road closed: collision",
+        "summary": "A3 Kennington Park Road northbound at Kennington Cross",
+        "text": "Collisions: [A3] Kennington Park Road (SE11) (Lambeth) - Northbound closed at Kennington Cross after a collision.",
+        "detail": "[A3] Kennington Park Road (SE11) (Lambeth) - Northbound closed at Kennington Cross after a collision.",
+        "valid_until": "2026-09-25T15:00:00Z"
+      },
+      {
+        "id": "3d9b6e2f8a1c5047",
+        "kind": "weather",
+        "severity": "warning",
+        "title": "Amber weather warning",
+        "summary": "Wind, until Fri 21:00",
+        "text": "Amber warning: wind until Fri 21:00",
+        "detail": "Amber warning of wind affecting London & South East England: Lambeth, Southwark, Wandsworth valid from 0600 Fri 25 Sep to 2100 Fri 25 Sep",
+        "valid_until": "2026-09-25T20:00:00Z"
+      },
+      {
+        "id": "c47a0e9d1b6f3258",
+        "kind": "weather",
+        "severity": "info",
+        "title": "Yellow weather warning",
+        "summary": "Rain, until Sat 09:00",
+        "text": "Yellow warning: rain until Sat 09:00",
+        "detail": "Yellow warning of rain affecting London & South East England: Bromley, Croydon, Lambeth, Southwark valid from 1800 Fri 25 Sep to 0900 Sat 26 Sep",
+        "valid_until": "2026-09-26T08:00:00Z"
+      },
+      {
+        "id": "e2580b7c4d9a1f63",
+        "kind": "station",
+        "severity": "info",
+        "title": "Kennington",
+        "summary": "No step-free access to the platforms",
+        "text": "Kennington: No step-free access to the platforms.",
+        "detail": "Kennington: No step-free access to the platforms.",
+        "valid_until": null
+      },
+      {
+        "id": "9b3f6a1e0c7d2854",
+        "kind": "closure",
+        "severity": "planned",
+        "title": "Northern line: Part closure",
+        "summary": "No service Kennington to Battersea until Sun 4 Oct",
+        "text": "Until Sunday 4 October, no service between Kennington and Battersea Power Station.",
+        "detail": "NORTHERN LINE: Until Sunday 4 October, no service between Kennington and Battersea Power Station. Replacement buses operate.",
+        "valid_until": "2026-10-04T12:00:00Z"
+      }
+    ]
+  }
+}
