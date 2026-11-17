@@ -516,6 +516,19 @@ TFL_ROADS_PREFIX = "v1:notices:tfl-roads:"
 TFL_ROADS_TTL_S = 1800
 
 
+# `v1:notices:tfl-network`: The status of every Tube line and the Elizabeth line, Good Service too, as TfL's
+# /Line/Mode/tube,elizabeth-line/Status answers it: the network at a glance, for a touchscreen with nothing on its
+# notice board.
+# A Redis string of models.StoredNetworkStatus (json), with a TTL of 600 s.
+# Written by countdown's TfL notices provider, with no subscription, as every London device reads it. Read by the
+# broker's getNotices.
+# Example: countdown_api.fixtures, tfl_network.json.
+TFL_NETWORK = "v1:notices:tfl-network"
+
+# The TTL of `v1:notices:tfl-network`, in seconds.
+TFL_NETWORK_TTL_S = 600
+
+
 def met_office(postcode: str) -> str:
     """Return the key `v1:notices:met-office:{postcode}`.
 

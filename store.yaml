@@ -364,6 +364,19 @@ keys:
     description: >-
       The road disruptions TfL reports near the postcode's place. TfL only knows London's roads, so elsewhere it's
       always empty.
+  tfl_network:
+    pattern: "v1:notices:tfl-network"
+    redis: string
+    value: StoredNetworkStatus
+    encoding: json
+    ttl_s: 600
+    written_by: countdown's TfL notices provider, with no subscription, as every London device reads it
+    read_by: the broker's getNotices
+    examples: [tfl_network.json]
+    description: >-
+      The status of every Tube line and the Elizabeth line, Good Service too, as TfL's
+      /Line/Mode/tube,elizabeth-line/Status answers it: the network at a glance, for a touchscreen with nothing on its
+      notice board.
   met_office:
     pattern: "v1:notices:met-office:{postcode}"
     params:
@@ -2089,6 +2102,22 @@ $defs:
     - fetched_at
     - stop_id
     - lines
+  StoredNetworkStatus:
+    description: >-
+      The value of v1:notices:tfl-network: every Tube line and the Elizabeth line, in TfL's order, each TfL's Line with
+      its lineStatuses (severity, description, reason, validityPeriods) under TfL's own names.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      lines:
+        type: array
+        items:
+          type: object
+    required:
+    - fetched_at
+    - lines
   StoredStationDisruptions:
     description: >-
       The value of v1:notices:tfl-stations:<stop id>: TfL's DisruptedPoints at the stop, under TfL's own names.
@@ -2409,6 +2438,13 @@ $defs:
         - $ref: '#/$defs/StoredBankHolidays'
         - type: 'null'
         description: Every part of the UK's; the postcode's place says which applies.
+      tfl_network:
+        anyOf:
+        - $ref: '#/$defs/StoredNetworkStatus'
+        - type: 'null'
+        description: >-
+          Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null for
+          any other, or with none stored.
     required:
     - postcode
     - country
@@ -2416,6 +2452,7 @@ $defs:
     - tfl_roads
     - met_office
     - bank_holidays
+    - tfl_network
   TflStopNotices:
     description: A TfL stop's line statuses and station disruptions, each null with none stored.
     type: object

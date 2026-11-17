@@ -1,0 +1,181 @@
+{
+  "about": "What countdown's TfL notices provider stores for the whole network (v1:notices:tfl-network): every Tube line and the Elizabeth line, in TfL's order, under TfL's own names. Shaped from TfL's /Line/Mode/tube,elizabeth-line/Status, with the Central line delayed, a District line part closure and the Waterloo & City closed for the weekend.",
+  "key": "v1:notices:tfl-network",
+  "value": {
+    "fetched_at": "2026-09-25T12:00:00Z",
+    "lines": [
+      {
+        "id": "bakerloo",
+        "name": "Bakerloo",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "central",
+        "name": "Central",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 9,
+            "statusSeverityDescription": "Minor Delays",
+            "reason": "Central Line: Minor delays between White City and Ealing Broadway due to an earlier signal failure at North Acton. GOOD SERVICE on the rest of the line.",
+            "validityPeriods": [
+              {
+                "fromDate": "2026-09-25T10:30:00Z",
+                "toDate": "2026-09-25T14:00:00Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "circle",
+        "name": "Circle",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "district",
+        "name": "District",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 5,
+            "statusSeverityDescription": "Part Closure",
+            "reason": "DISTRICT LINE: No service between Earl's Court and Wimbledon due to planned engineering works. GOOD SERVICE on the rest of the line.",
+            "validityPeriods": [
+              {
+                "fromDate": "2026-09-25T05:00:00Z",
+                "toDate": "2026-09-26T01:29:00Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "elizabeth",
+        "name": "Elizabeth line",
+        "modeName": "elizabeth-line",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "hammersmith-city",
+        "name": "Hammersmith & City",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "jubilee",
+        "name": "Jubilee",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "metropolitan",
+        "name": "Metropolitan",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "northern",
+        "name": "Northern",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "piccadilly",
+        "name": "Piccadilly",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "victoria",
+        "name": "Victoria",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null,
+            "validityPeriods": []
+          }
+        ]
+      },
+      {
+        "id": "waterloo-city",
+        "name": "Waterloo & City",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 20,
+            "statusSeverityDescription": "Service Closed",
+            "reason": "Waterloo & City Line: Train service will resume at 06:00 on Monday.",
+            "validityPeriods": [
+              {
+                "fromDate": "2026-09-25T05:00:00Z",
+                "toDate": "2026-09-28T05:00:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "ttl_s": 600
+}

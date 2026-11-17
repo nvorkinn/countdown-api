@@ -402,6 +402,16 @@ def test_tfl_notices_are_tfls_answers_under_their_keys() -> None:
     assert ttls == (keys.TFL_LINE_STATUS_TTL_S, keys.TFL_STATIONS_TTL_S, keys.TFL_ROADS_TTL_S)
 
 
+def test_the_tfl_network_is_every_tube_line_and_the_elizabeth_line() -> None:
+    example = fixtures.load("tfl_network.json")
+    assert example["key"] == keys.TFL_NETWORK
+    assert example["ttl_s"] == keys.TFL_NETWORK_TTL_S
+    lines = check("StoredNetworkStatus", example["value"]).lines
+    assert {line["modeName"] for line in lines} == {"tube", "elizabeth-line"}
+    assert len(lines) == 12  # the 11 Tube lines and the Elizabeth line
+    assert lines[0]["lineStatuses"][0]["statusSeverityDescription"]  # TfL's own names
+
+
 def test_met_office_warnings_are_the_regions_feed_under_the_postcodes_place() -> None:
     example = fixtures.load("met_office.json")
     assert example["key"] == keys.met_office(example["postcode"])
@@ -459,3 +469,4 @@ def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postco
     assert PANELS["notices"]["tfl_roads"] == tfl["roads"]["value"]
     assert PANELS["notices"]["met_office"] == fixtures.load("met_office.json")["value"]
     assert PANELS["notices"]["bank_holidays"] == fixtures.load("bank_holidays.json")["value"]
+    assert PANELS["notices"]["tfl_network"] == fixtures.load("tfl_network.json")["value"]

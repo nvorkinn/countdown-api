@@ -430,6 +430,18 @@ class StoredMetOfficeWarnings(BaseModel):
     )
 
 
+class StoredNetworkStatus(BaseModel):
+    """The ``StoredNetworkStatus`` object.
+
+    The value of v1:notices:tfl-network: every Tube line and the Elizabeth line, in TfL's order, each
+    TfL's Line with its lineStatuses (severity, description, reason, validityPeriods) under TfL's own
+    names.
+    """
+
+    fetched_at: datetime
+    lines: list[dict[str, Any]]
+
+
 class StoredRoadDisruptions(BaseModel):
     """The ``StoredRoadDisruptions`` object.
 
@@ -491,6 +503,12 @@ class DeviceNotices(BaseModel):
     met_office: StoredMetOfficeWarnings | None
     bank_holidays: StoredBankHolidays | None = Field(
         description="Every part of the UK's; the postcode's place says which applies.",
+    )
+    tfl_network: StoredNetworkStatus | None = Field(
+        description=(
+            "Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null "
+            "for any other, or with none stored."
+        ),
     )
 
 
