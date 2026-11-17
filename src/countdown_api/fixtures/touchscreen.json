@@ -40,7 +40,8 @@
     },
     "style": {
       "skin": "auto",
-      "colour": "dynamic"
+      "colour": "violet",
+      "dynamic": true
     },
     "display": {
       "sleep_minutes": 15
@@ -70,7 +71,8 @@
     },
     "style": {
       "skin": "night",
-      "colour": "dynamic"
+      "colour": "violet",
+      "dynamic": true
     },
     "display": {
       "sleep_minutes": 30
@@ -95,7 +97,8 @@
     "if_match": "\"6f1c0d2e9a8b47c3a1e5f0d9b2c4e7a8\"",
     "body": {
       "skin": "night",
-      "colour": "dynamic"
+      "colour": "violet",
+      "dynamic": true
     },
     "etag": "\"0e4b9c1d7a2f45e8b3c6d9f0a1b2c3d4\"",
     "config": {
@@ -122,7 +125,8 @@
       },
       "style": {
         "skin": "night",
-        "colour": "dynamic"
+        "colour": "violet",
+        "dynamic": true
       },
       "display": {
         "sleep_minutes": 15

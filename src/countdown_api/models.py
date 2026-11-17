@@ -1082,10 +1082,19 @@ class TouchscreenStyle(BaseModel):
             " that doesn't know its location shows as day."
         ),
     )
-    colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "dynamic"] = Field(
+    colour: Literal["forest", "navy", "teal", "plum", "terracotta", "pink", "yellow", "black", "violet", "dynamic"] = (
+        Field(
+            description=(
+                "The colour, in both skins; violet's play button is a gradient. dynamic is the old dynamic: true, over "
+                "forest."
+            ),
+        )
+    )
+    dynamic: bool = Field(
+        default=False,
         description=(
-            "The day skin's colour; the night skin has its own. dynamic follows the album art of the song playing, and"
-            " looks like forest without any."
+            "Whether the day skin's colours follow the album art while music plays, fading back to the colour once it "
+            "has stopped for a while."
         ),
     )
 
