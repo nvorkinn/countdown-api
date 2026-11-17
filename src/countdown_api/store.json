@@ -2337,9 +2337,41 @@
           "items": {
             "type": "object"
           }
+        },
+        "shorts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NoticeShort"
+          },
+          "description": "The short forms a model has made of the statuses' reasons here, for a notice's line under its title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text itself."
         }
       },
       "required": ["fetched_at", "stop_id", "lines"]
+    },
+    "NoticeShort": {
+      "description": "A provider's own prose (TfL's reason for a line's status, a disruption's description) and the short form a model made of it: stored beside the text it shortens, by the provider that fetched it, so nothing that shows a notice asks a model. It is the provider's words made fewer, not ours, so it's data like the text itself.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The text it shortens, as the provider wrote it but with each run of whitespace one space: what to match a status's reason or a disruption's text against, squashed the same way."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "What it is and where, in a few words (\"Severe delays, Kennington to Morden\"). A notice that has a title of its own (a line's, from its name and status) doesn't use it."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "One line with the most useful detail (\"Kennington to Morden, signal failure at Clapham Common\")."
+        }
+      },
+      "required": ["text", "title", "summary"]
     },
     "StoredNetworkStatus": {
       "description": "The value of v1:notices:tfl-network: every Tube line and the Elizabeth line, in TfL's order, each TfL's Line with its lineStatuses (severity, description, reason, validityPeriods) under TfL's own names.",
@@ -2374,6 +2406,14 @@
           "items": {
             "type": "object"
           }
+        },
+        "shorts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NoticeShort"
+          },
+          "description": "The short forms a model has made of the disruptions' descriptions here, for a notice's line under its title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text itself."
         }
       },
       "required": ["fetched_at", "stop_id", "disruptions"]
@@ -2395,6 +2435,14 @@
           "items": {
             "type": "object"
           }
+        },
+        "shorts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NoticeShort"
+          },
+          "description": "The short forms a model has made of the disruptions' comments here, for a notice's line under its title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text itself."
         }
       },
       "required": ["fetched_at", "postcode", "disruptions"]

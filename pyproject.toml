@@ -23,7 +23,14 @@ openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/
 
 [dependency-groups]
 # pytest and jsonschema for the contract's own tests (tests/), which check every example against the schemas.
-dev = ["jsonschema>=4.25", "openapi-codegen[yaml]", "pre-commit", "pytest>=8.4", "ruff"]
+dev = [
+    "jsonschema>=4.25",
+    "openapi-codegen[yaml]",
+    "pre-commit",
+    "pyicumessageformat>=1.0.0",
+    "pytest>=8.4",
+    "ruff",
+]
 
 [tool.ruff]
 line-length = 120

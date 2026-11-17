@@ -411,6 +411,23 @@ def test_a_background_place_is_a_touchscreens_place_beside_its_subscription() ->
         check_model("BackgroundPlace", {"name": "London"})
 
 
+def test_a_line_statuses_short_forms_are_of_its_reasons_and_within_the_limits() -> None:
+    stored = fixtures.load("tfl_notices.json")["lines"]["value"]
+    lines = check("StoredLineStatus", stored)
+    reasons = {" ".join(status["reason"].split()) for line in stored["lines"] for status in line["lineStatuses"]}
+    assert {short.text for short in lines.shorts} < reasons  # of its reasons, and one has none yet
+    for short in stored["shorts"]:
+        check("NoticeShort", short)
+        for field, limit in (("title", 32), ("summary", 64)):
+            with pytest.raises(ValidationError):
+                check_model("NoticeShort", short | {field: "x" * (limit + 1)})
+    # A value stored before there were any reads as one with none (the models read a missing list as None).
+    without = {key: value for key, value in stored.items() if key != "shorts"}
+    assert not check("StoredLineStatus", without).shorts
+    assert not check("StoredStationDisruptions", fixtures.load("tfl_notices.json")["stations"]["value"]).shorts
+    assert not check("StoredRoadDisruptions", fixtures.load("tfl_notices.json")["roads"]["value"]).shorts
+
+
 def test_tfl_notices_are_tfls_answers_under_their_keys() -> None:
     example = fixtures.load("tfl_notices.json")
     stop_id, postcode = example["stop_id"], example["postcode"]

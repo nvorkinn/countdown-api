@@ -466,6 +466,32 @@ class StoredNetworkStatus(BaseModel):
     lines: list[dict[str, Any]]
 
 
+class NoticeShort(BaseModel):
+    """The ``NoticeShort`` object.
+
+    A provider's own prose (TfL's reason for a line's status, a disruption's description) and the short
+    form a model made of it: stored beside the text it shortens, by the provider that fetched it, so
+    nothing that shows a notice asks a model. It is the provider's words made fewer, not ours, so it's
+    data like the text itself.
+    """
+
+    text: Annotated[str, Field(min_length=1)] = Field(
+        description=(
+            "The text it shortens, as the provider wrote it but with each run of whitespace one space: what to match a"
+            " status's reason or a disruption's text against, squashed the same way."
+        ),
+    )
+    title: Annotated[str, Field(min_length=1, max_length=32)] = Field(
+        description=(
+            'What it is and where, in a few words ("Severe delays, Kennington to Morden"). A notice that has a title '
+            "of its own (a line's, from its name and status) doesn't use it."
+        ),
+    )
+    summary: Annotated[str, Field(min_length=1, max_length=64)] = Field(
+        description='One line with the most useful detail ("Kennington to Morden, signal failure at Clapham Common").',
+    )
+
+
 class StoredRoadDisruptions(BaseModel):
     """The ``StoredRoadDisruptions`` object.
 
@@ -476,6 +502,14 @@ class StoredRoadDisruptions(BaseModel):
     fetched_at: datetime
     postcode: str = Field(description='The postcode as the broker subscribed it ("SE17 3LL").')
     disruptions: list[dict[str, Any]]
+    shorts: list[NoticeShort] | None = Field(
+        default=None,
+        description=(
+            "The short forms a model has made of the disruptions' comments here, for a notice's line under its title; "
+            "one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text "
+            "itself."
+        ),
+    )
 
 
 class StoredLineStatus(BaseModel):
@@ -489,6 +523,14 @@ class StoredLineStatus(BaseModel):
     fetched_at: datetime
     stop_id: str
     lines: list[dict[str, Any]]
+    shorts: list[NoticeShort] | None = Field(
+        default=None,
+        description=(
+            "The short forms a model has made of the statuses' reasons here, for a notice's line under its title; one "
+            "with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text "
+            "itself."
+        ),
+    )
 
 
 class StoredStationDisruptions(BaseModel):
@@ -501,6 +543,14 @@ class StoredStationDisruptions(BaseModel):
     fetched_at: datetime
     stop_id: str
     disruptions: list[dict[str, Any]]
+    shorts: list[NoticeShort] | None = Field(
+        default=None,
+        description=(
+            "The short forms a model has made of the disruptions' descriptions here, for a notice's line under its "
+            "title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts "
+            "the text itself."
+        ),
+    )
 
 
 class TflStopNotices(BaseModel):
