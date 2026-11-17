@@ -115,6 +115,21 @@ among them) are the owner's account's, held on the server. It's the value of `v1
 e-paper screen's `pairing_code` set, of `v1:pairing:<device id>`) as well as what the routes answer, so the render pool
 and a device read the same config.
 
+### The words
+
+What a screen says about a stored value is worded where it's shown: by the render pool for an e-paper screen, by the
+touchscreen's own app for a touchscreen. So that both say the same thing, the strings they word it with are here, in
+`countdown_api/messages`: [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) by
+id, each with a description and its string in English and Norwegian (`notices.json`: the notice board's line
+statuses, weather warnings and bank holidays). Each side formats them with its own ICU formatter, so a string keeps to
+what every formatter does alike: named arguments, `select`, and `plural` with `one` and `other`. Dates and times are
+formatted by the caller and passed in as text. Only what more than one kind of screen says is here.
+
+A provider's own prose (TfL's reason for a line's status) can't be worded from a string, and is too long for a
+touchscreen's row. The provider that fetches it has a model shorten it, and stores the short form beside it
+(`shorts`, each a `NoticeShort`: the text, a title and a summary), so it's data like the text itself and nothing that
+shows a notice asks a model.
+
 ## The package
 
     from countdown_api import fixtures, keys, models, scripts
@@ -124,6 +139,7 @@ and a device read the same config.
 | `countdown_api.keys` | a builder per key (`keys.config(device_id)`), or a constant for one with no parameter (`keys.RENDER_JOBS`), each TTL (`keys.PAIRING_TTL_S`, `keys.RENDER_QUEUED_TTL_MS`), each key's prefix for a SCAN (`keys.CONFIG_PREFIX`), and the subscription sources (`keys.SOURCES`) |
 | `countdown_api.models` | a Pydantic model (or a type alias) of every schema: `ConfigResponse`, `EpaperConfig`, `FrameRecord`, ... |
 | `countdown_api.scripts` | the Lua scripts: `scripts.ENQUEUE.source`, `.sha1`, and what its `keys` and `args` are |
+| `countdown_api.messages` | the words: `messages.catalog("en")["notice.line.title"]`, `messages.load("notices.json")`, `messages.LANGUAGES` |
 | `countdown_api.fixtures` | the canonical examples: `fixtures.load("config_store.json")`, `fixtures.read_bytes("frame_record.bin")`, `fixtures.DIRECTORY` |
 
 There are TypeScript types of the schemas too, `src/countdown_api/store.d.ts`, written by

@@ -556,6 +556,18 @@
                 }
               ]
             }
+          ],
+          "shorts": [
+            {
+              "text": "Northern Line: Severe delays between Kennington and Morden due to an earlier signal failure at Clapham Common. GOOD SERVICE on the rest of the line.",
+              "title": "Delays, Kennington to Morden",
+              "summary": "Kennington to Morden, signal failure at Clapham Common"
+            },
+            {
+              "text": "NORTHERN LINE: Until Sunday 4 October, no service between Kennington and Battersea Power Station. Replacement buses operate.",
+              "title": "No service to Battersea",
+              "summary": "No service Kennington to Battersea until Sun 4 Oct"
+            }
           ]
         },
         "stations": {

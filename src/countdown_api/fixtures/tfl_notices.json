@@ -1,5 +1,5 @@
 {
-  "about": "What countdown's TfL notices provider stores for Kennington Underground Station and the postcode SE17 3LL: the status of the lines at the stop (v1:notices:tfl-lines:<stop id>), the disruptions there (v1:notices:tfl-stations:<stop id>) and the road disruptions near the postcode (v1:notices:tfl-roads:<place>), each under TfL's own names. Captured from countdown's provider.",
+  "about": "What countdown's TfL notices provider stores for Kennington Underground Station and the postcode SE17 3LL: the status of the lines at the stop (v1:notices:tfl-lines:<stop id>), the disruptions there (v1:notices:tfl-stations:<stop id>) and the road disruptions near the postcode (v1:notices:tfl-roads:<place>), each under TfL's own names. Captured from countdown's provider. The line statuses have the short forms a model made of two of their three reasons (`shorts`); the third has none yet.",
   "stop_id": "940GZZLUKNG",
   "postcode": "SE17 3LL",
   "lines": {
@@ -47,6 +47,18 @@
               ]
             }
           ]
+        }
+      ],
+      "shorts": [
+        {
+          "text": "Northern Line: Severe delays between Kennington and Morden due to an earlier signal failure at Clapham Common. GOOD SERVICE on the rest of the line.",
+          "title": "Delays, Kennington to Morden",
+          "summary": "Kennington to Morden, signal failure at Clapham Common"
+        },
+        {
+          "text": "NORTHERN LINE: Until Sunday 4 October, no service between Kennington and Battersea Power Station. Replacement buses operate.",
+          "title": "No service to Battersea",
+          "summary": "No service Kennington to Battersea until Sun 4 Oct"
         }
       ]
     },

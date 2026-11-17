@@ -767,6 +767,20 @@ export interface components {
       fetched_at: string;
       stop_id: string;
       lines: Record<string, never>[];
+      /**
+       * @description The short forms a model has made of the statuses' reasons here, for a notice's line under its title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text itself.
+       * @default []
+       */
+      shorts: components["schemas"]["NoticeShort"][];
+    };
+    /** @description A provider's own prose (TfL's reason for a line's status, a disruption's description) and the short form a model made of it: stored beside the text it shortens, by the provider that fetched it, so nothing that shows a notice asks a model. It is the provider's words made fewer, not ours, so it's data like the text itself. */
+    NoticeShort: {
+      /** @description The text it shortens, as the provider wrote it but with each run of whitespace one space: what to match a status's reason or a disruption's text against, squashed the same way. */
+      text: string;
+      /** @description What it is and where, in a few words ("Severe delays, Kennington to Morden"). A notice that has a title of its own (a line's, from its name and status) doesn't use it. */
+      title: string;
+      /** @description One line with the most useful detail ("Kennington to Morden, signal failure at Clapham Common"). */
+      summary: string;
     };
     /** @description The value of v1:notices:tfl-network: every Tube line and the Elizabeth line, in TfL's order, each TfL's Line with its lineStatuses (severity, description, reason, validityPeriods) under TfL's own names. */
     StoredNetworkStatus: {
@@ -780,6 +794,11 @@ export interface components {
       fetched_at: string;
       stop_id: string;
       disruptions: Record<string, never>[];
+      /**
+       * @description The short forms a model has made of the disruptions' descriptions here, for a notice's line under its title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text itself.
+       * @default []
+       */
+      shorts: components["schemas"]["NoticeShort"][];
     };
     /** @description The value of v1:notices:tfl-roads:<place>: TfL's RoadDisruptions near the postcode's place, under TfL's own names. */
     StoredRoadDisruptions: {
@@ -788,6 +807,11 @@ export interface components {
       /** @description The postcode as the broker subscribed it ("SE17 3LL"). */
       postcode: string;
       disruptions: Record<string, never>[];
+      /**
+       * @description The short forms a model has made of the disruptions' comments here, for a notice's line under its title; one with none (not asked about yet, or refused) isn't listed, and whoever words the notice cuts the text itself.
+       * @default []
+       */
+      shorts: components["schemas"]["NoticeShort"][];
     };
     /** @description The value of v1:notices:met-office:<place>: the warnings feed of the Met Office region the postcode is in, as it was at fetched_at. */
     StoredMetOfficeWarnings: {
@@ -1022,6 +1046,7 @@ export type Departure = components["schemas"]["Departure"];
 export type StoredForecast = components["schemas"]["StoredForecast"];
 export type OpenMeteoForecast = components["schemas"]["OpenMeteoForecast"];
 export type StoredLineStatus = components["schemas"]["StoredLineStatus"];
+export type NoticeShort = components["schemas"]["NoticeShort"];
 export type StoredNetworkStatus = components["schemas"]["StoredNetworkStatus"];
 export type StoredStationDisruptions = components["schemas"]["StoredStationDisruptions"];
 export type StoredRoadDisruptions = components["schemas"]["StoredRoadDisruptions"];

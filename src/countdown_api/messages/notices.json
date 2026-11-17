@@ -1,0 +1,72 @@
+{
+  "notice.line.label": {
+    "description": "How a notice names the line or lines it is about, by TfL's mode. `lines` is their names, joined with commas (\"Northern\", \"333, 415\"), and `count` how many. A Tube line's name comes without \"line\".",
+    "en": "{mode, select, bus {{count, plural, one {Bus {lines}} other {Buses {lines}}}} tube {{lines} line} other {{lines}}}",
+    "nb": "{mode, select, bus {{count, plural, one {Buss {lines}} other {Buss {lines}}}} tube {{lines}-linjen} other {{lines}}}"
+  },
+  "notice.line.status": {
+    "description": "What is wrong on a line, in a word or two, for a notice's title. `status` is the key for TfL's status: suspended (Suspended), part_suspended (Part Suspended), severe_delays (Severe Delays), issues (Issues Reported), closed (Closed, Planned Closure), part_closed (Part Closure), not_running (Not Running).",
+    "en": "{status, select, suspended {Suspended} part_suspended {Part suspended} severe_delays {Severe delays} issues {Issues} closed {Closed} part_closed {Part closed} not_running {Not running} other {Disrupted}}",
+    "nb": "{status, select, suspended {Innstilt} part_suspended {Delvis innstilt} severe_delays {Store forsinkelser} issues {Problemer} closed {Stengt} part_closed {Delvis stengt} not_running {Kjører ikke} other {Avvik}}"
+  },
+  "notice.line.title": {
+    "description": "The title of a line's notice: `label` is notice.line.label's, `status` notice.line.status's (\"Northern line: Severe delays\"). Its summary is the provider's own text, shortened.",
+    "en": "{label}: {status}",
+    "nb": "{label}: {status}"
+  },
+  "notice.line.tag": {
+    "description": "The tag in front of a line's notice where a notice is one line (an e-paper screen): a bus route's (`mode` bus, `count` 1, `line` its number), several routes with one notice (`mode` bus, `count` more), or any other line's own name.",
+    "en": "{mode, select, bus {{count, plural, one {Bus {line}} other {Buses}}} other {{line}}}",
+    "nb": "{mode, select, bus {{count, plural, one {{line}-bussen} other {Busser}}} other {{line}}}"
+  },
+  "notice.weather.title": {
+    "description": "The title of a weather warning's notice. Its summary is notice.weather.warning's, and when it applies.",
+    "en": "Weather warning",
+    "nb": "Farevarsel"
+  },
+  "notice.weather.warning": {
+    "description": "A weather warning in a few words: `colour` is its level (red, amber or yellow, the Met Office's) and `hazard` what it warns of, in lower case (\"wind\", \"rain\").",
+    "en": "{colour, select, red {Red warning: {hazard}} amber {Amber warning: {hazard}} yellow {Yellow warning: {hazard}} other {Warning: {hazard}}}",
+    "nb": "{colour, select, red {Rødt farevarsel: {hazard}} amber {Oransje farevarsel: {hazard}} yellow {Gult farevarsel: {hazard}} other {Farevarsel: {hazard}}}"
+  },
+  "notice.until": {
+    "description": "Until when something applies, after what it is (\"Amber warning: wind until Fri 21:00\"). `when` is a time, a day, or a day and a time, already formatted.",
+    "en": "until {when}",
+    "nb": "til {when}"
+  },
+  "notice.holiday.title": {
+    "description": "The title of the notice for the next bank holiday. Its summary is notice.holiday.summary's.",
+    "en": "Upcoming bank holiday",
+    "nb": "Kommende fridag"
+  },
+  "notice.holiday.tag": {
+    "description": "The tag in front of a bank holiday's notice where a notice is one line (an e-paper screen).",
+    "en": "Bank holiday",
+    "nb": "Offentlig fridag"
+  },
+  "notice.holiday.summary": {
+    "description": "The next bank holiday under its title: `when` is notice.day.today's, notice.day.tomorrow's or its date, `name` the holiday's own (\"Fri 25 Dec – Christmas Day\").",
+    "en": "{when} – {name}",
+    "nb": "{when} – {name}"
+  },
+  "notice.holiday.text": {
+    "description": "The next bank holiday in one line, after notice.holiday.tag: `when` and `name` as notice.holiday.summary's (\"Tomorrow: Christmas Day\").",
+    "en": "{when}: {name}",
+    "nb": "{when}: {name}"
+  },
+  "notice.holiday.text_with_notes": {
+    "description": "notice.holiday.text for a holiday GOV.UK has a note on: `notes` is the note, in lower case (\"Today: Boxing Day (substitute day)\").",
+    "en": "{when}: {name} ({notes})",
+    "nb": "{when}: {name} ({notes})"
+  },
+  "notice.day.today": {
+    "description": "The day something is on, when it's today; starts a line.",
+    "en": "Today",
+    "nb": "I dag"
+  },
+  "notice.day.tomorrow": {
+    "description": "The day something is on, when it's tomorrow; starts a line.",
+    "en": "Tomorrow",
+    "nb": "I morgen"
+  }
+}
