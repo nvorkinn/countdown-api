@@ -783,6 +783,21 @@ class Parcels(BaseModel):
             " parcel provider fills with the Parcel API key it holds, so no key is sent here."
         ),
     )
+    days_ahead: Literal[0, 1, 2] | None = Field(
+        default=None,
+        description=(
+            "Which dated parcels show, by the day they're due: today (0), by tomorrow (1) or by the day after (2), or "
+            'any day (null), the settings site\'s "Arriving by". Undated parcels show only with any day; out for '
+            "delivery and held ones always show. Left out of a save, it stays as it is; the server always sends it."
+        ),
+    )
+    kept_hours: Literal[0, 1, 4, 24] | None = Field(
+        default=None,
+        description=(
+            'How many hours a parcel seen delivered stays (0: not kept), the settings site\'s "Delivered ones stay". '
+            "Left out of a save, it stays as it is; the server always sends it."
+        ),
+    )
 
 
 class Spotify(BaseModel):

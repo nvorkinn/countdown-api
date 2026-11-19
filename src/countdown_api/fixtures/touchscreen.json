@@ -51,7 +51,9 @@
       "align": "center"
     },
     "parcels": {
-      "enabled": false
+      "enabled": false,
+      "days_ahead": null,
+      "kept_hours": 4
     }
   },
   "save": {
@@ -89,7 +91,9 @@
       "align": "center"
     },
     "parcels": {
-      "enabled": false
+      "enabled": false,
+      "days_ahead": null,
+      "kept_hours": 4
     }
   },
   "spotify_token": {
@@ -150,7 +154,9 @@
         "align": "center"
       },
       "parcels": {
-        "enabled": false
+        "enabled": false,
+        "days_ahead": null,
+        "kept_hours": 4
       }
     }
   }

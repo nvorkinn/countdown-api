@@ -523,7 +523,7 @@ def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postco
     assert PANELS["notices"]["bank_holidays"] == fixtures.load("bank_holidays.json")["value"]
     assert PANELS["notices"]["tfl_network"] == fixtures.load("tfl_network.json")["value"]
     # Its parcels are switched on, so it has what the parcel provider stored for it.
-    assert PANELS["config"]["parcels"] == {"enabled": True}
+    assert PANELS["config"]["parcels"] == {"enabled": True, "days_ahead": None, "kept_hours": 4}
     assert PANELS["notices"]["parcels"] == fixtures.load("parcels.json")["value"]
 
 
