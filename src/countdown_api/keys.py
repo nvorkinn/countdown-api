@@ -25,7 +25,7 @@ GLOW = "glow"
 SPOTIFY = "spotify"
 # developer: Device ids with the developer panel switched on.
 DEVELOPER = "developer"
-# parcel: Device ids with the parcels panel switched on, so a Parcel API key saved.
+# parcel: Device ids with parcels switched on (an e-paper screen's or a touchscreen's), so a Parcel API key saved.
 PARCEL = "parcel"
 # postcode: The notice board's place: every screen's postcode in the broker's canonical form ("SW1A 1AA", or "0150" for
 # a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads).
@@ -296,7 +296,7 @@ def parcels(device_id: str) -> str:
     night, when the provider doesn't poll; a screen then shows a parcel's last known state rather than nothing, and
     `fetched_at` says how old it is. Rewritten (and so renewed) on every poll that gets an answer.
 
-    Written by the parcel provider. Read by the parcels panel and its parcel notices.
+    Written by the parcel provider. Read by the parcels panel and its parcel notices, the broker's `getNotices`.
 
     Example: countdown_api.fixtures, parcels.json.
     """

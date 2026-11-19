@@ -299,8 +299,8 @@ def test_a_touchscreen_config_from_before_lyrics_is_still_one() -> None:
 
 
 def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
-    # The flat fields, the panels it shows, its look and its screen's sleep: no language, pairing code, time zone,
-    # interval, music or other integrations, which only an e-paper screen has.
+    # The flat fields, the panels it shows, its look, its screen's sleep and its parcel notices: no language, pairing
+    # code, time zone, interval, music or other integrations, which only an e-paper screen has.
     assert set(models.TouchscreenConfig.model_fields) == {
         "device_id",
         "type",
@@ -313,6 +313,7 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
         "style",
         "display",
         "lyrics",
+        "parcels",
     }
     assert set(TOUCHSCREEN["config"]) == set(models.TouchscreenConfig.model_fields)
     epaper_only = set(models.EpaperConfig.model_fields) - set(models.TouchscreenConfig.model_fields)
@@ -326,7 +327,6 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
         "apple_music",
         "glowmarkt",
         "developer",
-        "parcels",
     }
 
 
@@ -522,3 +522,14 @@ def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postco
     assert PANELS["notices"]["met_office"] == fixtures.load("met_office.json")["value"]
     assert PANELS["notices"]["bank_holidays"] == fixtures.load("bank_holidays.json")["value"]
     assert PANELS["notices"]["tfl_network"] == fixtures.load("tfl_network.json")["value"]
+    # Its parcels are switched on, so it has what the parcel provider stored for it.
+    assert PANELS["config"]["parcels"] == {"enabled": True}
+    assert PANELS["notices"]["parcels"] == fixtures.load("parcels.json")["value"]
+
+
+def test_a_touchscreens_parcels_are_off_and_its_notices_have_none_when_left_out() -> None:
+    # As a config or an answer from before they were added reads.
+    config = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "parcels"}
+    assert check("ConfigResponse", config).parcels is None
+    notices = {key: value for key, value in PANELS["notices"].items() if key != "parcels"}
+    assert check("DeviceNotices", notices).parcels is None

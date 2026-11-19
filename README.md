@@ -28,7 +28,7 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:spotify-top:<device id>` | string, JSON | `StoredTop` | 7,200 s | the broker's music provider | the Spotify area |
 | `v1:art:<sha1 of the URL>` | string, bytes | `AlbumArt` | 300 s | the broker's music provider | the Spotify area |
 | `v1:developer:<device id>` | string, JSON | `StoredDeveloper` | 900 s | the broker's developer provider | the developer panel |
-| `v1:parcels:<device id>` | string, JSON | `ParcelList` | 43,200 s | the parcel provider | the parcels panel and notices |
+| `v1:parcels:<device id>` | string, JSON | `ParcelList` | 43,200 s | the parcel provider | the parcels panel and notices, the broker's `getNotices` |
 | `v1:parcels-status:<device id>` | string | `ParcelsLinkStatus` | 86,400 s | the parcel provider | the broker |
 | `v1:pace:<source>:<id>` | string | `Pace` (seconds) | 60 s | any bursty provider | the broker |
 | `v1:departures:<stop id>` | string, JSON | `StopDepartures` | 120 s | countdown's TfL and Entur providers | the arrivals panels, the broker's `getArrivals` |
@@ -70,7 +70,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a JPEG (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
 | `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
-| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, bank holidays) and every Tube line's status, as each provider stored it |
+| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, bank holidays, and its owner's parcels when switched on) and every Tube line's status, as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 
@@ -104,10 +104,11 @@ rest, so a new route gets its function in the same PR.
   weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour);
 - an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval`, `language` and `timezone`,
   and the sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
-- a touchscreen's own: `display` (when its screen sleeps) and `lyrics` (the synced lyrics' size and alignment; a
-  config from before it has none, which a touchscreen shows as medium, on the left). That is all of it: a touchscreen
-  is English only, keeps its own time, plays music itself and has no other integrations. Every setting a device has
-  lives here on the server, but for its Wi-Fi, which stays on the device.
+- a touchscreen's own: `display` (when its screen sleeps), `lyrics` (the synced lyrics' size and alignment; a config
+  from before it has none, which a touchscreen shows as medium, on the left) and `parcels` (whether its notice board
+  has its owner's parcels). That is all of it: a touchscreen is English only, keeps its own time, plays music itself
+  and has no other integrations. Every setting a device has lives here on the server, but for its Wi-Fi, which stays
+  on the device.
 
 It's a `oneOf` of `EpaperConfig` and `TouchscreenConfig` with a `discriminator` on `type`, so both languages get a
 tagged union: `models.ConfigResponse` is a Pydantic discriminated union (read it with `TypeAdapter(ConfigResponse)`),
