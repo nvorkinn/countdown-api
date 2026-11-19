@@ -489,6 +489,78 @@ class StoredBankHolidays(BaseModel):
     )
 
 
+class FloodWarning(BaseModel):
+    """The ``FloodWarning`` object.
+
+    One of the Environment Agency's flood warnings, the parts the notice board reads, under the EA's own
+    names.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    description: str = Field(description='Where it is, in the EA\'s words ("River Thames at Southwark").')
+    severity: str = Field(
+        description=(
+            'The EA\'s name for its level: "Severe Flood Warning", "Flood Warning", "Flood Alert" or "Warning no Longer'
+            ' in Force".'
+        ),
+    )
+    severity_level: Annotated[int, Field(ge=1, le=4)] = Field(
+        alias="severityLevel",
+        description="1 a severe flood warning, 2 a flood warning, 3 a flood alert, 4 no longer in force.",
+    )
+    flood_area_id: str = Field(
+        alias="floodAreaID",
+        description="The flood area it's for (the area's notation, \"062FWF46Southwrk\").",
+    )
+
+
+class FloodWarningsResponse(BaseModel):
+    """The ``FloodWarningsResponse`` object.
+
+    The Environment Agency's /flood-monitoring/id/floods, kept to its items: every warning the EA lists
+    for the flood areas near the place, those no longer in force too, in the EA's order.
+    """
+
+    items: list[FloodWarning] = Field(description="Empty when there are none near the place.")
+
+
+class StoredFloods(BaseModel):
+    """The ``StoredFloods`` object.
+
+    The value of v1:notices:floods:<place>: the Environment Agency's warnings near a UK postcode, as of
+    fetched_at. A place with nothing in force is still written, with no items.
+    """
+
+    fetched_at: datetime
+    postcode: str = Field(description='The postcode as the broker subscribed it ("SE17 3LL").')
+    floods: FloodWarningsResponse = Field(
+        description=(
+            "The Environment Agency's /flood-monitoring/id/floods, kept to its items: every warning the EA lists for "
+            "the flood areas near the place, those no longer in force too, in the EA's order."
+        ),
+    )
+
+
+class StoredMetAlerts(BaseModel):
+    """The ``StoredMetAlerts`` object.
+
+    The value of v1:notices:metalerts: MET Norway's current weather warnings, MetAlerts' current.json as
+    it came, a GeoJSON FeatureCollection with one Feature per warning, the area it covers as its
+    geometry (a Polygon or a MultiPolygon of [longitude, latitude] rings) and MET's own names in its
+    properties (awareness_level such as "3; orange; Severe", awareness_type such as "1; Wind", event,
+    area, title, description, instruction, consequences, eventEndingTime...); asked for without a place,
+    so for all of Norway, once in each language. Each answer's Features are the same warnings in the
+    same order. fetched_at is when MET last sent, or confirmed unchanged, the older of the two answers.
+    """
+
+    fetched_at: datetime
+    no: dict[str, Any] = Field(
+        description="current.json?lang=no, the warnings worded in Norwegian, for a screen in Norwegian (nb).",
+    )
+    en: dict[str, Any] = Field(description="current.json?lang=en, in English, for every other screen.")
+
+
 class MetOfficeFeedItem(BaseModel):
     """The ``MetOfficeFeedItem`` object.
 
@@ -640,8 +712,9 @@ class DeviceNotices(BaseModel):
 
     A device's notices (getNotices), as the store has them: what the notice board makes its notices
     from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's
-    for a device with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads
-    and the bank holidays for one whose postcode isn't a UK one), as is one with nothing stored.
+    for a device with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads,
+    the flood warnings and the bank holidays for one whose postcode isn't a UK one, MET Norway's
+    warnings for one whose postcode isn't a Norwegian one), as is one with nothing stored.
     """
 
     postcode: str | None = Field(description="The config's notice_board.postcode.")
@@ -670,6 +743,29 @@ class DeviceNotices(BaseModel):
             " stored. The device makes its notices from them as the e-paper notice board does."
         ),
     )
+    floods: StoredFloods | None = Field(
+        default=None,
+        description=(
+            "The Environment Agency's flood warnings near the postcode's place, as the floods provider stored them "
+            "(v1:notices:floods:<place>), those no longer in force too, for a device with a UK postcode; null for any "
+            "other, or with none stored. The device picks out those in force and words them as the e-paper notice "
+            "board does. Null from a server that predates it, too."
+        ),
+    )
+    metalerts: StoredMetAlerts | None = Field(
+        default=None,
+        description=(
+            "MET Norway's weather warnings for the postcode's place, for a device with a Norwegian postcode: what the "
+            "MetAlerts provider stored for all of Norway (v1:notices:metalerts), narrowed by the server to the "
+            "Features whose area covers the postcode's location (v1:location:<place>), in both answers (`no` and `en`)"
+            " alike, each answer's other members as they came. So the device needs no geometry of its own: every "
+            "Feature it gets is about its place, and it words them as the e-paper notice board does. Null for any "
+            "other device, for a postcode whose location isn't known (not looked up yet, or not found), or with none "
+            "stored; a place with no warnings has answers with no Features. A Feature covers the place when the "
+            "location, at four decimals, is in its geometry's Polygon (or any of its MultiPolygon's), in its outer "
+            "ring and none of its holes, as the e-paper notice board has it. Null from a server that predates it, too."
+        ),
+    )
 
 
 class DeviceFeedEventValueOption3(BaseModel):
@@ -680,8 +776,9 @@ class DeviceFeedEventValueOption3(BaseModel):
         description=(
             "A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not"
             " the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device "
-            "with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads and the bank "
-            "holidays for one whose postcode isn't a UK one), as is one with nothing stored."
+            "with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads, the flood warnings"
+            " and the bank holidays for one whose postcode isn't a UK one, MET Norway's warnings for one whose "
+            "postcode isn't a Norwegian one), as is one with nothing stored."
         ),
     )
 
@@ -960,6 +1057,33 @@ class PlaceSearchResult(SearchResult):
     longitude: float
 
 
+class Postcode(BaseModel):
+    """The ``Postcode`` object.
+
+    Where a postcode is, in the fields of postcodes.io's /postcodes/{postcode} the notice board uses. A
+    Norwegian postcode's is made from Kartverket's address search in the same fields: its first
+    address's point, Norway as its country, and its municipality as its admin_district.
+    """
+
+    postcode: str
+    latitude: float
+    longitude: float
+    country: str = Field(
+        description=(
+            '"England", "Scotland", "Wales", "Northern Ireland", or "Norway": which of the UK\'s bank holidays, flood '
+            "warnings and weather warnings apply."
+        ),
+    )
+    region: str | None = Field(
+        default=None,
+        description='The English region ("London", "South East"); null outside England.',
+    )
+    admin_district: str | None = Field(
+        default=None,
+        description='The local authority ("Southwark", in Scotland the council area), or a Norwegian municipality ("Oslo").',
+    )
+
+
 RenderJobs = list[DeviceId]
 """v1:render:jobs, device ids, newest first (LPUSH; the workers BRPOP the oldest)."""
 
@@ -1082,6 +1206,25 @@ class StoredEnergy(BaseModel):
             "pairs. The renderer reads it with its own model of Glowmarkt's answer."
         ),
     )
+
+
+class StoredLocation(BaseModel):
+    """The ``StoredLocation`` object.
+
+    The value of v1:location:<place>: where a postcode is, as looked up at fetched_at, or that it isn't
+    one postcodes.io or Kartverket know. `found` and `location` go together: a found postcode has a
+    location, and one that wasn't found has none.
+    """
+
+    fetched_at: datetime
+    postcode: str = Field(
+        description=(
+            'As v1:sub:postcode has it ("SE17 3LL", "0150"); for a weather key\'s, the postcode or district it stands '
+            'for ("SE17").'
+        ),
+    )
+    found: bool = Field(description="False for a postcode that doesn't exist (a typo, or one that's been terminated).")
+    location: Postcode | None = Field(default=None, description="Where it is; null when it wasn't found.")
 
 
 class StoredPlayer(BaseModel):

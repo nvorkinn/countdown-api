@@ -84,7 +84,7 @@ def package_files(contract: dict[str, Any]) -> dict[str, str]:
     """Return the generated package as {path relative to src/countdown_api: text}."""
     document = openapi_document(contract)
     files = generate(models_document(document), source=CONTRACT.name, only=["models"], package=PACKAGE)
-    files["models.py"] += tagged_unions(document)
+    files["models.py"] = written_as_named(files["models.py"]) + tagged_unions(document)
     files["__init__.py"] = render_init(contract)
     files["keys.py"] = render_keys(contract)
     files["scripts.py"] = render_scripts(contract)
@@ -93,6 +93,18 @@ def package_files(contract: dict[str, Any]) -> dict[str, str]:
     files["client.ts"] = biome(render_client(contract), "client.ts")
     files["store.json"] = biome(json.dumps(contract, indent=2, ensure_ascii=False) + "\n", "store.json")
     return files
+
+
+def written_as_named(models: str) -> str:
+    """Return models.py with each model whose fields have other names in Python written back under the schema's names.
+
+    A property that isn't a Python name (the Environment Agency's `severityLevel`) is a snake_case field with the
+    property's name as its alias, which openapi-codegen reads by either name (populate_by_name) but would dump by the
+    Python one. A writer dumps a value to the store, so it is dumped by the alias too: `model_dump_json()` gives the
+    JSON the schema says, with nothing to remember at every call.
+    """
+    aliased = "ConfigDict(populate_by_name=True"
+    return models.replace(aliased, f"{aliased}, serialize_by_alias=True")
 
 
 def openapi_document(contract: dict[str, Any]) -> dict[str, Any]:

@@ -1,0 +1,77 @@
+{
+  "about": "The Environment Agency's flood warnings near three postcodes, as countdown's floods provider stores them under v1:notices:floods:<place>: SE17 3LL's four (a severe flood warning, a flood warning, a flood alert, and one no longer in force), YO1 7HH's two, and CF10 1EP's none (Cardiff, in Wales, which the EA doesn't cover), each under the EA's own names. countdown's tests/fixtures/floods.json.",
+  "ttl_s": 1800,
+  "places": [
+    {
+      "postcode": "SE17 3LL",
+      "key": "v1:notices:floods:SE173LL",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "SE17 3LL",
+        "floods": {
+          "items": [
+            {
+              "description": "River Thames at Southwark",
+              "severity": "Flood Warning",
+              "severityLevel": 2,
+              "floodAreaID": "062FWF46Southwrk"
+            },
+            {
+              "description": "Tidal Thames at Bankside and Rotherhithe",
+              "severity": "Severe Flood Warning",
+              "severityLevel": 1,
+              "floodAreaID": "062FWF46TidalThm"
+            },
+            {
+              "description": "Lower River Effra",
+              "severity": "Flood Alert",
+              "severityLevel": 3,
+              "floodAreaID": "062WAF60LowEffra"
+            },
+            {
+              "description": "River Thames at Vauxhall",
+              "severity": "Warning no Longer in Force",
+              "severityLevel": 4,
+              "floodAreaID": "062FWF46Vauxhall"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "postcode": "YO1 7HH",
+      "key": "v1:notices:floods:YO17HH",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "YO1 7HH",
+        "floods": {
+          "items": [
+            {
+              "description": "River Ouse at York city centre",
+              "severity": "Flood Warning",
+              "severityLevel": 2,
+              "floodAreaID": "122FWF706"
+            },
+            {
+              "description": "River Foss in York",
+              "severity": "Flood Alert",
+              "severityLevel": 3,
+              "floodAreaID": "122WAF940"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "postcode": "CF10 1EP",
+      "key": "v1:notices:floods:CF101EP",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "CF10 1EP",
+        "floods": {
+          "items": []
+        }
+      }
+    }
+  ]
+}

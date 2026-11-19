@@ -613,3 +613,70 @@ BANK_HOLIDAYS = "v1:notices:bank-holidays"
 
 # The TTL of `v1:notices:bank-holidays`, in seconds.
 BANK_HOLIDAYS_TTL_S = 604800
+
+
+def location(postcode: str) -> str:
+    """Return the key `v1:location:{postcode}`.
+
+    Where a postcode is: postcodes.io's answer for a UK postcode, Kartverket's address search's for a Norwegian one
+    (four digits), each kept to the fields the notice board uses, so one shape serves both countries. A postcode neither
+    knows is written too, as not found, so a board can say so rather than wait for a place that will never come. A
+    postcode district's key (v1:location:SE17) holds the district's centre. Its TTL is a week, renewed each time it's
+    asked about, so a postcode that leaves the set is kept a while in case it comes back.
+
+    A Redis string of models.StoredLocation (json), with a TTL of 604800 s.
+
+    Written by countdown's locations provider, for every postcode in v1:sub:postcode and every weather key that's a
+    typed UK postcode's slug, asked about again once a day. Read by the notice board and countdown's providers of
+    notices about a place, and the broker's getNotices (for MetAlerts' place).
+
+    Example: countdown_api.fixtures, location.json.
+    """
+    return f"v1:location:{postcode.replace(' ', '').upper()}"
+
+
+# What every `v1:location:{postcode}` key starts with, for SCAN and removeprefix().
+LOCATION_PREFIX = "v1:location:"
+
+
+# The TTL of `v1:location:{postcode}`, in seconds.
+LOCATION_TTL_S = 604800
+
+
+def floods(postcode: str) -> str:
+    """Return the key `v1:notices:floods:{postcode}`.
+
+    The Environment Agency's flood warnings for the flood areas near the postcode's place (within 5 km), those no longer
+    in force too, as its /flood-monitoring/id/floods lists them. A place with nothing in force is written with no items,
+    so all clear isn't taken for a missing key. The EA covers England only, so for a Scottish, Welsh or Northern Irish
+    postcode it's always empty.
+
+    A Redis string of models.StoredFloods (json), with a TTL of 1800 s.
+
+    Written by countdown's floods provider, for every UK postcode in v1:sub:postcode. Read by the notice board, and the
+    broker's getNotices.
+
+    Example: countdown_api.fixtures, floods.json.
+    """
+    return f"v1:notices:floods:{postcode.replace(' ', '').upper()}"
+
+
+# What every `v1:notices:floods:{postcode}` key starts with, for SCAN and removeprefix().
+FLOODS_PREFIX = "v1:notices:floods:"
+
+
+# The TTL of `v1:notices:floods:{postcode}`, in seconds.
+FLOODS_TTL_S = 1800
+
+
+# `v1:notices:metalerts`: MET Norway's current weather warnings (MetAlerts' current.json) for all of Norway, in
+# Norwegian and in English: one key, not one per place, as MetAlerts answers for the whole country at once.
+# A Redis string of models.StoredMetAlerts (json), with a TTL of 1800 s.
+# Written by countdown's MetAlerts provider, while any Norwegian postcode is in v1:sub:postcode. Read by the notice
+# board, and the broker's getNotices, each picking out the warnings whose area covers its own postcode's place
+# (v1:location:<place>).
+# Example: countdown_api.fixtures, metalerts.json.
+METALERTS = "v1:notices:metalerts"
+
+# The TTL of `v1:notices:metalerts`, in seconds.
+METALERTS_TTL_S = 1800

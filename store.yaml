@@ -439,6 +439,61 @@ keys:
     examples: [bank_holidays.json]
     description: >-
       gov.uk's bank holidays for every part of the UK (https://www.gov.uk/bank-holidays.json), by its divisions.
+  location:
+    pattern: "v1:location:{postcode}"
+    params:
+      postcode: >-
+        a postcode from v1:sub:postcode, as the broker writes it ("SE17 3LL", "0150"), or the UK postcode or postcode
+        district a weather key is the slug of ("SE17").
+    form: {postcode: place}
+    redis: string
+    value: StoredLocation
+    encoding: json
+    ttl_s: 604800
+    written_by: >-
+      countdown's locations provider, for every postcode in v1:sub:postcode and every weather key that's a typed UK
+      postcode's slug, asked about again once a day
+    read_by: >-
+      the notice board and countdown's providers of notices about a place, and the broker's getNotices (for MetAlerts'
+      place)
+    examples: [location.json]
+    description: >-
+      Where a postcode is: postcodes.io's answer for a UK postcode, Kartverket's address search's for a Norwegian one
+      (four digits), each kept to the fields the notice board uses, so one shape serves both countries. A postcode
+      neither knows is written too, as not found, so a board can say so rather than wait for a place that will never
+      come. A postcode district's key (v1:location:SE17) holds the district's centre. Its TTL is a week, renewed
+      each time it's asked about, so a postcode that leaves the set is kept a while in case it comes back.
+  floods:
+    pattern: "v1:notices:floods:{postcode}"
+    params:
+      postcode: a UK postcode from v1:sub:postcode, as the broker writes it ("SE17 3LL").
+    form: {postcode: place}
+    redis: string
+    value: StoredFloods
+    encoding: json
+    ttl_s: 1800
+    written_by: countdown's floods provider, for every UK postcode in v1:sub:postcode
+    read_by: the notice board, and the broker's getNotices
+    examples: [floods.json]
+    description: >-
+      The Environment Agency's flood warnings for the flood areas near the postcode's place (within 5 km), those no
+      longer in force too, as its /flood-monitoring/id/floods lists them. A place with nothing in force is written
+      with no items, so all clear isn't taken for a missing key. The EA covers England only, so for a Scottish, Welsh
+      or Northern Irish postcode it's always empty.
+  metalerts:
+    pattern: "v1:notices:metalerts"
+    redis: string
+    value: StoredMetAlerts
+    encoding: json
+    ttl_s: 1800
+    written_by: countdown's MetAlerts provider, while any Norwegian postcode is in v1:sub:postcode
+    read_by: >-
+      the notice board, and the broker's getNotices, each picking out the warnings whose area covers its own postcode's
+      place (v1:location:<place>)
+    examples: [metalerts.json]
+    description: >-
+      MET Norway's current weather warnings (MetAlerts' current.json) for all of Norway, in Norwegian and in English:
+      one key, not one per place, as MetAlerts answers for the whole country at once.
 
 # The Lua scripts both sides run. Each becomes a countdown_api.scripts.Script of the same name (upper case), carrying
 # the source byte for byte and its SHA1, which EVALSHA calls it by.
@@ -866,9 +921,10 @@ paths:
       summary: The device's notices.
       description: >-
         What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions
-        there, TfL's road disruptions, the Met Office's warnings near its postcode, the UK's bank holidays and, with
-        parcels switched on, its owner's parcels. Each as its provider stored it (DeviceNotices), not worded or judged
-        as notices.
+        there, TfL's road disruptions, the Met Office's and the Environment Agency's warnings near a UK postcode,
+        MET Norway's warnings covering a Norwegian one, the UK's bank holidays and, with parcels switched on, its
+        owner's parcels. Each as its provider stored it (DeviceNotices), not worded or judged as notices, but for MET
+        Norway's, narrowed to the warnings about the device's place.
       security:
       - deviceSecret: []
       responses:
@@ -884,7 +940,7 @@ paths:
           description: The device isn't paired yet, so it has no config to read.
         '503':
           description: The store couldn't be reached; try again shortly.
-      x-examples: [device_panels.json]
+      x-examples: [device_panels.json, device_notices_norway.json]
   /api/devices/feed:
     get:
       operationId: getFeed
@@ -2526,6 +2582,150 @@ $defs:
     required:
     - title
     - date
+  StoredLocation:
+    description: >-
+      The value of v1:location:<place>: where a postcode is, as looked up at fetched_at, or that it isn't one
+      postcodes.io or Kartverket know. `found` and `location` go together: a found postcode has a location, and one
+      that wasn't found has none.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      postcode:
+        type: string
+        description: >-
+          As v1:sub:postcode has it ("SE17 3LL", "0150"); for a weather key's, the postcode or district it stands for
+          ("SE17").
+      found:
+        type: boolean
+        description: False for a postcode that doesn't exist (a typo, or one that's been terminated).
+      location:
+        anyOf:
+        - $ref: '#/$defs/Postcode'
+        - type: 'null'
+        default: null
+        description: Where it is; null when it wasn't found.
+    required:
+    - fetched_at
+    - postcode
+    - found
+  Postcode:
+    description: >-
+      Where a postcode is, in the fields of postcodes.io's /postcodes/{postcode} the notice board uses. A Norwegian
+      postcode's is made from Kartverket's address search in the same fields: its first address's point, Norway as its
+      country, and its municipality as its admin_district.
+    type: object
+    properties:
+      postcode:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      country:
+        type: string
+        description: >-
+          "England", "Scotland", "Wales", "Northern Ireland", or "Norway": which of the UK's bank holidays, flood
+          warnings and weather warnings apply.
+      region:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: The English region ("London", "South East"); null outside England.
+      admin_district:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: The local authority ("Southwark", in Scotland the council area), or a Norwegian municipality ("Oslo").
+    required:
+    - postcode
+    - latitude
+    - longitude
+    - country
+  StoredFloods:
+    description: >-
+      The value of v1:notices:floods:<place>: the Environment Agency's warnings near a UK postcode, as of fetched_at.
+      A place with nothing in force is still written, with no items.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      postcode:
+        type: string
+        description: The postcode as the broker subscribed it ("SE17 3LL").
+      floods:
+        $ref: '#/$defs/FloodWarningsResponse'
+    required:
+    - fetched_at
+    - postcode
+    - floods
+  FloodWarningsResponse:
+    description: >-
+      The Environment Agency's /flood-monitoring/id/floods, kept to its items: every warning the EA lists for the flood
+      areas near the place, those no longer in force too, in the EA's order.
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/$defs/FloodWarning'
+        description: Empty when there are none near the place.
+    required:
+    - items
+  FloodWarning:
+    description: >-
+      One of the Environment Agency's flood warnings, the parts the notice board reads, under the EA's own names.
+    type: object
+    properties:
+      description:
+        type: string
+        description: Where it is, in the EA's words ("River Thames at Southwark").
+      severity:
+        type: string
+        description: >-
+          The EA's name for its level: "Severe Flood Warning", "Flood Warning", "Flood Alert" or "Warning no Longer in
+          Force".
+      severityLevel:
+        type: integer
+        minimum: 1
+        maximum: 4
+        description: 1 a severe flood warning, 2 a flood warning, 3 a flood alert, 4 no longer in force.
+      floodAreaID:
+        type: string
+        description: The flood area it's for (the area's notation, "062FWF46Southwrk").
+    required:
+    - description
+    - severity
+    - severityLevel
+    - floodAreaID
+  StoredMetAlerts:
+    description: >-
+      The value of v1:notices:metalerts: MET Norway's current weather warnings, MetAlerts' current.json as it came, a
+      GeoJSON FeatureCollection with one Feature per warning, the area it covers as its geometry (a Polygon or a
+      MultiPolygon of [longitude, latitude] rings) and MET's own names in its properties (awareness_level such as
+      "3; orange; Severe", awareness_type such as "1; Wind", event, area, title, description, instruction,
+      consequences, eventEndingTime...); asked for without a place, so for all of Norway, once in each language. Each
+      answer's Features are the same warnings in the same order. fetched_at is when MET last sent, or confirmed
+      unchanged, the older of the two answers.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      'no':
+        type: object
+        description: current.json?lang=no, the warnings worded in Norwegian, for a screen in Norwegian (nb).
+      en:
+        type: object
+        description: current.json?lang=en, in English, for every other screen.
+    required:
+    - fetched_at
+    - 'no'
+    - en
   DeviceFeedEvent:
     description: >-
       One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or
@@ -2617,8 +2817,9 @@ $defs:
     description: >-
       A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the
       notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL
-      stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads and the bank holidays for one whose
-      postcode isn't a UK one), as is one with nothing stored.
+      stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads, the flood warnings and the bank
+      holidays for one whose postcode isn't a UK one, MET Norway's warnings for one whose postcode isn't a Norwegian
+      one), as is one with nothing stored.
     type: object
     properties:
       postcode:
@@ -2674,6 +2875,31 @@ $defs:
           The owner's parcels as the parcel provider stored them (v1:parcels:<device id>), already narrowed to those
           the device's settings show, for a device with parcels switched on; null for any other, or with none stored.
           The device makes its notices from them as the e-paper notice board does.
+      floods:
+        anyOf:
+        - $ref: '#/$defs/StoredFloods'
+        - type: 'null'
+        default: null
+        description: >-
+          The Environment Agency's flood warnings near the postcode's place, as the floods provider stored them
+          (v1:notices:floods:<place>), those no longer in force too, for a device with a UK postcode; null for any
+          other, or with none stored. The device picks out those in force and words them as the e-paper notice board
+          does. Null from a server that predates it, too.
+      metalerts:
+        anyOf:
+        - $ref: '#/$defs/StoredMetAlerts'
+        - type: 'null'
+        default: null
+        description: >-
+          MET Norway's weather warnings for the postcode's place, for a device with a Norwegian postcode: what the
+          MetAlerts provider stored for all of Norway (v1:notices:metalerts), narrowed by the server to the Features
+          whose area covers the postcode's location (v1:location:<place>), in both answers (`no` and `en`) alike, each
+          answer's other members as they came. So the device needs no geometry of its own: every Feature it gets is
+          about its place, and it words them as the e-paper notice board does. Null for any other device, for a
+          postcode whose location isn't known (not looked up yet, or not found), or with none stored; a place with no
+          warnings has answers with no Features. A Feature covers the place when the location, at four decimals, is in
+          its geometry's Polygon (or any of its MultiPolygon's), in its outer ring and none of its holes, as the
+          e-paper notice board has it. Null from a server that predates it, too.
     required:
     - postcode
     - country
