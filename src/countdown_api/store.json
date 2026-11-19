@@ -2282,6 +2282,11 @@
           ],
           "default": null,
           "description": "Its mode where a stop serves several (Entur's metro or tram at Majorstuen); null from TfL, whose stops serve one (the stop's `mode`)."
+        },
+        "scheduled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether `expected_at` is only the timetable's time, with no live prediction behind it: an Entur call with `realtime` false, or a TfL train or bus from the line's timetable, which the TfL provider adds while TfL predicts nothing for that line at the stop (the first trains of the morning, before the line opens)."
         }
       },
       "required": ["line", "destination", "expected_at"]

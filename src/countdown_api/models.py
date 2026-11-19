@@ -249,6 +249,14 @@ class Departure(BaseModel):
             "serve one (the stop's `mode`)."
         ),
     )
+    scheduled: bool = Field(
+        default=False,
+        description=(
+            "Whether `expected_at` is only the timetable's time, with no live prediction behind it: an Entur call with"
+            " `realtime` false, or a TfL train or bus from the line's timetable, which the TfL provider adds while TfL"
+            " predicts nothing for that line at the stop (the first trains of the morning, before the line opens)."
+        ),
+    )
 
 
 class Developer(BaseModel):
