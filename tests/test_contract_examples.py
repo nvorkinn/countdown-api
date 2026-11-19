@@ -534,8 +534,9 @@ def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postco
     assert PANELS["notices"]["met_office"] == fixtures.load("met_office.json")["value"]
     assert PANELS["notices"]["bank_holidays"] == fixtures.load("bank_holidays.json")["value"]
     assert PANELS["notices"]["tfl_network"] == fixtures.load("tfl_network.json")["value"]
-    # A London touchscreen has no Entur stops.
-    assert PANELS["notices"]["entur_stops"] == []
+    entur_stops = [stop["id"] for stop in PANELS["config"]["arrivals"]["stops"] if stop["source"] == "entur"]
+    assert [stop.stop_id for stop in notices.entur_stops or []] == entur_stops
+    assert PANELS["notices"]["entur_stops"] == [{"stop_id": entur_stops[0], "situations": None}]  # none stored
     # Its parcels are switched on, so it has what the parcel provider stored for it.
     assert PANELS["config"]["parcels"] == {"enabled": True, "days_ahead": None, "kept_hours": 4}
     assert PANELS["notices"]["parcels"] == fixtures.load("parcels.json")["value"]
