@@ -410,7 +410,7 @@ export interface components {
     /** @description A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and only then. getConfig answers it, and a save sends it back as If-Match. */
     ConfigVersion: string;
     /**
-     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style` and `display`.
+     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style`, `display` and `lyrics`.
      * @enum {string}
      */
     ConfigSection:
@@ -425,7 +425,8 @@ export interface components {
       | "developer"
       | "parcels"
       | "style"
-      | "display";
+      | "display"
+      | "lyrics";
     /** @description One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape). */
     SearchResult: {
       /** @description The result's id at its source, as text. */
@@ -552,7 +553,7 @@ export interface components {
        */
       return_to?: string;
     };
-    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board, its look and its screen's sleep; an e-paper screen's also has its language, time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
+    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its language, time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
     ConfigResponse: components["schemas"]["EpaperConfig"] | components["schemas"]["TouchscreenConfig"];
     /** @description What every device's config has (ConfigResponse), whatever its type: who and what the device is, its size, its clock format, and the panels both types show (arrivals, weather and the notice board). */
     ConfigBase: {
@@ -630,6 +631,7 @@ export interface components {
       readonly type: "touchscreen";
       style: components["schemas"]["TouchscreenStyle"];
       display: components["schemas"]["TouchscreenDisplay"];
+      lyrics?: components["schemas"]["TouchscreenLyrics"];
     } & (WithRequired<components["schemas"]["ConfigBase"], "type"> & {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -662,6 +664,19 @@ export interface components {
        * @enum {integer}
        */
       sleep_minutes: 0 | 2 | 5 | 15 | 30;
+    };
+    /** @description How a touchscreen shows a song's synced lyrics. A config without it (one saved before it existed) shows them at medium size, lined up on the left. */
+    TouchscreenLyrics: {
+      /**
+       * @description The lyrics' type size: medium is the size the touchscreen works out from its lyrics panel, and small, large and x-large are 0.8, 1.2 and 1.4 times that.
+       * @enum {string}
+       */
+      size: "small" | "medium" | "large" | "x-large";
+      /**
+       * @description Which side the lines line up on.
+       * @enum {string}
+       */
+      align: "left" | "center" | "right";
     };
     /** @description The arrivals panel (bus, train and tram stops). */
     Arrivals: {
@@ -1046,6 +1061,7 @@ export type EpaperStyle = components["schemas"]["EpaperStyle"];
 export type TouchscreenConfig = components["schemas"]["TouchscreenConfig"];
 export type TouchscreenStyle = components["schemas"]["TouchscreenStyle"];
 export type TouchscreenDisplay = components["schemas"]["TouchscreenDisplay"];
+export type TouchscreenLyrics = components["schemas"]["TouchscreenLyrics"];
 export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
