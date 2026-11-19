@@ -67,6 +67,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `PUT /api/devices/config/{section}` | a section (`ConfigSection` names it), `If-Match` | `ConfigResponse`, its new `ETag` | save one section whole; 409 when `If-Match` is stale, so the caller reloads instead of overwriting |
 | `GET /api/stops/search` | `q` | `StopSearchResult[]` | London's and Norway's stops, for a stop picker |
 | `GET /api/places/search` | `q` | `PlaceSearchResult[]` | towns and cities (Open-Meteo), for the weather picker |
+| `GET /api/places/here` | `latitude`, `longitude` (optional) | `PlaceSearchResult[]` (at most one) | the town or city at the position sent, or with none where the caller's IP places it, for the weather picker's current location |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a JPEG (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
