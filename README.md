@@ -104,9 +104,10 @@ rest, so a new route gets its function in the same PR.
   weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour);
 - an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval`, `language` and `timezone`,
   and the sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
-- a touchscreen's own: `display` (when its screen sleeps). That is all of it: a touchscreen is English only, keeps its
-  own time, plays music itself and has no other integrations. Every setting a device has lives here on the server,
-  but for its Wi-Fi, which stays on the device.
+- a touchscreen's own: `display` (when its screen sleeps) and `lyrics` (the synced lyrics' size and alignment; a
+  config from before it has none, which a touchscreen shows as medium, on the left). That is all of it: a touchscreen
+  is English only, keeps its own time, plays music itself and has no other integrations. Every setting a device has
+  lives here on the server, but for its Wi-Fi, which stays on the device.
 
 It's a `oneOf` of `EpaperConfig` and `TouchscreenConfig` with a `discriminator` on `type`, so both languages get a
 tagged union: `models.ConfigResponse` is a Pydantic discriminated union (read it with `TypeAdapter(ConfigResponse)`),

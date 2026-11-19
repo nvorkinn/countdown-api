@@ -627,7 +627,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "The section's new value, in its own schema: the field's in ConfigBase, or for `style` and `display`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay).",
+          "description": "The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics).",
           "content": {
             "application/json": {
               "schema": {
@@ -664,6 +664,9 @@
                   },
                   {
                     "$ref": "#/$defs/TouchscreenDisplay"
+                  },
+                  {
+                    "$ref": "#/$defs/TouchscreenLyrics"
                   },
                   {
                     "enum": ["12h", "24h"],
@@ -1578,10 +1581,11 @@
         "developer",
         "parcels",
         "style",
-        "display"
+        "display",
+        "lyrics"
       ],
       "type": "string",
-      "description": "A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style` and `display`."
+      "description": "A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style`, `display` and `lyrics`."
     },
     "SearchResult": {
       "description": "One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape).",
@@ -1851,7 +1855,7 @@
       "required": ["secret_hash", "width", "height"]
     },
     "ConfigResponse": {
-      "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board, its look and its screen's sleep; an e-paper screen's also has its language, time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",
+      "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its language, time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",
       "oneOf": [
         {
           "$ref": "#/$defs/EpaperConfig"
@@ -2040,6 +2044,9 @@
         },
         "display": {
           "$ref": "#/$defs/TouchscreenDisplay"
+        },
+        "lyrics": {
+          "$ref": "#/$defs/TouchscreenLyrics"
         }
       },
       "required": ["type", "style", "display"]
@@ -2077,6 +2084,23 @@
         }
       },
       "required": ["sleep_minutes"]
+    },
+    "TouchscreenLyrics": {
+      "description": "How a touchscreen shows a song's synced lyrics. A config without it (one saved before it existed) shows them at medium size, lined up on the left.",
+      "type": "object",
+      "properties": {
+        "size": {
+          "enum": ["small", "medium", "large", "x-large"],
+          "type": "string",
+          "description": "The lyrics' type size: medium is the size the touchscreen works out from its lyrics panel, and small, large and x-large are 0.8, 1.2 and 1.4 times that."
+        },
+        "align": {
+          "enum": ["left", "center", "right"],
+          "type": "string",
+          "description": "Which side the lines line up on."
+        }
+      },
+      "required": ["size", "align"]
     },
     "Arrivals": {
       "description": "The arrivals panel (bus, train and tram stops).",

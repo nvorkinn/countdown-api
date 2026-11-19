@@ -45,6 +45,10 @@
     },
     "display": {
       "sleep_minutes": 15
+    },
+    "lyrics": {
+      "size": "large",
+      "align": "center"
     }
   },
   "save": {
@@ -76,6 +80,10 @@
     },
     "display": {
       "sleep_minutes": 30
+    },
+    "lyrics": {
+      "size": "large",
+      "align": "center"
     }
   },
   "spotify_token": {
@@ -130,6 +138,10 @@
       },
       "display": {
         "sleep_minutes": 15
+      },
+      "lyrics": {
+        "size": "large",
+        "align": "center"
       }
     }
   }

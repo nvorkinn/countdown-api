@@ -38,6 +38,10 @@
     },
     "display": {
       "sleep_minutes": 15
+    },
+    "lyrics": {
+      "size": "large",
+      "align": "center"
     }
   },
   "weather": {

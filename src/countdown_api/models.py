@@ -203,11 +203,12 @@ ConfigSection = Literal[
     "parcels",
     "style",
     "display",
+    "lyrics",
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
-type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style` and
-`display`.
+type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style`,
+`display` and `lyrics`.
 """
 
 
@@ -1081,6 +1082,21 @@ class TouchscreenDisplay(BaseModel):
     )
 
 
+class TouchscreenLyrics(BaseModel):
+    """How a touchscreen shows a song's synced lyrics.
+
+    A config without it (one saved before it existed) shows them at medium size, lined up on the left.
+    """
+
+    size: Literal["small", "medium", "large", "x-large"] = Field(
+        description=(
+            "The lyrics' type size: medium is the size the touchscreen works out from its lyrics panel, and small, "
+            "large and x-large are 0.8, 1.2 and 1.4 times that."
+        ),
+    )
+    align: Literal["left", "center", "right"] = Field(description="Which side the lines line up on.")
+
+
 class TouchscreenStyle(BaseModel):
     """How a touchscreen looks."""
 
@@ -1119,6 +1135,13 @@ class TouchscreenConfig(ConfigBase):
     type: Literal["touchscreen"]
     style: TouchscreenStyle = Field(description="How a touchscreen looks.")
     display: TouchscreenDisplay = Field(description="A touchscreen's screen itself.")
+    lyrics: TouchscreenLyrics | None = Field(
+        default=None,
+        description=(
+            "How a touchscreen shows a song's synced lyrics. A config without it (one saved before it existed) shows "
+            "them at medium size, lined up on the left."
+        ),
+    )
 
 
 class TouchscreenRegistration(BaseModel):
@@ -1153,9 +1176,9 @@ pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/c
 take. A few flat fields (who and what the device is, its size, and its clock format), then a section
 per panel, each its own schema, and `style`, which every type has but whose schema is the type's
 own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board,
-its look and its screen's sleep; an e-paper screen's also has its language, time zone, pairing code
-and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's
-(TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's,
-held on the server. A read-only field (readOnly) is the server's, or what the device said at
-registration, and isn't changed by a save.
+its look, its screen's sleep and its lyrics; an e-paper screen's also has its language, time zone,
+pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a
+touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the
+owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the
+device said at registration, and isn't changed by a save.
 """

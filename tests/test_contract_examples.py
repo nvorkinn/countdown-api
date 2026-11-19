@@ -279,6 +279,8 @@ def test_a_config_takes_only_its_types_style() -> None:
         {key: value for key, value in touchscreen.items() if key != "display"},
         {**epaper, "type": "kiosk"},
         {**touchscreen, "display": {"sleep_minutes": 10}},
+        {**touchscreen, "lyrics": {"size": "huge", "align": "left"}},
+        {**touchscreen, "lyrics": {"size": "medium", "align": "justify"}},
         {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
         {key: value for key, value in epaper.items() if key != "language"},
         {key: value for key, value in epaper.items() if key != "pairing_code"},
@@ -288,6 +290,12 @@ def test_a_config_takes_only_its_types_style() -> None:
             check_schema("ConfigResponse", config)
         with pytest.raises(ValidationError):
             check_model("ConfigResponse", config)
+
+
+def test_a_touchscreen_config_from_before_lyrics_is_still_one() -> None:
+    older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "lyrics"}
+    check_schema("ConfigResponse", older)
+    assert check("TouchscreenConfig", older).lyrics is None
 
 
 def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
@@ -304,6 +312,7 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
         "notice_board",
         "style",
         "display",
+        "lyrics",
     }
     assert set(TOUCHSCREEN["config"]) == set(models.TouchscreenConfig.model_fields)
     epaper_only = set(models.EpaperConfig.model_fields) - set(models.TouchscreenConfig.model_fields)
