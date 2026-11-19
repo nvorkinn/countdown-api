@@ -43,15 +43,18 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:notices:entur:<stop id>` | string, JSON | `StoredEnturSituations` | 900 s | countdown's Entur situations provider | the notice board, the broker's `getNotices` |
 | `v1:notices:met-office:<place>` | string, JSON | `StoredMetOfficeWarnings` | 1,800 s | countdown's Met Office provider | the notice board, the broker's `getNotices` |
 | `v1:notices:bank-holidays` | string, JSON | `StoredBankHolidays` | 604,800 s | countdown's bank holidays provider | the notice board, the broker's `getNotices` |
+| `v1:location:<place>` | string, JSON | `StoredLocation` | 604,800 s | countdown's locations provider | the notice board and countdown's providers of notices about a place, the broker's `getNotices` |
+| `v1:notices:floods:<place>` | string, JSON | `StoredFloods` | 1,800 s | countdown's floods provider | the notice board, the broker's `getNotices` |
+| `v1:notices:metalerts` | string, JSON | `StoredMetAlerts` | 1,800 s | countdown's MetAlerts provider | the notice board, the broker's `getNotices` |
 
 `store.yaml` says more about each (its `keys`), and about the subscription sources (`sources`). The schemas (its
 `$defs`) are JSON Schema 2020-12. The values that are the upstream service's own answer (Glowmarkt's readings,
 Spotify's queue and top lists, the GitHub summary) are pinned as their wrapper, with the answer itself left open: the
 renderer reads those with its own models of the service's answers; so are TfL's answers in the TfL notices, Entur's in
-its situations, and Open-Meteo's forecast in the weather. A `<place>` is a postcode without its space, in capitals (`SE173LL`): the key
+its situations, MET Norway's in its warnings, and Open-Meteo's forecast in the weather. A `<place>` is a postcode without its space, in capitals (`SE173LL`): the key
 builders take the postcode as the broker writes it (`SE17 3LL`) and make the place themselves. Keys only one side
-uses (the render lease, and countdown's other providers' data: floods, MET Norway's warnings, the
-postcodes' places) aren't here: they are that side's own, until the other side reads them too.
+uses (the render lease, countdown's TfL timetables and notices' short forms, and the channel the locations provider
+nudges its readers on) aren't here: they are that side's own, until the other side reads them too.
 
 The enqueue script, [`lua/enqueue.lua`](lua/enqueue.lua), is the one way anything queues a render: `SET` the queued
 flag `NX` with its TTL, and only if that set it, `LPUSH` the device id. Every consumer runs it from here, byte for byte, so
@@ -71,7 +74,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a JPEG (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
 | `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
-| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, bank holidays, and its owner's parcels when switched on) and every Tube line's status, as each provider stored it |
+| `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, the Environment Agency's flood warnings, bank holidays, MET Norway's warnings covering a Norwegian postcode, and its owner's parcels when switched on) and every Tube line's status, as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 
@@ -124,7 +127,8 @@ What a screen says about a stored value is worded where it's shown: by the rende
 touchscreen's own app for a touchscreen. So that both say the same thing, the strings they word it with are here, in
 `countdown_api/messages`: [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) by
 id, each with a description and its string in English and Norwegian (`notices.json`: the notice board's line
-statuses, weather warnings and bank holidays). Each side formats them with its own ICU formatter, so a string keeps to
+statuses, TfL's station and road disruptions, flood warnings, the Met Office's and MET Norway's weather warnings, the
+clocks changing, and the UK's bank holidays and Norway's public holidays). Each side formats them with its own ICU formatter, so a string keeps to
 what every formatter does alike: named arguments, `select`, and `plural` with `one` and `other`. Dates and times are
 formatted by the caller and passed in as text. Only what more than one kind of screen says is here.
 

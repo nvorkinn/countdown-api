@@ -19,18 +19,58 @@
     "en": "{mode, select, bus {{count, plural, one {Bus {line}} other {Buses}}} other {{line}}}",
     "nb": "{mode, select, bus {{count, plural, one {{line}-bussen} other {Busser}}} other {{line}}}"
   },
+  "notice.station.title": {
+    "description": "The title of the notice for something wrong at a TfL stop (a lift out of order, an entrance closed): `station` is the stop's name without \"Underground Station\", \"Rail Station\" or \"DLR Station\" at its end (\"Elephant & Castle\"). Its summary is TfL's description of it, without the station's name in capitals TfL leads it with, shortened.",
+    "en": "{station} station",
+    "nb": "{station} stasjon"
+  },
+  "notice.station.text": {
+    "description": "Something wrong at a TfL stop in one line, where a notice is one line (an e-paper screen, after the tag TfL): `station` as notice.station.title's, `detail` TfL's description without the station's name it leads with (\"Elephant & Castle: No step-free access to the Northern line\").",
+    "en": "{station}: {detail}",
+    "nb": "{station}: {detail}"
+  },
+  "notice.road.title": {
+    "description": "The title of the notice for a serious or severe road disruption TfL reports near the postcode. Its summary is notice.road.text's, shortened.",
+    "en": "Road disruption",
+    "nb": "Trafikkhindring"
+  },
+  "notice.road.tag": {
+    "description": "The tag in front of a road disruption's notice where a notice is one line (an e-paper screen).",
+    "en": "Roads",
+    "nb": "Veier"
+  },
+  "notice.road.text": {
+    "description": "A road disruption in one line: `category` is TfL's for it (\"Works\", \"Collisions\"), `comments` TfL's comments on it, each as TfL wrote it.",
+    "en": "{category}: {comments}",
+    "nb": "{category}: {comments}"
+  },
+  "notice.flood.title": {
+    "description": "What one of the Environment Agency's flood warnings is, by its level: `level` is severe (its severityLevel 1, a severe flood warning), warning (2, a flood warning) or alert (3, a flood alert). A warning no longer in force (4) has no notice. The title of its notice, whose summary is the flood area the EA names it for (\"River Thames at Southwark\").",
+    "en": "{level, select, severe {Severe flood warning} warning {Flood warning} alert {Flood alert} other {Flood warning}}",
+    "nb": "{level, select, severe {Alvorlig flomfare} warning {Flomfare} alert {Flomvarsel} other {Flomfare}}"
+  },
+  "notice.flood.tag": {
+    "description": "The tag in front of a flood warning's notice where a notice is one line (an e-paper screen).",
+    "en": "Floods",
+    "nb": "Flom"
+  },
+  "notice.flood.text": {
+    "description": "A flood warning in one line, after notice.flood.tag: `title` is notice.flood.title's, `area` the flood area the EA names it for (\"Flood warning: River Thames at Southwark\").",
+    "en": "{title}: {area}",
+    "nb": "{title}: {area}"
+  },
   "notice.weather.title": {
-    "description": "The title of a weather warning's notice. Its summary is notice.weather.warning's, and when it applies.",
+    "description": "The title of a weather warning's notice, the Met Office's or MET Norway's. Its summary is notice.weather.warning's, and when it applies (notice.until).",
     "en": "Weather warning",
     "nb": "Farevarsel"
   },
   "notice.weather.warning": {
-    "description": "A weather warning in a few words: `colour` is its level (red, amber or yellow, the Met Office's) and `hazard` what it warns of, in lower case (\"wind\", \"rain\").",
-    "en": "{colour, select, red {Red warning: {hazard}} amber {Amber warning: {hazard}} yellow {Yellow warning: {hazard}} other {Warning: {hazard}}}",
-    "nb": "{colour, select, red {Rødt farevarsel: {hazard}} amber {Oransje farevarsel: {hazard}} yellow {Gult farevarsel: {hazard}} other {Farevarsel: {hazard}}}"
+    "description": "A weather warning in a few words: `colour` is its level (red, amber or yellow, the Met Office's; red, orange or yellow, MET Norway's) and `hazard` what it warns of, in lower case (\"wind\", \"rain\"), as the warning names it (the Met Office's title, MetAlerts' eventAwarenessName or event).",
+    "en": "{colour, select, red {Red warning: {hazard}} amber {Amber warning: {hazard}} orange {Orange warning: {hazard}} yellow {Yellow warning: {hazard}} other {Warning: {hazard}}}",
+    "nb": "{colour, select, red {Rødt farevarsel: {hazard}} amber {Oransje farevarsel: {hazard}} orange {Oransje farevarsel: {hazard}} yellow {Gult farevarsel: {hazard}} other {Farevarsel: {hazard}}}"
   },
   "notice.until": {
-    "description": "Until when something applies, after what it is (\"Amber warning: wind until Fri 21:00\"). `when` is a time, a day, or a day and a time, already formatted.",
+    "description": "Until when something applies, after what it is (\"Amber warning: wind until Fri 21:00\"). `when` is a time, a day, or a day and a time, already formatted; for MET Norway's warnings, the day it ends on, in Norway's time (\"Fri\"), the board adding the time in the screen's clock format.",
     "en": "until {when}",
     "nb": "til {when}"
   },
@@ -58,6 +98,46 @@
     "description": "notice.holiday.text for a holiday GOV.UK has a note on: `notes` is the note, in lower case (\"Today: Boxing Day (substitute day)\").",
     "en": "{when}: {name} ({notes})",
     "nb": "{when}: {name} ({notes})"
+  },
+  "notice.clock.title": {
+    "description": "The title of the reminder, in the week before, that the clocks go forward or back in the screen's time zone. Its summary is notice.clock.text's.",
+    "en": "Clock change",
+    "nb": "Klokken stilles"
+  },
+  "notice.clock.tag": {
+    "description": "The tag in front of the clock change's notice where a notice is one line (an e-paper screen).",
+    "en": "Clocks",
+    "nb": "Klokker"
+  },
+  "notice.clock.text": {
+    "description": "When the clocks change: `direction` is forward (an hour on, in the spring) or back (in the autumn), and `when` notice.clock.tonight's or notice.clock.on's. It ends before the time, which the screen adds after it in its own clock format, as it is just before the change (\"Clocks go back an hour tonight, at 02:00\").",
+    "en": "{direction, select, forward {Clocks go forward an hour {when}, at} back {Clocks go back an hour {when}, at} other {Clocks change an hour {when}, at}}",
+    "nb": "{direction, select, forward {Klokken stilles frem en time {when}, kl.} back {Klokken stilles tilbake en time {when}, kl.} other {Klokken stilles en time {when}, kl.}}"
+  },
+  "notice.clock.tonight": {
+    "description": "When the clocks change, in notice.clock.text, when it's in the coming night: the change is on today's or tomorrow's date, in the small hours.",
+    "en": "tonight",
+    "nb": "i kveld"
+  },
+  "notice.clock.on": {
+    "description": "When the clocks change, in notice.clock.text, on a later day: `day` is its date, already formatted (\"Sun 25 Oct\", in Norwegian \"søn. 25. okt.\").",
+    "en": "on {day}",
+    "nb": "på {day}"
+  },
+  "notice.holiday.public_title": {
+    "description": "The title of the notice for Norway's next public holiday (a helligdag or 1 May, 17 May), for a Norwegian postcode, where notice.holiday.title is the UK's bank holidays'. Its summary is notice.holiday.summary's, with notice.holiday.name's.",
+    "en": "Upcoming public holiday",
+    "nb": "Kommende helligdag"
+  },
+  "notice.holiday.public_tag": {
+    "description": "The tag in front of a Norwegian public holiday's notice where a notice is one line (an e-paper screen), as notice.holiday.tag is a UK bank holiday's. Its text is notice.holiday.text's, with notice.holiday.name's.",
+    "en": "Public holiday",
+    "nb": "Helligdag"
+  },
+  "notice.holiday.name": {
+    "description": "A Norwegian public holiday's name, by its key: new_year (1 January), maundy_thursday, good_friday, easter_sunday, easter_monday, labour_day (1 May), constitution_day (17 May), ascension_day, whit_sunday, whit_monday, christmas_day (25 December) and boxing_day (26 December). The device works out when each falls (from Easter) itself; gov.uk names the UK's.",
+    "en": "{holiday, select, new_year {New Year’s Day} maundy_thursday {Maundy Thursday} good_friday {Good Friday} easter_sunday {Easter Sunday} easter_monday {Easter Monday} labour_day {Labour Day} constitution_day {Constitution Day} ascension_day {Ascension Day} whit_sunday {Whit Sunday} whit_monday {Whit Monday} christmas_day {Christmas Day} boxing_day {Boxing Day} other {Public holiday}}",
+    "nb": "{holiday, select, new_year {Første nyttårsdag} maundy_thursday {Skjærtorsdag} good_friday {Langfredag} easter_sunday {1. påskedag} easter_monday {2. påskedag} labour_day {Arbeidernes dag} constitution_day {Grunnlovsdag} ascension_day {Kristi himmelfartsdag} whit_sunday {Første pinsedag} whit_monday {Andre pinsedag} christmas_day {1. juledag} boxing_day {2. juledag} other {Helligdag}}"
   },
   "notice.day.today": {
     "description": "The day something is on, when it's today; starts a line.",
