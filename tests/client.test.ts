@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   type Client,
+  connectParcelPageUrl,
   deviceSettingsPageUrl,
   getBackgroundImageUrl,
   getConfig,
@@ -92,6 +93,7 @@ test("a page's address takes its path and query parameters", () => {
     "https://example.com/device/a1b2%2Fc3?embed=1",
   );
   assert.equal(deviceSettingsPageUrl("https://example.com", { device_id: "a1b2c3d4e5f6" }).search, "");
+  assert.equal(connectParcelPageUrl("https://example.com/").href, "https://example.com/account/parcel");
 });
 
 test("an image's address is its digest on the devices' API", () => {

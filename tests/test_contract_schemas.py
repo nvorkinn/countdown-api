@@ -63,9 +63,11 @@ def test_each_routes_schemas_security_and_examples_exist(path: str, method: str)
     assert method in {"get", "post", "put", "delete"}
     # The devices' API, or the settings site's pages a touchscreen opens: registering through the login, and a
     # device's settings, which it shows in a frame.
-    assert path.startswith("/api/") or path in {"/register", "/device/{device_id}"}
+    pages = {"/register", "/device/{device_id}", "/account/parcel"}
+    assert path.startswith("/api/") or path in pages
     refs = _refs(operation)
-    assert refs
+    # A page may take nothing and answer only itself; every route of the API has a schema.
+    assert refs or path in pages
     assert all(ref.removeprefix("#/$defs/") in DEFS for ref in refs), refs
     for requirement in operation.get("security", []):
         assert set(requirement) <= set(contract()["securitySchemes"])
@@ -82,6 +84,7 @@ def test_every_example_is_some_keys_or_routes() -> None:
 def test_the_routes_are_what_they_were() -> None:
     # The routes the devices run on.
     assert sorted(OPERATIONS) == [
+        ("/account/parcel", "get"),
         ("/api/backgrounds/{digest}", "get"),
         ("/api/devices/account", "get"),
         ("/api/devices/arrivals", "get"),

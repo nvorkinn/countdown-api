@@ -1208,6 +1208,22 @@ paths:
                 type: string
         '404':
           description: No such device, or not one of the signed-in person's.
+  /account/parcel:
+    get:
+      operationId: connectParcelPage
+      summary: The page where the signed-in person saves their Parcel API key.
+      description: >-
+        On the settings site, behind the login: where to find the key in the person's own Parcel account, and a field
+        to paste it into, and nothing else of their account. A device whose owner's account has no key
+        (getAccount's parcel.linked) sends a phone here, as a code to scan; the key is saved to the account, for
+        every device they own, and never reaches a device. The page's own form posts are the page's.
+      responses:
+        '200':
+          description: The page.
+          content:
+            text/html:
+              schema:
+                type: string
 
 # How a device proves which it is on the routes above: the secret it registered with, as a bearer token.
 securitySchemes:
