@@ -2415,7 +2415,7 @@
       "required": ["parcel", "spotify"]
     },
     "AccountLink": {
-      "description": "One service of an account's (DeviceAccount), by whether it's linked; never the login or key itself.",
+      "description": "One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
       "type": "object",
       "properties": {
         "linked": {

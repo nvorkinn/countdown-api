@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class AccountLink(BaseModel):
     """The ``AccountLink`` object.
 
-    One service of an account's (DeviceAccount), by whether it's linked; never the login or key itself.
+    One of an account's services (DeviceAccount), by whether it's linked; never its login or key.
     """
 
     linked: bool = Field(description="Whether the account has the login or key the service needs.")
@@ -289,10 +289,10 @@ class DeviceAccount(BaseModel):
     """
 
     parcel: AccountLink = Field(
-        description="One service of an account's (DeviceAccount), by whether it's linked; never the login or key itself.",
+        description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
     )
     spotify: AccountLink = Field(
-        description="One service of an account's (DeviceAccount), by whether it's linked; never the login or key itself.",
+        description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
     )
 
 

@@ -772,7 +772,7 @@ export interface components {
       /** @description Spotify: linked while the account has signed in to Spotify on the Account page. */
       spotify: components["schemas"]["AccountLink"];
     };
-    /** @description One service of an account's (DeviceAccount), by whether it's linked; never the login or key itself. */
+    /** @description One of an account's services (DeviceAccount), by whether it's linked; never its login or key. */
     AccountLink: {
       /** @description Whether the account has the login or key the service needs. */
       linked: boolean;
