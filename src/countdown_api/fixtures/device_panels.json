@@ -432,7 +432,8 @@
               "expected_at": "2026-10-17T12:02:00Z",
               "platform": "Southbound - Platform 2",
               "mode": null,
-              "vehicle_id": "031"
+              "vehicle_id": "031",
+              "scheduled": false
             },
             {
               "line": "Northern",
@@ -440,7 +441,8 @@
               "expected_at": "2026-10-17T12:04:00Z",
               "platform": "Northbound - Platform 1",
               "mode": null,
-              "vehicle_id": "057"
+              "vehicle_id": "057",
+              "scheduled": false
             }
           ]
         }
@@ -462,7 +464,8 @@
               "expected_at": "2026-10-17T12:01:00Z",
               "platform": null,
               "mode": null,
-              "vehicle_id": "LTZ1234"
+              "vehicle_id": "LTZ1234",
+              "scheduled": false
             },
             {
               "line": "12",
@@ -470,7 +473,8 @@
               "expected_at": "2026-10-17T12:05:00Z",
               "platform": null,
               "mode": null,
-              "vehicle_id": "LX11AVC"
+              "vehicle_id": "LX11AVC",
+              "scheduled": false
             }
           ]
         }
@@ -492,7 +496,8 @@
               "expected_at": "2026-10-17T12:03:00Z",
               "platform": "A",
               "mode": "tram",
-              "vehicle_id": null
+              "vehicle_id": null,
+              "scheduled": true
             },
             {
               "line": "5",
@@ -500,7 +505,8 @@
               "expected_at": "2026-10-17T12:07:00Z",
               "platform": "2",
               "mode": "metro",
-              "vehicle_id": null
+              "vehicle_id": null,
+              "scheduled": false
             }
           ]
         }

@@ -749,6 +749,11 @@ export interface components {
        * @default null
        */
       mode: string | null;
+      /**
+       * @description Whether `expected_at` is only the timetable's time, with no live prediction behind it: an Entur call with `realtime` false, or a TfL train or bus from the line's timetable, which the TfL provider adds while TfL predicts nothing for that line at the stop (the first trains of the morning, before the line opens).
+       * @default false
+       */
+      scheduled: boolean;
     };
     /** @description The value of v1:weather:<weather key>: a place's Open-Meteo forecast, as fetched (timezone=auto, so its times are the place's local time), in a thin wrapper. */
     StoredForecast: {
