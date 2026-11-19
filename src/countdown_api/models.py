@@ -207,8 +207,8 @@ ConfigSection = Literal[
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
-type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style`,
-`display` and `lyrics`.
+type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `parcels`,
+`style`, `display` and `lyrics`.
 """
 
 
@@ -415,6 +415,48 @@ class DeviceFeedEventValueOption2(BaseModel):
     )
 
 
+ParcelStatus = Literal["ordered", "in_transit", "out_for_delivery", "delivered", "exception", "unknown"]
+"""Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees
+those codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the
+owner's attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping
+for.
+"""
+
+
+class Parcel(BaseModel):
+    """One active delivery in the owner's Parcel account."""
+
+    description: str = Field(description="What the owner called the delivery in Parcel (or what Parcel made of it).")
+    carrier: str = Field(description="The carrier's name, as Parcel gives it (Royal Mail, DHL, Amazon).")
+    tracking_number: str
+    status: ParcelStatus = Field(
+        description=(
+            "Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees those"
+            " codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the owner's "
+            "attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping for."
+        ),
+    )
+    expected_date: date | None = Field(
+        default=None,
+        description=(
+            "The day the carrier expects to deliver, in the owner's time zone, null when it hasn't said. Optional, so "
+            "a provider that doesn't know it can leave it out."
+        ),
+    )
+    updated_at: datetime = Field(description="When Parcel last saw the delivery change.")
+
+
+class ParcelList(BaseModel):
+    """The ``ParcelList`` object.
+
+    The value of v1:parcels:<device id>: the owner's active deliveries and when they were fetched.
+    Ordered by expected date, soonest first, those with none last; the panel does not have to sort them.
+    """
+
+    fetched_at: datetime
+    parcels: list[Parcel]
+
+
 class StoredBankHolidays(BaseModel):
     """The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK."""
 
@@ -591,6 +633,14 @@ class DeviceNotices(BaseModel):
         description=(
             "Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null "
             "for any other, or with none stored."
+        ),
+    )
+    parcels: ParcelList | None = Field(
+        default=None,
+        description=(
+            "The owner's parcels as the parcel provider stored them (v1:parcels:<device id>), already narrowed to "
+            "those the device's settings show, for a device with parcels switched on; null for any other, or with none"
+            " stored. The device makes its notices from them as the e-paper notice board does."
         ),
     )
 
@@ -829,48 +879,6 @@ MusicTopLists = dict[str, MusicTopRange]
 
 Pace = Annotated[str, Field(pattern="^[0-9]+$")]
 """Seconds, as decimal text (what SET of an integer stores)."""
-
-
-ParcelStatus = Literal["ordered", "in_transit", "out_for_delivery", "delivered", "exception", "unknown"]
-"""Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees
-those codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the
-owner's attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping
-for.
-"""
-
-
-class Parcel(BaseModel):
-    """One active delivery in the owner's Parcel account."""
-
-    description: str = Field(description="What the owner called the delivery in Parcel (or what Parcel made of it).")
-    carrier: str = Field(description="The carrier's name, as Parcel gives it (Royal Mail, DHL, Amazon).")
-    tracking_number: str
-    status: ParcelStatus = Field(
-        description=(
-            "Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees those"
-            " codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the owner's "
-            "attention (failed attempt, held, returned) and `unknown` a code the provider has no mapping for."
-        ),
-    )
-    expected_date: date | None = Field(
-        default=None,
-        description=(
-            "The day the carrier expects to deliver, in the owner's time zone, null when it hasn't said. Optional, so "
-            "a provider that doesn't know it can leave it out."
-        ),
-    )
-    updated_at: datetime = Field(description="When Parcel last saw the delivery change.")
-
-
-class ParcelList(BaseModel):
-    """The ``ParcelList`` object.
-
-    The value of v1:parcels:<device id>: the owner's active deliveries and when they were fetched.
-    Ordered by expected date, soonest first, those with none last; the panel does not have to sort them.
-    """
-
-    fetched_at: datetime
-    parcels: list[Parcel]
 
 
 ParcelsLinkStatus = Literal["ok", "invalid_key", "rate_limited"]
@@ -1129,7 +1137,8 @@ class TouchscreenConfig(ConfigBase):
     It draws itself from it, and saves it from its own settings, as its owner does on the settings site.
     It is English only and paired by token, so it has no language and no pairing code; it keeps its own
     time, so it has no time zone or interval; and it plays music itself, so it has no music or other
-    integrations' sections. Its Wi-Fi stays on the device, never here.
+    integrations' sections but parcels, whose notices join its notice board. Its Wi-Fi stays on the
+    device, never here.
     """
 
     type: Literal["touchscreen"]
@@ -1140,6 +1149,14 @@ class TouchscreenConfig(ConfigBase):
         description=(
             "How a touchscreen shows a song's synced lyrics. A config without it (one saved before it existed) shows "
             "them at medium size, lined up on the left."
+        ),
+    )
+    parcels: Parcels | None = Field(
+        default=None,
+        description=(
+            "Whether its notice board has the owner's parcels (DeviceNotices.parcels). The server always sends it; "
+            "null or left out is off, so a config from before it was added reads the same, and a whole save "
+            "(putConfig) that leaves it out keeps it as it is."
         ),
     )
 

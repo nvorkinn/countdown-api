@@ -179,7 +179,7 @@ export interface paths {
     };
     /**
      * The device's notices.
-     * @description What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions there, TfL's road disruptions, the Met Office's warnings near its postcode and the UK's bank holidays. Each as its provider stored it (DeviceNotices), not worded or judged as notices.
+     * @description What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions there, TfL's road disruptions, the Met Office's warnings near its postcode, the UK's bank holidays and, with parcels switched on, its owner's parcels. Each as its provider stored it (DeviceNotices), not worded or judged as notices.
      */
     get: operations["getNotices"];
     put?: never;
@@ -410,7 +410,7 @@ export interface components {
     /** @description A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and only then. getConfig answers it, and a save sends it back as If-Match. */
     ConfigVersion: string;
     /**
-     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style`, `display` and `lyrics`.
+     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display` and `lyrics`.
      * @enum {string}
      */
     ConfigSection:
@@ -625,13 +625,18 @@ export interface components {
       /** @description Which layout the screen is drawn in, or null for its size's default. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. */
       layout: components["schemas"]["Layout"] | null;
     };
-    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is English only and paired by token, so it has no language and no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections. Its Wi-Fi stays on the device, never here. */
+    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is English only and paired by token, so it has no language and no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections but parcels, whose notices join its notice board. Its Wi-Fi stays on the device, never here. */
     TouchscreenConfig: {
       /** @constant */
       readonly type: "touchscreen";
       style: components["schemas"]["TouchscreenStyle"];
       display: components["schemas"]["TouchscreenDisplay"];
       lyrics?: components["schemas"]["TouchscreenLyrics"];
+      /**
+       * @description Whether its notice board has the owner's parcels (DeviceNotices.parcels). The server always sends it; null or left out is off, so a config from before it was added reads the same, and a whole save (putConfig) that leaves it out keeps it as it is.
+       * @default null
+       */
+      parcels: components["schemas"]["Parcels"] | null;
     } & (WithRequired<components["schemas"]["ConfigBase"], "type"> & {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -1000,6 +1005,11 @@ export interface components {
       bank_holidays: components["schemas"]["StoredBankHolidays"] | null;
       /** @description Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null for any other, or with none stored. */
       tfl_network: components["schemas"]["StoredNetworkStatus"] | null;
+      /**
+       * @description The owner's parcels as the parcel provider stored them (v1:parcels:<device id>), already narrowed to those the device's settings show, for a device with parcels switched on; null for any other, or with none stored. The device makes its notices from them as the e-paper notice board does.
+       * @default null
+       */
+      parcels: components["schemas"]["ParcelList"] | null;
     };
     /** @description A TfL stop's line statuses and station disruptions, each null with none stored. */
     TflStopNotices: {

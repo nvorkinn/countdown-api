@@ -1,5 +1,5 @@
 {
-  "about": "A London touchscreen's config, and what getWeather, getArrivals and getNotices answer it from the store's values in weather.json, background.json, departures.json, tfl_notices.json, met_office.json, bank_holidays.json and tfl_network.json. Its bus stop 490000123W has no notices stored, so its lines and stations are null.",
+  "about": "A London touchscreen's config, and what getWeather, getArrivals and getNotices answer it from the store's values in weather.json, background.json, departures.json, tfl_notices.json, met_office.json, bank_holidays.json, tfl_network.json and parcels.json (it has parcels switched on). Its bus stop 490000123W has no notices stored, so its lines and stations are null.",
   "device_id": "0a1b2c3d4e60",
   "config": {
     "device_id": "0a1b2c3d4e60",
@@ -42,6 +42,9 @@
     "lyrics": {
       "size": "large",
       "align": "center"
+    },
+    "parcels": {
+      "enabled": true
     }
   },
   "weather": {
@@ -1032,6 +1035,50 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    "parcels": {
+      "fetched_at": "2026-10-17T12:00:00+00:00",
+      "parcels": [
+        {
+          "description": "Running shoes",
+          "carrier": "DHL",
+          "tracking_number": "JD0000000000000001",
+          "status": "out_for_delivery",
+          "expected_date": "2026-10-17",
+          "updated_at": "2026-10-17T08:41:00+00:00"
+        },
+        {
+          "description": "Book",
+          "carrier": "Evri",
+          "tracking_number": "H00000000000000002",
+          "status": "delivered",
+          "expected_date": "2026-10-17",
+          "updated_at": "2026-10-17T10:12:00+00:00"
+        },
+        {
+          "description": "Desk lamp",
+          "carrier": "Royal Mail",
+          "tracking_number": "AB000000001GB",
+          "status": "in_transit",
+          "expected_date": "2026-10-19",
+          "updated_at": "2026-10-16T17:05:00+00:00"
+        },
+        {
+          "description": "Phone case",
+          "carrier": "Amazon",
+          "tracking_number": "TBA000000000001",
+          "status": "exception",
+          "expected_date": null,
+          "updated_at": "2026-10-16T09:30:00+00:00"
+        },
+        {
+          "description": "Gift",
+          "carrier": "Parcelforce",
+          "tracking_number": "PF000000001",
+          "status": "ordered",
+          "updated_at": "2026-10-17T07:00:00+00:00"
         }
       ]
     }

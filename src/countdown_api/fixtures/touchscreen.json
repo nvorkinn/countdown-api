@@ -49,6 +49,9 @@
     "lyrics": {
       "size": "large",
       "align": "center"
+    },
+    "parcels": {
+      "enabled": false
     }
   },
   "save": {
@@ -84,6 +87,9 @@
     "lyrics": {
       "size": "large",
       "align": "center"
+    },
+    "parcels": {
+      "enabled": false
     }
   },
   "spotify_token": {
@@ -142,6 +148,9 @@
       "lyrics": {
         "size": "large",
         "align": "center"
+      },
+      "parcels": {
+        "enabled": false
       }
     }
   }

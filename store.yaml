@@ -25,7 +25,7 @@ sources:
   glow: Device ids with a Glowmarkt account the broker's glow provider signs in with.
   spotify: Device ids with Spotify (or Apple Music) switched on.
   developer: Device ids with the developer panel switched on.
-  parcel: Device ids with the parcels panel switched on, so a Parcel API key saved.
+  parcel: Device ids with parcels switched on (an e-paper screen's or a touchscreen's), so a Parcel API key saved.
   postcode: >-
     The notice board's place: every screen's postcode in the broker's canonical form ("SW1A 1AA", or "0150" for a
     Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings,
@@ -227,7 +227,7 @@ keys:
       parcel's last known state rather than nothing, and `fetched_at` says how old it is. Rewritten (and so renewed) on
       every poll that gets an answer.
     written_by: the parcel provider
-    read_by: the parcels panel and its parcel notices
+    read_by: the parcels panel and its parcel notices, the broker's `getNotices`
     examples: [parcels.json]
     description: >-
       A device's active deliveries from the Parcel app, in the owner's own Parcel account, normalised to ParcelList.
@@ -851,8 +851,9 @@ paths:
       summary: The device's notices.
       description: >-
         What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions
-        there, TfL's road disruptions, the Met Office's warnings near its postcode and the UK's bank holidays. Each as
-        its provider stored it (DeviceNotices), not worded or judged as notices.
+        there, TfL's road disruptions, the Met Office's warnings near its postcode, the UK's bank holidays and, with
+        parcels switched on, its owner's parcels. Each as its provider stored it (DeviceNotices), not worded or judged
+        as notices.
       security:
       - deviceSecret: []
       responses:
@@ -1380,7 +1381,8 @@ $defs:
     description: >-
       A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the
       server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a
-      touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `style`, `display` and `lyrics`.
+      touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display` and
+      `lyrics`.
   SearchResult:
     description: >-
       One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over
@@ -1833,7 +1835,8 @@ $defs:
       A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own
       settings, as its owner does on the settings site. It is English only and paired by token, so it has no language
       and no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it
-      has no music or other integrations' sections. Its Wi-Fi stays on the device, never here.
+      has no music or other integrations' sections but parcels, whose notices join its notice board. Its Wi-Fi stays
+      on the device, never here.
     allOf:
     - $ref: '#/$defs/ConfigBase'
     type: object
@@ -1847,6 +1850,15 @@ $defs:
         $ref: '#/$defs/TouchscreenDisplay'
       lyrics:
         $ref: '#/$defs/TouchscreenLyrics'
+      parcels:
+        anyOf:
+        - $ref: '#/$defs/Parcels'
+        - type: 'null'
+        default: null
+        description: >-
+          Whether its notice board has the owner's parcels (DeviceNotices.parcels). The server always sends it; null
+          or left out is off, so a config from before it was added reads the same, and a whole save (putConfig) that
+          leaves it out keeps it as it is.
     required:
     - type
     - style
@@ -2590,6 +2602,15 @@ $defs:
         description: >-
           Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null for
           any other, or with none stored.
+      parcels:
+        anyOf:
+        - $ref: '#/$defs/ParcelList'
+        - type: 'null'
+        default: null
+        description: >-
+          The owner's parcels as the parcel provider stored them (v1:parcels:<device id>), already narrowed to those
+          the device's settings show, for a device with parcels switched on; null for any other, or with none stored.
+          The device makes its notices from them as the e-paper notice board does.
     required:
     - postcode
     - country
