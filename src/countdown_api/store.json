@@ -1018,6 +1018,37 @@
         "x-examples": ["touchscreen.json"]
       }
     },
+    "/api/devices/account": {
+      "get": {
+        "operationId": "getAccount",
+        "summary": "What the owner's account has linked.",
+        "description": "Which services the account that owns the device has linked (DeviceAccount), so a device with a settings panel of its own can tell a service that's switched off from one that was never set up, and say how to set it up. The links are the account's, not the device's: one covers every device the owner has, they're made on the settings site's Account page, and they aren't part of the device's config, which has only the device's own switches (a service's `enabled`). Only whether each is there: no login, key or token is ever sent.",
+        "security": [
+          {
+            "deviceSecret": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The owner's account's links.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/$defs/DeviceAccount"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A missing or unknown secret."
+          },
+          "409": {
+            "description": "The device isn't paired yet, so it has no owner."
+          }
+        },
+        "x-examples": ["touchscreen.json"]
+      }
+    },
     "/api/devices/weather": {
       "get": {
         "operationId": "getWeather",
@@ -2367,6 +2398,32 @@
         }
       },
       "required": ["access_token", "token_type", "expires_in", "scope"]
+    },
+    "DeviceAccount": {
+      "description": "The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink.",
+      "type": "object",
+      "properties": {
+        "parcel": {
+          "$ref": "#/$defs/AccountLink",
+          "description": "Parcel: linked while the account has a Parcel API key saved, which the parcel provider reads the owner's deliveries with."
+        },
+        "spotify": {
+          "$ref": "#/$defs/AccountLink",
+          "description": "Spotify: linked while the account has signed in to Spotify on the Account page."
+        }
+      },
+      "required": ["parcel", "spotify"]
+    },
+    "AccountLink": {
+      "description": "One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
+      "type": "object",
+      "properties": {
+        "linked": {
+          "type": "boolean",
+          "description": "Whether the account has the login or key the service needs."
+        }
+      },
+      "required": ["linked"]
     },
     "StopDepartures": {
       "description": "The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the providers' own shape (TfL's and Entur's answers mapped to one).",

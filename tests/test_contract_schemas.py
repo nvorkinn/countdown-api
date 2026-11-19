@@ -83,6 +83,7 @@ def test_the_routes_are_what_they_were() -> None:
     # The routes the devices run on.
     assert sorted(OPERATIONS) == [
         ("/api/backgrounds/{digest}", "get"),
+        ("/api/devices/account", "get"),
         ("/api/devices/arrivals", "get"),
         ("/api/devices/config", "get"),
         ("/api/devices/config", "put"),

@@ -150,6 +150,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/account": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the owner's account has linked.
+     * @description Which services the account that owns the device has linked (DeviceAccount), so a device with a settings panel of its own can tell a service that's switched off from one that was never set up, and say how to set it up. The links are the account's, not the device's: one covers every device the owner has, they're made on the settings site's Account page, and they aren't part of the device's config, which has only the device's own switches (a service's `enabled`). Only whether each is there: no login, key or token is ever sent.
+     */
+    get: operations["getAccount"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/weather": {
     parameters: {
       query?: never;
@@ -745,6 +765,18 @@ export interface components {
       /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
       scope: string;
     };
+    /** @description The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink. */
+    DeviceAccount: {
+      /** @description Parcel: linked while the account has a Parcel API key saved, which the parcel provider reads the owner's deliveries with. */
+      parcel: components["schemas"]["AccountLink"];
+      /** @description Spotify: linked while the account has signed in to Spotify on the Account page. */
+      spotify: components["schemas"]["AccountLink"];
+    };
+    /** @description One of an account's services (DeviceAccount), by whether it's linked; never its login or key. */
+    AccountLink: {
+      /** @description Whether the account has the login or key the service needs. */
+      linked: boolean;
+    };
     /** @description The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the providers' own shape (TfL's and Entur's answers mapped to one). */
     StopDepartures: {
       /** Format: date-time */
@@ -1196,6 +1228,8 @@ export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
+export type DeviceAccount = components["schemas"]["DeviceAccount"];
+export type AccountLink = components["schemas"]["AccountLink"];
 export type StopDepartures = components["schemas"]["StopDepartures"];
 export type Departure = components["schemas"]["Departure"];
 export type StoredForecast = components["schemas"]["StoredForecast"];
@@ -1688,6 +1722,40 @@ export interface operations {
       };
       /** @description Spotify couldn't be reached, or refused to renew the token. */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The owner's account's links. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeviceAccount"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no owner. */
+      409: {
         headers: {
           [name: string]: unknown;
         };

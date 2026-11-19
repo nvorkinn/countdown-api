@@ -8,6 +8,16 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
+class AccountLink(BaseModel):
+    """The ``AccountLink`` object.
+
+    One of an account's services (DeviceAccount), by whether it's linked; never its login or key.
+    """
+
+    linked: bool = Field(description="Whether the account has the login or key the service needs.")
+
+
 AlbumArt = bytes
 """An image file's own bytes (a JPEG, as the music service serves it)."""
 
@@ -268,6 +278,21 @@ class Developer(BaseModel):
             "Whether the screen shows the developer panel. Its data comes from the store, which the broker's developer"
             " provider fills with the GitHub token it holds, so no token is sent here."
         ),
+    )
+
+
+class DeviceAccount(BaseModel):
+    """The ``DeviceAccount`` object.
+
+    The account that owns a device, as the device is told of it (getAccount): which of the services a
+    device shows it has linked. A service per field, each an AccountLink.
+    """
+
+    parcel: AccountLink = Field(
+        description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
+    )
+    spotify: AccountLink = Field(
+        description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
     )
 
 
