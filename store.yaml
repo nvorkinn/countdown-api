@@ -397,6 +397,21 @@ keys:
       The status of every Tube line and the Elizabeth line, Good Service too, as TfL's
       /Line/Mode/tube,elizabeth-line/Status answers it: the network at a glance, for a touchscreen with nothing on its
       notice board.
+  entur_situations:
+    pattern: "v1:notices:entur:{stop_id}"
+    params:
+      stop_id: an Entur stop place's or quay's id from v1:sub:entur ("NSR:StopPlace:58381", "NSR:Quay:7333").
+    redis: string
+    value: StoredEnturSituations
+    encoding: json
+    ttl_s: 900
+    written_by: countdown's Entur situations provider, for every stop in v1:sub:entur
+    read_by: the notice board, and the broker's getNotices
+    examples: [entur_situations.json]
+    description: >-
+      The situations (Entur's disruption messages, every operator's) at an Entur stop: on the stop itself, on every
+      line serving it, and on the next departures leaving it, as Entur's journey planner answers its query. A stop
+      Entur doesn't know is written too, as Entur answers it, so it isn't taken for a missing key.
   met_office:
     pattern: "v1:notices:met-office:{postcode}"
     params:
@@ -2445,6 +2460,26 @@ $defs:
     type: string
     format: binary
     description: A background image file's own bytes (a JPEG).
+  StoredEnturSituations:
+    description: >-
+      The value of v1:notices:entur:<stop id>: Entur's GraphQL `data` for the stop as it came, under Entur's own
+      names: {"stopPlace": {"name", "situations", "quays": [{"lines": [{"id", "publicCode", "transportMode",
+      "situations"}]}], "estimatedCalls": [{"serviceJourney": {"line": {...}}, "situations"}]}} ("quay" in place of
+      "stopPlace", with its "lines", for a quay), each situation's "id", "summary" and "description" (texts with
+      their "language"), "validityPeriod" ("startTime", "endTime"), "severity" and "reportType".
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      stop_id:
+        type: string
+      data:
+        type: object
+    required:
+    - fetched_at
+    - stop_id
+    - data
   StoredBankHolidays:
     description: The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK.
     type: object
@@ -2582,8 +2617,8 @@ $defs:
     description: >-
       A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the
       notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL
-      stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK one), as is one
-      with nothing stored.
+      stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads and the bank holidays for one whose
+      postcode isn't a UK one), as is one with nothing stored.
     type: object
     properties:
       postcode:
@@ -2624,6 +2659,12 @@ $defs:
         description: >-
           Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null for
           any other, or with none stored.
+      entur_stops:
+        type: array
+        default: []
+        items:
+          $ref: '#/$defs/EnturStopNotices'
+        description: Each of the device's Entur stops, in the owner's order.
       parcels:
         anyOf:
         - $ref: '#/$defs/ParcelList'
@@ -2641,6 +2682,19 @@ $defs:
     - met_office
     - bank_holidays
     - tfl_network
+  EnturStopNotices:
+    description: An Entur stop's situations, null with none stored.
+    type: object
+    properties:
+      stop_id:
+        type: string
+      situations:
+        anyOf:
+        - $ref: '#/$defs/StoredEnturSituations'
+        - type: 'null'
+    required:
+    - stop_id
+    - situations
   TflStopNotices:
     description: A TfL stop's line statuses and station disruptions, each null with none stored.
     type: object

@@ -163,6 +163,8 @@ def test_the_keys_are_what_they_were() -> None:
     assert keys.met_office("0150") == "v1:notices:met-office:0150"
     assert keys.BANK_HOLIDAYS == "v1:notices:bank-holidays"
     assert (keys.TFL_NETWORK, keys.TFL_NETWORK_TTL_S) == ("v1:notices:tfl-network", 600)
+    assert keys.entur_situations("NSR:Quay:7333") == "v1:notices:entur:NSR:Quay:7333"
+    assert keys.ENTUR_SITUATIONS_TTL_S == 900
     assert (keys.DEPARTURES_TTL_S, keys.WEATHER_TTL_S, keys.TFL_LINE_STATUS_TTL_S) == (120, 1_800, 600)
     assert (keys.TFL_STATIONS_TTL_S, keys.TFL_ROADS_TTL_S, keys.MET_OFFICE_TTL_S) == (1_800, 1_800, 1_800)
     assert keys.BANK_HOLIDAYS_TTL_S == 604_800

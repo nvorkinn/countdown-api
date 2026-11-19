@@ -40,16 +40,17 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:notices:tfl-stations:<stop id>` | string, JSON | `StoredStationDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
 | `v1:notices:tfl-roads:<place>` | string, JSON | `StoredRoadDisruptions` | 1,800 s | countdown's TfL notices provider | the notice board, the broker's `getNotices` |
 | `v1:notices:tfl-network` | string, JSON | `StoredNetworkStatus` | 600 s | countdown's TfL notices provider | the broker's `getNotices` |
+| `v1:notices:entur:<stop id>` | string, JSON | `StoredEnturSituations` | 900 s | countdown's Entur situations provider | the notice board, the broker's `getNotices` |
 | `v1:notices:met-office:<place>` | string, JSON | `StoredMetOfficeWarnings` | 1,800 s | countdown's Met Office provider | the notice board, the broker's `getNotices` |
 | `v1:notices:bank-holidays` | string, JSON | `StoredBankHolidays` | 604,800 s | countdown's bank holidays provider | the notice board, the broker's `getNotices` |
 
 `store.yaml` says more about each (its `keys`), and about the subscription sources (`sources`). The schemas (its
 `$defs`) are JSON Schema 2020-12. The values that are the upstream service's own answer (Glowmarkt's readings,
 Spotify's queue and top lists, the GitHub summary) are pinned as their wrapper, with the answer itself left open: the
-renderer reads those with its own models of the service's answers; so are TfL's answers in the TfL notices and
-Open-Meteo's forecast in the weather. A `<place>` is a postcode without its space, in capitals (`SE173LL`): the key
+renderer reads those with its own models of the service's answers; so are TfL's answers in the TfL notices, Entur's in
+its situations, and Open-Meteo's forecast in the weather. A `<place>` is a postcode without its space, in capitals (`SE173LL`): the key
 builders take the postcode as the broker writes it (`SE17 3LL`) and make the place themselves. Keys only one side
-uses (the render lease, and countdown's other providers' data: floods, Entur's situations, MET Norway's warnings, the
+uses (the render lease, and countdown's other providers' data: floods, MET Norway's warnings, the
 postcodes' places) aren't here: they are that side's own, until the other side reads them too.
 
 The enqueue script, [`lua/enqueue.lua`](lua/enqueue.lua), is the one way anything queues a render: `SET` the queued
