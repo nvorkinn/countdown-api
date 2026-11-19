@@ -2851,7 +2851,7 @@
             }
           ],
           "default": null,
-          "description": "The local authority (\"Southwark\", in Scotland the council area), or a Norwegian municipality (\"Oslo\")."
+          "description": "The local authority (\"Southwark\"; in Scotland, the council area), or the municipality in Norway."
         }
       },
       "required": ["postcode", "latitude", "longitude", "country"]

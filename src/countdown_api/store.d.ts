@@ -989,7 +989,7 @@ export interface components {
        */
       region: string | null;
       /**
-       * @description The local authority ("Southwark", in Scotland the council area), or a Norwegian municipality ("Oslo").
+       * @description The local authority ("Southwark"; in Scotland, the council area), or the municipality in Norway.
        * @default null
        */
       admin_district: string | null;

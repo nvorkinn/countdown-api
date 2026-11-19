@@ -1080,7 +1080,7 @@ class Postcode(BaseModel):
     )
     admin_district: str | None = Field(
         default=None,
-        description='The local authority ("Southwark", in Scotland the council area), or a Norwegian municipality ("Oslo").',
+        description='The local authority ("Southwark"; in Scotland, the council area), or the municipality in Norway.',
     )
 
 
