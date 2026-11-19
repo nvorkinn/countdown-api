@@ -65,7 +65,9 @@
       "enabled": false
     },
     "parcels": {
-      "enabled": false
+      "enabled": false,
+      "days_ahead": null,
+      "kept_hours": 4
     },
     "style": {
       "orientation": "horizontal",

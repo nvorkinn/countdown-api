@@ -44,7 +44,9 @@
       "align": "center"
     },
     "parcels": {
-      "enabled": true
+      "enabled": true,
+      "days_ahead": null,
+      "kept_hours": 4
     }
   },
   "weather": {
