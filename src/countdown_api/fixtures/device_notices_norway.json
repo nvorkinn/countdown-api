@@ -1,0 +1,480 @@
+{
+  "about": "An Oslo touchscreen's notices (getNotices), for the postcode 0150 and the Entur stop in entur_situations.json: MET Norway's warnings from metalerts.json narrowed to the three whose area covers 0150's location in location.json (wind and ice for Oslo and Akershus, rain for Bergen and Oslo), in both answers alike, each answer's other members as they came; the Skagerrak, Troms and Eastern Norway warnings are left out. Its UK sources (TfL's, the Met Office's, the flood warnings, the bank holidays and the Tube's status) are null, as its postcode is a Norwegian one, and it has no parcels switched on.",
+  "postcode": "0150",
+  "location": "v1:location:0150",
+  "notices": {
+    "postcode": "0150",
+    "country": "NO",
+    "tfl_stops": [],
+    "tfl_roads": null,
+    "met_office": null,
+    "bank_holidays": null,
+    "tfl_network": null,
+    "entur_stops": [
+      {
+        "stop_id": "NSR:StopPlace:58366",
+        "situations": {
+          "fetched_at": "2026-11-19T08:30:00Z",
+          "stop_id": "NSR:StopPlace:58366",
+          "data": {
+            "stopPlace": {
+              "name": "Jernbanetorget",
+              "situations": [],
+              "quays": [
+                {
+                  "lines": [
+                    {
+                      "id": "RUT:Line:74",
+                      "publicCode": "74",
+                      "transportMode": "bus",
+                      "situations": [
+                        {
+                          "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NjQzOC0x",
+                          "summary": [
+                            {
+                              "value": "Forsinkelser på linje 74",
+                              "language": "no"
+                            },
+                            {
+                              "value": "Delays on line 74",
+                              "language": "en"
+                            }
+                          ],
+                          "description": [
+                            {
+                              "value": "Det er forsinkelser på linje 74. Dette skyldes uforutsette forhold.",
+                              "language": "no"
+                            },
+                            {
+                              "value": "There are delays on line 74. This is due to unforeseen circumstances.",
+                              "language": "en"
+                            }
+                          ],
+                          "validityPeriod": {
+                            "startTime": "2026-11-19T08:41:00+01:00",
+                            "endTime": "2026-11-19T10:00:00+01:00"
+                          },
+                          "severity": "normal",
+                          "reportType": "incident"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "lines": [
+                    {
+                      "id": "RUT:Line:17",
+                      "publicCode": "17",
+                      "transportMode": "tram",
+                      "situations": []
+                    }
+                  ]
+                },
+                {
+                  "lines": [
+                    {
+                      "id": "RUT:Line:1",
+                      "publicCode": "1",
+                      "transportMode": "metro",
+                      "situations": [
+                        {
+                          "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NDQwNS0x",
+                          "summary": [
+                            {
+                              "value": "T-banen stenger 19.-22. november",
+                              "language": "no"
+                            },
+                            {
+                              "value": "The Metro will be closed from November 19.–22.",
+                              "language": "en"
+                            }
+                          ],
+                          "description": [
+                            {
+                              "value": "T-banen er stengt på nesten alle strekninger 19. - 22. november. Se ruter.no for mer informasjon.",
+                              "language": "no"
+                            },
+                            {
+                              "value": "The Metro is closed on almost all lines from November 19–22. See ruter.no for more information.",
+                              "language": "en"
+                            }
+                          ],
+                          "validityPeriod": {
+                            "startTime": "2026-11-02T07:42:00+01:00",
+                            "endTime": "2026-11-23T04:00:00+01:00"
+                          },
+                          "severity": "normal",
+                          "reportType": "incident"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "RUT:Line:2",
+                      "publicCode": "2",
+                      "transportMode": "metro",
+                      "situations": [
+                        {
+                          "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NDQwNS0y",
+                          "summary": [
+                            {
+                              "value": "T-banen stenger 19.-22. november",
+                              "language": "no"
+                            },
+                            {
+                              "value": "The Metro will be closed from November 19.–22.",
+                              "language": "en"
+                            }
+                          ],
+                          "description": [
+                            {
+                              "value": "T-banen er stengt på nesten alle strekninger 19. - 22. november. Se ruter.no for mer informasjon.",
+                              "language": "no"
+                            },
+                            {
+                              "value": "The Metro is closed on almost all lines from November 19–22. See ruter.no for more information.",
+                              "language": "en"
+                            }
+                          ],
+                          "validityPeriod": {
+                            "startTime": "2026-11-02T07:42:00+01:00",
+                            "endTime": "2026-11-23T04:00:00+01:00"
+                          },
+                          "severity": "normal",
+                          "reportType": "incident"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "estimatedCalls": [
+                {
+                  "serviceJourney": {
+                    "line": {
+                      "id": "RUT:Line:74",
+                      "publicCode": "74",
+                      "transportMode": "bus"
+                    }
+                  },
+                  "situations": [
+                    {
+                      "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NjQzOC0x",
+                      "summary": [
+                        {
+                          "value": "Forsinkelser på linje 74",
+                          "language": "no"
+                        },
+                        {
+                          "value": "Delays on line 74",
+                          "language": "en"
+                        }
+                      ],
+                      "description": [
+                        {
+                          "value": "Det er forsinkelser på linje 74. Dette skyldes uforutsette forhold.",
+                          "language": "no"
+                        },
+                        {
+                          "value": "There are delays on line 74. This is due to unforeseen circumstances.",
+                          "language": "en"
+                        }
+                      ],
+                      "validityPeriod": {
+                        "startTime": "2026-11-19T08:41:00+01:00",
+                        "endTime": "2026-11-19T10:00:00+01:00"
+                      },
+                      "severity": "normal",
+                      "reportType": "incident"
+                    }
+                  ]
+                },
+                {
+                  "serviceJourney": {
+                    "line": {
+                      "id": "RUT:Line:17",
+                      "publicCode": "17",
+                      "transportMode": "tram"
+                    }
+                  },
+                  "situations": []
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parcels": null,
+    "floods": null,
+    "metalerts": {
+      "fetched_at": "2026-10-16T12:00:00+00:00",
+      "no": {
+        "features": [
+          {
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [[10.31, 59.62], [11.42, 59.66], [11.37, 60.21], [10.72, 60.29], [10.28, 60.02], [10.31, 59.62]]
+              ]
+            },
+            "properties": {
+              "altitude_above_sea_level": 0,
+              "area": "Oslo og Akershus",
+              "awarenessSeriousness": "Utfordrende situasjon",
+              "awareness_level": "3; orange; Severe",
+              "awareness_type": "1; Wind",
+              "ceiling_above_sea_level": 274,
+              "certainty": "Likely",
+              "contact": "https://www.met.no/kontakt-oss",
+              "county": ["03", "32"],
+              "event": "wind",
+              "eventAwarenessName": "Vind",
+              "eventEndingTime": "2026-10-16T19:00:00+00:00",
+              "geographicDomain": "land",
+              "id": "2.49.0.1.578.0.20261016050512.001",
+              "municipality": [],
+              "resources": [
+                {
+                  "description": "CAP file",
+                  "mimeType": "application/xml",
+                  "uri": "https://api.met.no/weatherapi/metalerts/2.0/current?cap=2.49.0.1.578.0.20261016050512.001"
+                }
+              ],
+              "riskMatrixColor": "Orange",
+              "severity": "Severe",
+              "status": "Actual",
+              "title": "Vind, oransje nivå, Oslo og Akershus, 16 oktober 08:00 UTC til 16 oktober 21:00 UTC.",
+              "type": "Alert",
+              "web": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"
+            },
+            "type": "Feature",
+            "when": {
+              "interval": ["2026-10-16T06:00:00+00:00", "2026-10-16T19:00:00+00:00"]
+            }
+          },
+          {
+            "geometry": {
+              "type": "MultiPolygon",
+              "coordinates": [
+                [[[5.02, 60.08], [5.71, 60.11], [5.62, 60.69], [4.98, 60.52], [5.02, 60.08]]],
+                [[[10.52, 59.81], [10.97, 59.83], [10.95, 60.07], [10.55, 60.05], [10.52, 59.81]]]
+              ]
+            },
+            "properties": {
+              "altitude_above_sea_level": 0,
+              "area": "Bergen og Oslo",
+              "awarenessSeriousness": "Utfordrende situasjon",
+              "awareness_level": "2; yellow; Moderate",
+              "awareness_type": "10; Rain",
+              "ceiling_above_sea_level": 274,
+              "certainty": "Likely",
+              "contact": "https://www.met.no/kontakt-oss",
+              "county": ["46", "03"],
+              "event": "rain",
+              "eventAwarenessName": "Regn",
+              "eventEndingTime": "2026-10-17T06:00:00+00:00",
+              "geographicDomain": "land",
+              "id": "2.49.0.1.578.0.20261016051033.002",
+              "municipality": [],
+              "resources": [
+                {
+                  "description": "CAP file",
+                  "mimeType": "application/xml",
+                  "uri": "https://api.met.no/weatherapi/metalerts/2.0/current?cap=2.49.0.1.578.0.20261016051033.002"
+                }
+              ],
+              "severity": "Moderate",
+              "status": "Actual",
+              "title": "Regn, gult nivå, Bergen og Oslo, 16 oktober 08:00 UTC til 17 oktober 08:00 UTC.",
+              "type": "Alert",
+              "web": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"
+            },
+            "type": "Feature",
+            "when": {
+              "interval": ["2026-10-16T06:00:00+00:00", "2026-10-17T06:00:00+00:00"]
+            }
+          },
+          {
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [[10.31, 59.62], [11.42, 59.66], [11.37, 60.21], [10.72, 60.29], [10.28, 60.02], [10.31, 59.62]]
+              ]
+            },
+            "properties": {
+              "altitude_above_sea_level": 0,
+              "area": "Oslo og Akershus",
+              "awarenessSeriousness": "Utfordrende situasjon",
+              "awareness_level": "2; yellow; Moderate",
+              "awareness_type": "5; Ice",
+              "ceiling_above_sea_level": 274,
+              "certainty": "Likely",
+              "contact": "https://www.met.no/kontakt-oss",
+              "county": ["03", "32"],
+              "event": "icing",
+              "eventAwarenessName": "Ising",
+              "eventEndingTime": "2026-10-15T09:00:00+00:00",
+              "geographicDomain": "land",
+              "id": "2.49.0.1.578.0.20261014181500.003",
+              "municipality": [],
+              "resources": [
+                {
+                  "description": "CAP file",
+                  "mimeType": "application/xml",
+                  "uri": "https://api.met.no/weatherapi/metalerts/2.0/current?cap=2.49.0.1.578.0.20261014181500.003"
+                }
+              ],
+              "riskMatrixColor": "Yellow",
+              "severity": "Moderate",
+              "status": "Actual",
+              "title": "Ising, gult nivå, Oslo og Akershus, 15 oktober 08:00 UTC til 15 oktober 11:00 UTC.",
+              "type": "Alert",
+              "web": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"
+            },
+            "type": "Feature",
+            "when": {
+              "interval": ["2026-10-15T06:00:00+00:00", "2026-10-15T09:00:00+00:00"]
+            }
+          }
+        ],
+        "lang": "no",
+        "lastChange": "2026-10-16T07:00:00+00:00",
+        "type": "FeatureCollection"
+      },
+      "en": {
+        "features": [
+          {
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [[10.31, 59.62], [11.42, 59.66], [11.37, 60.21], [10.72, 60.29], [10.28, 60.02], [10.31, 59.62]]
+              ]
+            },
+            "properties": {
+              "altitude_above_sea_level": 0,
+              "area": "Oslo and Akershus",
+              "awarenessSeriousness": "Challenging situation",
+              "awareness_level": "3; orange; Severe",
+              "awareness_type": "1; Wind",
+              "ceiling_above_sea_level": 274,
+              "certainty": "Likely",
+              "contact": "https://www.met.no/kontakt-oss",
+              "county": ["03", "32"],
+              "event": "wind",
+              "eventAwarenessName": "Wind",
+              "eventEndingTime": "2026-10-16T19:00:00+00:00",
+              "geographicDomain": "land",
+              "id": "2.49.0.1.578.0.20261016050512.001",
+              "municipality": [],
+              "resources": [
+                {
+                  "description": "CAP file",
+                  "mimeType": "application/xml",
+                  "uri": "https://api.met.no/weatherapi/metalerts/2.0/current?cap=2.49.0.1.578.0.20261016050512.001"
+                }
+              ],
+              "riskMatrixColor": "Orange",
+              "severity": "Severe",
+              "status": "Actual",
+              "title": "Wind, orange level, Oslo and Akershus, 16 October 08:00 UTC to 16 October 21:00 UTC.",
+              "type": "Alert",
+              "web": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"
+            },
+            "type": "Feature",
+            "when": {
+              "interval": ["2026-10-16T06:00:00+00:00", "2026-10-16T19:00:00+00:00"]
+            }
+          },
+          {
+            "geometry": {
+              "type": "MultiPolygon",
+              "coordinates": [
+                [[[5.02, 60.08], [5.71, 60.11], [5.62, 60.69], [4.98, 60.52], [5.02, 60.08]]],
+                [[[10.52, 59.81], [10.97, 59.83], [10.95, 60.07], [10.55, 60.05], [10.52, 59.81]]]
+              ]
+            },
+            "properties": {
+              "altitude_above_sea_level": 0,
+              "area": "Bergen and Oslo",
+              "awarenessSeriousness": "Challenging situation",
+              "awareness_level": "2; yellow; Moderate",
+              "awareness_type": "10; Rain",
+              "ceiling_above_sea_level": 274,
+              "certainty": "Likely",
+              "contact": "https://www.met.no/kontakt-oss",
+              "county": ["46", "03"],
+              "event": "rain",
+              "eventAwarenessName": "Rain",
+              "eventEndingTime": "2026-10-17T06:00:00+00:00",
+              "geographicDomain": "land",
+              "id": "2.49.0.1.578.0.20261016051033.002",
+              "municipality": [],
+              "resources": [
+                {
+                  "description": "CAP file",
+                  "mimeType": "application/xml",
+                  "uri": "https://api.met.no/weatherapi/metalerts/2.0/current?cap=2.49.0.1.578.0.20261016051033.002"
+                }
+              ],
+              "severity": "Moderate",
+              "status": "Actual",
+              "title": "Rain, yellow level, Bergen and Oslo, 16 October 08:00 UTC to 17 October 08:00 UTC.",
+              "type": "Alert",
+              "web": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"
+            },
+            "type": "Feature",
+            "when": {
+              "interval": ["2026-10-16T06:00:00+00:00", "2026-10-17T06:00:00+00:00"]
+            }
+          },
+          {
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [[10.31, 59.62], [11.42, 59.66], [11.37, 60.21], [10.72, 60.29], [10.28, 60.02], [10.31, 59.62]]
+              ]
+            },
+            "properties": {
+              "altitude_above_sea_level": 0,
+              "area": "Oslo and Akershus",
+              "awarenessSeriousness": "Challenging situation",
+              "awareness_level": "2; yellow; Moderate",
+              "awareness_type": "5; Ice",
+              "ceiling_above_sea_level": 274,
+              "certainty": "Likely",
+              "contact": "https://www.met.no/kontakt-oss",
+              "county": ["03", "32"],
+              "event": "icing",
+              "eventAwarenessName": "Icing",
+              "eventEndingTime": "2026-10-15T09:00:00+00:00",
+              "geographicDomain": "land",
+              "id": "2.49.0.1.578.0.20261014181500.003",
+              "municipality": [],
+              "resources": [
+                {
+                  "description": "CAP file",
+                  "mimeType": "application/xml",
+                  "uri": "https://api.met.no/weatherapi/metalerts/2.0/current?cap=2.49.0.1.578.0.20261014181500.003"
+                }
+              ],
+              "riskMatrixColor": "Yellow",
+              "severity": "Moderate",
+              "status": "Actual",
+              "title": "Icing, yellow level, Oslo and Akershus, 15 October 08:00 UTC to 15 October 11:00 UTC.",
+              "type": "Alert",
+              "web": "https://www.met.no/vaer-og-klima/ekstremvaervarsler-og-andre-farevarsler"
+            },
+            "type": "Feature",
+            "when": {
+              "interval": ["2026-10-15T06:00:00+00:00", "2026-10-15T09:00:00+00:00"]
+            }
+          }
+        ],
+        "lang": "en",
+        "lastChange": "2026-10-16T07:00:00+00:00",
+        "type": "FeatureCollection"
+      }
+    }
+  }
+}

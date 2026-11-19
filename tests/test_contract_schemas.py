@@ -168,6 +168,12 @@ def test_the_keys_are_what_they_were() -> None:
     assert (keys.DEPARTURES_TTL_S, keys.WEATHER_TTL_S, keys.TFL_LINE_STATUS_TTL_S) == (120, 1_800, 600)
     assert (keys.TFL_STATIONS_TTL_S, keys.TFL_ROADS_TTL_S, keys.MET_OFFICE_TTL_S) == (1_800, 1_800, 1_800)
     assert keys.BANK_HOLIDAYS_TTL_S == 604_800
+    assert keys.location("SE17 3LL") == "v1:location:SE173LL"
+    assert keys.location("0150") == "v1:location:0150"
+    assert keys.location("SE17") == "v1:location:SE17"
+    assert keys.floods("se17 3ll") == "v1:notices:floods:SE173LL"
+    assert keys.METALERTS == "v1:notices:metalerts"
+    assert (keys.LOCATION_TTL_S, keys.FLOODS_TTL_S, keys.METALERTS_TTL_S) == (604_800, 1_800, 1_800)
 
 
 def test_store_json_is_store_yaml() -> None:

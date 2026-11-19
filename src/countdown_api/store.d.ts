@@ -179,7 +179,7 @@ export interface paths {
     };
     /**
      * The device's notices.
-     * @description What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions there, TfL's road disruptions, the Met Office's warnings near its postcode, the UK's bank holidays and, with parcels switched on, its owner's parcels. Each as its provider stored it (DeviceNotices), not worded or judged as notices.
+     * @description What the store has for the device's notice board: the status of the lines at its TfL stops and the disruptions there, TfL's road disruptions, the Met Office's and the Environment Agency's warnings near a UK postcode, MET Norway's warnings covering a Norwegian one, the UK's bank holidays and, with parcels switched on, its owner's parcels. Each as its provider stored it (DeviceNotices), not worded or judged as notices, but for MET Norway's, narrowed to the warnings about the device's place.
      */
     get: operations["getNotices"];
     put?: never;
@@ -962,6 +962,71 @@ export interface components {
        */
       notes: string;
     };
+    /** @description The value of v1:location:<place>: where a postcode is, as looked up at fetched_at, or that it isn't one postcodes.io or Kartverket know. `found` and `location` go together: a found postcode has a location, and one that wasn't found has none. */
+    StoredLocation: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description As v1:sub:postcode has it ("SE17 3LL", "0150"); for a weather key's, the postcode or district it stands for ("SE17"). */
+      postcode: string;
+      /** @description False for a postcode that doesn't exist (a typo, or one that's been terminated). */
+      found: boolean;
+      /**
+       * @description Where it is; null when it wasn't found.
+       * @default null
+       */
+      location: components["schemas"]["Postcode"] | null;
+    };
+    /** @description Where a postcode is, in the fields of postcodes.io's /postcodes/{postcode} the notice board uses. A Norwegian postcode's is made from Kartverket's address search in the same fields: its first address's point, Norway as its country, and its municipality as its admin_district. */
+    Postcode: {
+      postcode: string;
+      latitude: number;
+      longitude: number;
+      /** @description "England", "Scotland", "Wales", "Northern Ireland", or "Norway": which of the UK's bank holidays, flood warnings and weather warnings apply. */
+      country: string;
+      /**
+       * @description The English region ("London", "South East"); null outside England.
+       * @default null
+       */
+      region: string | null;
+      /**
+       * @description The local authority ("Southwark"; in Scotland, the council area), or the municipality in Norway.
+       * @default null
+       */
+      admin_district: string | null;
+    };
+    /** @description The value of v1:notices:floods:<place>: the Environment Agency's warnings near a UK postcode, as of fetched_at. A place with nothing in force is still written, with no items. */
+    StoredFloods: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description The postcode as the broker subscribed it ("SE17 3LL"). */
+      postcode: string;
+      floods: components["schemas"]["FloodWarningsResponse"];
+    };
+    /** @description The Environment Agency's /flood-monitoring/id/floods, kept to its items: every warning the EA lists for the flood areas near the place, those no longer in force too, in the EA's order. */
+    FloodWarningsResponse: {
+      /** @description Empty when there are none near the place. */
+      items: components["schemas"]["FloodWarning"][];
+    };
+    /** @description One of the Environment Agency's flood warnings, the parts the notice board reads, under the EA's own names. */
+    FloodWarning: {
+      /** @description Where it is, in the EA's words ("River Thames at Southwark"). */
+      description: string;
+      /** @description The EA's name for its level: "Severe Flood Warning", "Flood Warning", "Flood Alert" or "Warning no Longer in Force". */
+      severity: string;
+      /** @description 1 a severe flood warning, 2 a flood warning, 3 a flood alert, 4 no longer in force. */
+      severityLevel: number;
+      /** @description The flood area it's for (the area's notation, "062FWF46Southwrk"). */
+      floodAreaID: string;
+    };
+    /** @description The value of v1:notices:metalerts: MET Norway's current weather warnings, MetAlerts' current.json as it came, a GeoJSON FeatureCollection with one Feature per warning, the area it covers as its geometry (a Polygon or a MultiPolygon of [longitude, latitude] rings) and MET's own names in its properties (awareness_level such as "3; orange; Severe", awareness_type such as "1; Wind", event, area, title, description, instruction, consequences, eventEndingTime...); asked for without a place, so for all of Norway, once in each language. Each answer's Features are the same warnings in the same order. fetched_at is when MET last sent, or confirmed unchanged, the older of the two answers. */
+    StoredMetAlerts: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description current.json?lang=no, the warnings worded in Norwegian, for a screen in Norwegian (nb). */
+      no: Record<string, never>;
+      /** @description current.json?lang=en, in English, for every other screen. */
+      en: Record<string, never>;
+    };
     /** @description One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON. */
     DeviceFeedEvent:
       | {
@@ -1005,7 +1070,7 @@ export interface components {
       /** @description The stop's departures, or null with none stored (its provider is down, or the stop is new). */
       departures: components["schemas"]["StopDepartures"] | null;
     };
-    /** @description A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK one), as is one with nothing stored. */
+    /** @description A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads, the flood warnings and the bank holidays for one whose postcode isn't a UK one, MET Norway's warnings for one whose postcode isn't a Norwegian one), as is one with nothing stored. */
     DeviceNotices: {
       /** @description The config's notice_board.postcode. */
       postcode: string | null;
@@ -1029,6 +1094,16 @@ export interface components {
        * @default null
        */
       parcels: components["schemas"]["ParcelList"] | null;
+      /**
+       * @description The Environment Agency's flood warnings near the postcode's place, as the floods provider stored them (v1:notices:floods:<place>), those no longer in force too, for a device with a UK postcode; null for any other, or with none stored. The device picks out those in force and words them as the e-paper notice board does. Null from a server that predates it, too.
+       * @default null
+       */
+      floods: components["schemas"]["StoredFloods"] | null;
+      /**
+       * @description MET Norway's weather warnings for the postcode's place, for a device with a Norwegian postcode: what the MetAlerts provider stored for all of Norway (v1:notices:metalerts), narrowed by the server to the Features whose area covers the postcode's location (v1:location:<place>), in both answers (`no` and `en`) alike, each answer's other members as they came. So the device needs no geometry of its own: every Feature it gets is about its place, and it words them as the e-paper notice board does. Null for any other device, for a postcode whose location isn't known (not looked up yet, or not found), or with none stored; a place with no warnings has answers with no Features. A Feature covers the place when the location, at four decimals, is in its geometry's Polygon (or any of its MultiPolygon's), in its outer ring and none of its holes, as the e-paper notice board has it. Null from a server that predates it, too.
+       * @default null
+       */
+      metalerts: components["schemas"]["StoredMetAlerts"] | null;
     };
     /** @description An Entur stop's situations, null with none stored. */
     EnturStopNotices: {
@@ -1122,6 +1197,12 @@ export type StoredEnturSituations = components["schemas"]["StoredEnturSituations
 export type StoredBankHolidays = components["schemas"]["StoredBankHolidays"];
 export type BankHolidayDivision = components["schemas"]["BankHolidayDivision"];
 export type BankHoliday = components["schemas"]["BankHoliday"];
+export type StoredLocation = components["schemas"]["StoredLocation"];
+export type Postcode = components["schemas"]["Postcode"];
+export type StoredFloods = components["schemas"]["StoredFloods"];
+export type FloodWarningsResponse = components["schemas"]["FloodWarningsResponse"];
+export type FloodWarning = components["schemas"]["FloodWarning"];
+export type StoredMetAlerts = components["schemas"]["StoredMetAlerts"];
 export type DeviceFeedEvent = components["schemas"]["DeviceFeedEvent"];
 export type DeviceWeather = components["schemas"]["DeviceWeather"];
 export type DeviceArrivals = components["schemas"]["DeviceArrivals"];

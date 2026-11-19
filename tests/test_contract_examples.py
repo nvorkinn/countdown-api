@@ -5,6 +5,7 @@ contract's, so a change to one that the schemas don't allow fails here, before e
 """
 
 import hashlib
+import json
 from datetime import datetime
 
 import pytest
@@ -493,6 +494,50 @@ def test_bank_holidays_are_every_part_of_the_uks() -> None:
     assert set(stored.divisions) == {"england-and-wales", "scotland", "northern-ireland"}
 
 
+def test_locations_are_where_each_postcode_is_or_that_it_isnt_one() -> None:
+    example = fixtures.load("location.json")
+    assert example["ttl_s"] == keys.LOCATION_TTL_S
+    found = {}
+    for entry in example["locations"]:
+        assert entry["key"] == keys.location(entry["postcode"])
+        stored = check("StoredLocation", entry["value"])
+        assert stored.postcode == entry["postcode"]
+        assert stored.found == (stored.location is not None)
+        found[stored.postcode] = stored
+    assert found["SE17 3LL"].location.region == "London"
+    assert found["EH1 1YZ"].location.region is None  # outside England
+    assert found["0150"].location.country == "Norway"
+    assert not found["ZZ1 1ZZ"].found
+    assert not found["0001"].found
+
+
+def test_floods_are_the_eas_warnings_near_the_postcodes_place_under_its_names() -> None:
+    example = fixtures.load("floods.json")
+    assert example["ttl_s"] == keys.FLOODS_TTL_S
+    for entry in example["places"]:
+        assert entry["key"] == keys.floods(entry["postcode"])
+        stored = check("StoredFloods", entry["value"])
+        assert stored.postcode == entry["postcode"]
+        # Written back under the EA's own names, as a writer dumps it.
+        assert json.loads(stored.model_dump_json()) == entry["value"]
+    levels = [warning["severityLevel"] for warning in example["places"][0]["value"]["floods"]["items"]]
+    assert sorted(levels) == [1, 2, 3, 4]
+    assert example["places"][-1]["value"]["floods"]["items"] == []  # all clear is still written
+
+
+def test_metalerts_are_mets_answers_for_all_of_norway_in_both_languages() -> None:
+    example = fixtures.load("metalerts.json")
+    assert example["key"] == keys.METALERTS
+    assert example["ttl_s"] == keys.METALERTS_TTL_S
+    stored = check("StoredMetAlerts", example["value"])
+    for answer in (stored.no, stored.en):
+        assert answer["type"] == "FeatureCollection"
+        assert {feature["geometry"]["type"] for feature in answer["features"]} <= {"Polygon", "MultiPolygon"}
+    assert [feature["properties"]["id"] for feature in stored.no["features"]] == [
+        feature["properties"]["id"] for feature in stored.en["features"]
+    ]
+
+
 def test_the_panels_examples_are_a_paired_touchscreens() -> None:
     config = check("ConfigResponse", PANELS["config"])
     assert isinstance(config, models.TouchscreenConfig)
@@ -540,6 +585,37 @@ def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postco
     # Its parcels are switched on, so it has what the parcel provider stored for it.
     assert PANELS["config"]["parcels"] == {"enabled": True, "days_ahead": None, "kept_hours": 4}
     assert PANELS["notices"]["parcels"] == fixtures.load("parcels.json")["value"]
+    # A UK postcode: the EA's warnings near it, and none of MET Norway's.
+    floods = {entry["postcode"]: entry["value"] for entry in fixtures.load("floods.json")["places"]}
+    assert PANELS["notices"]["floods"] == floods[notices.postcode]
+    assert notices.metalerts is None
+
+
+NORWAY = fixtures.load("device_notices_norway.json")
+
+
+def test_get_notices_for_a_norwegian_postcode_has_mets_warnings_covering_its_place() -> None:
+    notices = check("DeviceNotices", NORWAY["notices"])
+    assert (notices.postcode, notices.country) == (NORWAY["postcode"], "NO")
+    assert NORWAY["location"] == keys.location(notices.postcode)
+    assert (notices.tfl_roads, notices.met_office, notices.bank_holidays, notices.floods) == (None, None, None, None)
+    stored = fixtures.load("metalerts.json")["value"]
+    assert NORWAY["notices"]["metalerts"]["fetched_at"] == stored["fetched_at"]
+    for language in ("no", "en"):
+        narrowed = NORWAY["notices"]["metalerts"][language]
+        # Each answer's other members as they came, and its Features a subset of it, in its order.
+        assert {key: value for key, value in narrowed.items() if key != "features"} == {
+            key: value for key, value in stored[language].items() if key != "features"
+        }
+        assert narrowed["features"] == [
+            feature for feature in stored[language]["features"] if feature in narrowed["features"]
+        ]
+        assert 0 < len(narrowed["features"]) < len(stored[language]["features"])
+    ids = {
+        language: [f["properties"]["id"] for f in notices.metalerts.model_dump()[language]["features"]]
+        for language in ("no", "en")
+    }
+    assert ids["no"] == ids["en"]
 
 
 def test_a_touchscreens_parcels_are_off_and_its_notices_have_none_when_left_out() -> None:
@@ -548,3 +624,9 @@ def test_a_touchscreens_parcels_are_off_and_its_notices_have_none_when_left_out(
     assert check("ConfigResponse", config).parcels is None
     notices = {key: value for key, value in PANELS["notices"].items() if key != "parcels"}
     assert check("DeviceNotices", notices).parcels is None
+
+
+def test_notices_from_a_server_before_floods_and_metalerts_still_validate() -> None:
+    older = {key: value for key, value in PANELS["notices"].items() if key not in {"floods", "metalerts"}}
+    notices = check("DeviceNotices", older)
+    assert (notices.floods, notices.metalerts) == (None, None)

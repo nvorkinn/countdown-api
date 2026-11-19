@@ -1,0 +1,77 @@
+{
+  "about": "Where five postcodes are, as countdown's locations provider stores them under v1:location:<place>: three UK postcodes from postcodes.io (one in England, one in Scotland, whose region is null, and one postcodes.io doesn't know, stored as not found) and two Norwegian ones from Kartverket's address search (Oslo's 0150, and 0001, which isn't one). countdown's tests/fixtures/locations.json.",
+  "ttl_s": 604800,
+  "locations": [
+    {
+      "postcode": "SE17 3LL",
+      "key": "v1:location:SE173LL",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "SE17 3LL",
+        "found": true,
+        "location": {
+          "postcode": "SE17 3LL",
+          "latitude": 51.48873,
+          "longitude": -0.09766,
+          "country": "England",
+          "region": "London",
+          "admin_district": "Southwark"
+        }
+      }
+    },
+    {
+      "postcode": "EH1 1YZ",
+      "key": "v1:location:EH11YZ",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "EH1 1YZ",
+        "found": true,
+        "location": {
+          "postcode": "EH1 1YZ",
+          "latitude": 55.95325,
+          "longitude": -3.19046,
+          "country": "Scotland",
+          "region": null,
+          "admin_district": "City of Edinburgh"
+        }
+      }
+    },
+    {
+      "postcode": "ZZ1 1ZZ",
+      "key": "v1:location:ZZ11ZZ",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "ZZ1 1ZZ",
+        "found": false,
+        "location": null
+      }
+    },
+    {
+      "postcode": "0150",
+      "key": "v1:location:0150",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "0150",
+        "found": true,
+        "location": {
+          "postcode": "0150",
+          "latitude": 59.9116,
+          "longitude": 10.7505,
+          "country": "Norway",
+          "region": null,
+          "admin_district": "Oslo"
+        }
+      }
+    },
+    {
+      "postcode": "0001",
+      "key": "v1:location:0001",
+      "value": {
+        "fetched_at": "2026-10-18T12:00:00Z",
+        "postcode": "0001",
+        "found": false,
+        "location": null
+      }
+    }
+  ]
+}
