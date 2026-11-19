@@ -1273,7 +1273,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style` and `display`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay). */
+    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics). */
     requestBody: {
       content: {
         "application/json":
@@ -1288,6 +1288,7 @@ export interface operations {
           | components["schemas"]["EpaperStyle"]
           | components["schemas"]["TouchscreenStyle"]
           | components["schemas"]["TouchscreenDisplay"]
+          | components["schemas"]["TouchscreenLyrics"]
           | ("12h" | "24h")
           | ("en" | "nb");
       };

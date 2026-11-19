@@ -628,8 +628,8 @@ paths:
       requestBody:
         required: true
         description: >-
-          The section's new value, in its own schema: the field's in ConfigBase, or for `style` and `display`, the
-          device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay).
+          The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and
+          `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics).
         content:
           application/json:
             schema:
@@ -645,6 +645,7 @@ paths:
               - $ref: '#/$defs/EpaperStyle'
               - $ref: '#/$defs/TouchscreenStyle'
               - $ref: '#/$defs/TouchscreenDisplay'
+              - $ref: '#/$defs/TouchscreenLyrics'
               - enum: [12h, 24h]
                 type: string
               - enum: [en, nb]
