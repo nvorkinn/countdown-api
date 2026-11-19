@@ -238,6 +238,13 @@ def test_both_searches_answer_the_same_result_shape_with_what_picking_saves() ->
     assert [stop.indent for stop in stops] == [False, True, False]
 
 
+def test_the_current_location_is_at_most_one_place_as_the_search_answers_it() -> None:
+    here = [check("PlaceSearchResult", result) for result in SEARCH["here"]]
+    assert len(here) <= 1
+    assert SEARCH["here"] == SEARCH["places"][:1]
+    assert all(place.value.key is not None for place in here)
+
+
 def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     token = check("SpotifyAccessToken", TOUCHSCREEN["spotify_token"])
 

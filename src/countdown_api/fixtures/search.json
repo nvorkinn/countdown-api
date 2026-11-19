@@ -1,5 +1,5 @@
 {
-  "about": "What the pickers' searches answer (GET /api/stops/search and GET /api/places/search): `stops` for ?q=oslo s, Oslo's central station and one of its platforms indented under it, then a London bus stop; `places` for ?q=oslo. Every result has the same core (SearchResult: id, name, subtitle, indent) and a `value`, what picking it saves: a stop for arrivals.stops, or a place's whole weather section. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "about": "What the pickers' searches answer (GET /api/stops/search and GET /api/places/search): `stops` for ?q=oslo s, Oslo's central station and one of its platforms indented under it, then a London bus stop; `places` for ?q=oslo; `here`, what GET /api/places/here answers for a caller in Oslo (`here_query`). Every result has the same core (SearchResult: id, name, subtitle, indent) and a `value`, what picking it saves: a stop for arrivals.stops, or a place's whole weather section. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
   "stops_query": "oslo s",
   "stops": [
     {
@@ -50,6 +50,26 @@
   ],
   "places_query": "oslo",
   "places": [
+    {
+      "id": "3143244",
+      "name": "Oslo",
+      "subtitle": "Norway",
+      "indent": false,
+      "value": {
+        "location": "Oslo",
+        "key": "oslo-no-3143244"
+      },
+      "label": "Oslo, Norway",
+      "country_code": "NO",
+      "latitude": 59.91273,
+      "longitude": 10.74609
+    }
+  ],
+  "here_query": {
+    "latitude": 59.9139,
+    "longitude": 10.7522
+  },
+  "here": [
     {
       "id": "3143244",
       "name": "Oslo",

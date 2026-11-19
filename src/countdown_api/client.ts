@@ -178,6 +178,19 @@ export function searchPlaces(
 }
 
 /**
+ * The town or city the caller is in, for the weather.
+ *
+ * `GET /api/places/here`, with the device's secret.
+ */
+export function locatePlace(
+  client: Client,
+  query: NonNullable<operations["locatePlace"]["parameters"]["query"]> = {},
+  options: RequestOptions = {},
+): Promise<Result<operations["locatePlace"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/places/here", query, secret: true, json: true });
+}
+
+/**
  * An access token for the owner's Spotify, for a touchscreen.
  *
  * `GET /api/devices/spotify/token`, with the device's secret.

@@ -110,6 +110,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/places/here": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The town or city the caller is in, for the weather.
+     * @description The biggest town or city near a position (from GeoNames, looked up on the server), as searchPlaces answers it for that name: the position the caller sends, which a touchscreen gets from its browser (getCurrentPosition), or with none, where the caller's IP places it (DB-IP's City Lite, also on the server, so no IP leaves it; the same guess a new screen's weather starts with). Rough at best, but the weather is the same across a city. No result for a private IP, an IP the database doesn't know, or when Open-Meteo has no such place. On the settings site (APP_HOST) it takes the person's login instead of a secret.
+     */
+    get: operations["locatePlace"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/spotify/token": {
     parameters: {
       query?: never;
@@ -1539,6 +1559,61 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["PlaceSearchResult"][];
         };
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Open-Meteo couldn't be asked; the body is no results. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlaceSearchResult"][];
+        };
+      };
+    };
+  };
+  locatePlace: {
+    parameters: {
+      query?: {
+        /** @description Where the caller is, in degrees; sent with `longitude`, or neither. */
+        latitude?: number;
+        /** @description Where the caller is, in degrees; sent with `latitude`, or neither. */
+        longitude?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The place, or no result when there's no telling. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlaceSearchResult"][];
+        };
+      };
+      /** @description Only one of `latitude` and `longitude`, or one that isn't a number in range. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description A missing or unknown secret, or, on the settings site, no login. */
       401: {
