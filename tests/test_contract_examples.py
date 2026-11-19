@@ -255,6 +255,16 @@ def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     assert "refresh_token" not in TOUCHSCREEN["spotify_token"]
 
 
+def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothing_more() -> None:
+    account = check("DeviceAccount", TOUCHSCREEN["account"])
+    # The example's owner has pasted no Parcel key, so its parcels are off whatever its own switch says.
+    assert not account.parcel.linked
+    assert not check("ConfigResponse", TOUCHSCREEN["config"]).parcels.enabled
+    assert account.spotify.linked
+    # Only whether each is linked.
+    assert all(set(link) == {"linked"} for link in TOUCHSCREEN["account"].values())
+
+
 def test_a_touchscreen_registers_through_the_login_with_its_secrets_hash() -> None:
     query = check("TouchscreenRegistration", TOUCHSCREEN["register"])
     registration = check("DeviceRegistration", TOUCHSCREEN["registration"])

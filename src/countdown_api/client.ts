@@ -203,6 +203,18 @@ export function getSpotifyToken(
 }
 
 /**
+ * What the owner's account has linked.
+ *
+ * `GET /api/devices/account`, with the device's secret.
+ */
+export function getAccount(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getAccount"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/account", secret: true, json: true });
+}
+
+/**
  * The device's weather.
  *
  * `GET /api/devices/weather`, with the device's secret.
