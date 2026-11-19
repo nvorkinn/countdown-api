@@ -314,6 +314,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/account/parcel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The page where the signed-in person saves their Parcel API key.
+     * @description On the settings site, behind the login: where to find the key in the person's own Parcel account, and a field to paste it into, and nothing else of their account. A device whose owner's account has no key (getAccount's parcel.linked) sends a phone here, as a code to scan; the key is saved to the account, for every device they own, and never reaches a device. The page's own form posts are the page's.
+     */
+    get: operations["connectParcelPage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2102,6 +2122,26 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  connectParcelPage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
       };
     };
   };

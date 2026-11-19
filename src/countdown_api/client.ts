@@ -295,3 +295,12 @@ export function deviceSettingsPageUrl(
 ): URL {
   return url(baseUrl, `/device/${encodeURIComponent(path.device_id)}`, query);
 }
+
+/**
+ * The page where the signed-in person saves their Parcel API key.
+ *
+ * The address of the page `GET /account/parcel`, to send a browser to.
+ */
+export function connectParcelPageUrl(baseUrl: string | URL): URL {
+  return url(baseUrl, "/account/parcel", {});
+}

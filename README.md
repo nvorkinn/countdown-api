@@ -79,6 +79,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, the Environment Agency's flood warnings, bank holidays, MET Norway's warnings covering a Norwegian postcode, and its owner's parcels when switched on) and every Tube line's status, as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
+| `GET /account/parcel` | | a page | on the settings site, behind the login: where the person finds their Parcel API key and pastes it, for a device to send a phone to while its owner's account has none |
 
 All but the registrations and the backgrounds take the device's secret as `Authorization: Bearer <secret>`
 (`securitySchemes.deviceSecret`);
@@ -94,9 +95,9 @@ For TypeScript, `client.ts` has a function per route, named by its `operationId`
 `getConfig(client)`, `putConfig(client, config, { headers: { "If-Match": etag } })` and so on for the devices' API
 (each answers `{ data, response }` for a 2xx and `{ error, response }` otherwise, and sends `client.secret` as the
 bearer where the route takes it), and a URL builder for each page a device sends a browser to,
-`registerTouchscreenUrl(server, { secret_hash, width, height, return_to })` and `deviceSettingsPageUrl(server, {
-device_id })`. It's plain `fetch`, typed by `store.d.ts`, with nothing to install; `generate.py` writes it with the
-rest, so a new route gets its function in the same PR.
+`registerTouchscreenUrl(server, { secret_hash, width, height, return_to })`, `deviceSettingsPageUrl(server, {
+device_id })` and `connectParcelPageUrl(server)`. It's plain `fetch`, typed by `store.d.ts`, with nothing to install;
+`generate.py` writes it with the rest, so a new route gets its function in the same PR.
 
 ### A device's config
 
