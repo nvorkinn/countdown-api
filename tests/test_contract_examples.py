@@ -464,6 +464,18 @@ def test_the_tfl_network_is_every_tube_line_and_the_elizabeth_line() -> None:
     assert lines[0]["lineStatuses"][0]["statusSeverityDescription"]  # TfL's own names
 
 
+def test_entur_situations_are_enturs_answer_for_the_stop() -> None:
+    example = fixtures.load("entur_situations.json")
+    stored = check("StoredEnturSituations", example["value"])
+    assert example["key"] == keys.entur_situations(stored.stop_id)
+    assert example["ttl_s"] == keys.ENTUR_SITUATIONS_TTL_S
+    stop = stored.data["stopPlace"]
+    lines = [line for quay in stop["quays"] for line in quay["lines"]]
+    situations = [situation for line in lines for situation in line["situations"]]
+    assert {"summary", "validityPeriod", "severity", "reportType"} <= set(situations[0])  # Entur's own names
+    assert [call["serviceJourney"]["line"]["publicCode"] for call in stop["estimatedCalls"]]
+
+
 def test_met_office_warnings_are_the_regions_feed_under_the_postcodes_place() -> None:
     example = fixtures.load("met_office.json")
     assert example["key"] == keys.met_office(example["postcode"])
@@ -522,6 +534,9 @@ def test_get_notices_answers_the_stored_sources_for_the_devices_stops_and_postco
     assert PANELS["notices"]["met_office"] == fixtures.load("met_office.json")["value"]
     assert PANELS["notices"]["bank_holidays"] == fixtures.load("bank_holidays.json")["value"]
     assert PANELS["notices"]["tfl_network"] == fixtures.load("tfl_network.json")["value"]
+    entur_stops = [stop["id"] for stop in PANELS["config"]["arrivals"]["stops"] if stop["source"] == "entur"]
+    assert [stop.stop_id for stop in notices.entur_stops or []] == entur_stops
+    assert PANELS["notices"]["entur_stops"] == [{"stop_id": entur_stops[0], "situations": None}]  # none stored
     # Its parcels are switched on, so it has what the parcel provider stored for it.
     assert PANELS["config"]["parcels"] == {"enabled": True, "days_ahead": None, "kept_hours": 4}
     assert PANELS["notices"]["parcels"] == fixtures.load("parcels.json")["value"]

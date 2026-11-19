@@ -554,6 +554,31 @@ TFL_NETWORK = "v1:notices:tfl-network"
 TFL_NETWORK_TTL_S = 600
 
 
+def entur_situations(stop_id: str) -> str:
+    """Return the key `v1:notices:entur:{stop_id}`.
+
+    The situations (Entur's disruption messages, every operator's) at an Entur stop: on the stop itself, on every line
+    serving it, and on the next departures leaving it, as Entur's journey planner answers its query. A stop Entur
+    doesn't know is written too, as Entur answers it, so it isn't taken for a missing key.
+
+    A Redis string of models.StoredEnturSituations (json), with a TTL of 900 s.
+
+    Written by countdown's Entur situations provider, for every stop in v1:sub:entur. Read by the notice board, and the
+    broker's getNotices.
+
+    Example: countdown_api.fixtures, entur_situations.json.
+    """
+    return f"v1:notices:entur:{stop_id}"
+
+
+# What every `v1:notices:entur:{stop_id}` key starts with, for SCAN and removeprefix().
+ENTUR_SITUATIONS_PREFIX = "v1:notices:entur:"
+
+
+# The TTL of `v1:notices:entur:{stop_id}`, in seconds.
+ENTUR_SITUATIONS_TTL_S = 900
+
+
 def met_office(postcode: str) -> str:
     """Return the key `v1:notices:met-office:{postcode}`.
 

@@ -415,6 +415,29 @@ class DeviceFeedEventValueOption2(BaseModel):
     )
 
 
+class StoredEnturSituations(BaseModel):
+    """The ``StoredEnturSituations`` object.
+
+    The value of v1:notices:entur:<stop id>: Entur's GraphQL `data` for the stop as it came, under
+    Entur's own names: {"stopPlace": {"name", "situations", "quays": [{"lines": [{"id", "publicCode",
+    "transportMode", "situations"}]}], "estimatedCalls": [{"serviceJourney": {"line": {...}},
+    "situations"}]}} ("quay" in place of "stopPlace", with its "lines", for a quay), each situation's
+    "id", "summary" and "description" (texts with their "language"), "validityPeriod" ("startTime",
+    "endTime"), "severity" and "reportType".
+    """
+
+    fetched_at: datetime
+    stop_id: str
+    data: dict[str, Any]
+
+
+class EnturStopNotices(BaseModel):
+    """An Entur stop's situations, null with none stored."""
+
+    stop_id: str
+    situations: StoredEnturSituations | None
+
+
 ParcelStatus = Literal["ordered", "in_transit", "out_for_delivery", "delivered", "exception", "unknown"]
 """Where a delivery is, normalised from Parcel's status codes by the provider; nothing downstream sees
 those codes. `ordered` is a delivery the carrier hasn't collected, `exception` one that needs the
@@ -617,8 +640,8 @@ class DeviceNotices(BaseModel):
 
     A device's notices (getNotices), as the store has them: what the notice board makes its notices
     from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's
-    for a device with no TfL stops; the Met Office's, TfL's roads and the bank holidays for one whose
-    postcode isn't a UK one), as is one with nothing stored.
+    for a device with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads
+    and the bank holidays for one whose postcode isn't a UK one), as is one with nothing stored.
     """
 
     postcode: str | None = Field(description="The config's notice_board.postcode.")
@@ -634,6 +657,10 @@ class DeviceNotices(BaseModel):
             "Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null "
             "for any other, or with none stored."
         ),
+    )
+    entur_stops: list[EnturStopNotices] | None = Field(
+        default=None,
+        description="Each of the device's Entur stops, in the owner's order.",
     )
     parcels: ParcelList | None = Field(
         default=None,
@@ -653,8 +680,8 @@ class DeviceFeedEventValueOption3(BaseModel):
         description=(
             "A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not"
             " the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device "
-            "with no TfL stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK "
-            "one), as is one with nothing stored."
+            "with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads and the bank "
+            "holidays for one whose postcode isn't a UK one), as is one with nothing stored."
         ),
     )
 

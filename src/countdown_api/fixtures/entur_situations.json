@@ -1,0 +1,195 @@
+{
+  "about": "What countdown's Entur situations provider stores for Jernbanetorget (v1:notices:entur:NSR:StopPlace:58366), trimmed: Entur's answer on 19 November 2026, with the T-bane closed for four days (one situation per line, the same words), bus 74 delayed, and tram 17 running as normal.",
+  "key": "v1:notices:entur:NSR:StopPlace:58366",
+  "ttl_s": 900,
+  "value": {
+    "fetched_at": "2026-11-19T08:30:00Z",
+    "stop_id": "NSR:StopPlace:58366",
+    "data": {
+      "stopPlace": {
+        "name": "Jernbanetorget",
+        "situations": [],
+        "quays": [
+          {
+            "lines": [
+              {
+                "id": "RUT:Line:74",
+                "publicCode": "74",
+                "transportMode": "bus",
+                "situations": [
+                  {
+                    "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NjQzOC0x",
+                    "summary": [
+                      {
+                        "value": "Forsinkelser på linje 74",
+                        "language": "no"
+                      },
+                      {
+                        "value": "Delays on line 74",
+                        "language": "en"
+                      }
+                    ],
+                    "description": [
+                      {
+                        "value": "Det er forsinkelser på linje 74. Dette skyldes uforutsette forhold.",
+                        "language": "no"
+                      },
+                      {
+                        "value": "There are delays on line 74. This is due to unforeseen circumstances.",
+                        "language": "en"
+                      }
+                    ],
+                    "validityPeriod": {
+                      "startTime": "2026-11-19T08:41:00+01:00",
+                      "endTime": "2026-11-19T10:00:00+01:00"
+                    },
+                    "severity": "normal",
+                    "reportType": "incident"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "lines": [
+              {
+                "id": "RUT:Line:17",
+                "publicCode": "17",
+                "transportMode": "tram",
+                "situations": []
+              }
+            ]
+          },
+          {
+            "lines": [
+              {
+                "id": "RUT:Line:1",
+                "publicCode": "1",
+                "transportMode": "metro",
+                "situations": [
+                  {
+                    "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NDQwNS0x",
+                    "summary": [
+                      {
+                        "value": "T-banen stenger 19.-22. november",
+                        "language": "no"
+                      },
+                      {
+                        "value": "The Metro will be closed from November 19.–22.",
+                        "language": "en"
+                      }
+                    ],
+                    "description": [
+                      {
+                        "value": "T-banen er stengt på nesten alle strekninger 19. - 22. november. Se ruter.no for mer informasjon.",
+                        "language": "no"
+                      },
+                      {
+                        "value": "The Metro is closed on almost all lines from November 19–22. See ruter.no for more information.",
+                        "language": "en"
+                      }
+                    ],
+                    "validityPeriod": {
+                      "startTime": "2026-11-02T07:42:00+01:00",
+                      "endTime": "2026-11-23T04:00:00+01:00"
+                    },
+                    "severity": "normal",
+                    "reportType": "incident"
+                  }
+                ]
+              },
+              {
+                "id": "RUT:Line:2",
+                "publicCode": "2",
+                "transportMode": "metro",
+                "situations": [
+                  {
+                    "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NDQwNS0y",
+                    "summary": [
+                      {
+                        "value": "T-banen stenger 19.-22. november",
+                        "language": "no"
+                      },
+                      {
+                        "value": "The Metro will be closed from November 19.–22.",
+                        "language": "en"
+                      }
+                    ],
+                    "description": [
+                      {
+                        "value": "T-banen er stengt på nesten alle strekninger 19. - 22. november. Se ruter.no for mer informasjon.",
+                        "language": "no"
+                      },
+                      {
+                        "value": "The Metro is closed on almost all lines from November 19–22. See ruter.no for more information.",
+                        "language": "en"
+                      }
+                    ],
+                    "validityPeriod": {
+                      "startTime": "2026-11-02T07:42:00+01:00",
+                      "endTime": "2026-11-23T04:00:00+01:00"
+                    },
+                    "severity": "normal",
+                    "reportType": "incident"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "estimatedCalls": [
+          {
+            "serviceJourney": {
+              "line": {
+                "id": "RUT:Line:74",
+                "publicCode": "74",
+                "transportMode": "bus"
+              }
+            },
+            "situations": [
+              {
+                "id": "UHRTaXR1YXRpb25FbGVtZW50OlJVVDpTaXR1YXRpb25OdW1iZXI6MjAyNi03NjQzOC0x",
+                "summary": [
+                  {
+                    "value": "Forsinkelser på linje 74",
+                    "language": "no"
+                  },
+                  {
+                    "value": "Delays on line 74",
+                    "language": "en"
+                  }
+                ],
+                "description": [
+                  {
+                    "value": "Det er forsinkelser på linje 74. Dette skyldes uforutsette forhold.",
+                    "language": "no"
+                  },
+                  {
+                    "value": "There are delays on line 74. This is due to unforeseen circumstances.",
+                    "language": "en"
+                  }
+                ],
+                "validityPeriod": {
+                  "startTime": "2026-11-19T08:41:00+01:00",
+                  "endTime": "2026-11-19T10:00:00+01:00"
+                },
+                "severity": "normal",
+                "reportType": "incident"
+              }
+            ]
+          },
+          {
+            "serviceJourney": {
+              "line": {
+                "id": "RUT:Line:17",
+                "publicCode": "17",
+                "transportMode": "tram"
+              }
+            },
+            "situations": []
+          }
+        ]
+      }
+    }
+  }
+}

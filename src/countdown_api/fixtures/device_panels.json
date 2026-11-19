@@ -1,5 +1,5 @@
 {
-  "about": "A London touchscreen's config, and what getWeather, getArrivals and getNotices answer it from the store's values in weather.json, background.json, departures.json, tfl_notices.json, met_office.json, bank_holidays.json, tfl_network.json and parcels.json (it has parcels switched on). Its bus stop 490000123W has no notices stored, so its lines and stations are null.",
+  "about": "A London touchscreen's config, and what getWeather, getArrivals and getNotices answer it from the store's values in weather.json, background.json, departures.json, tfl_notices.json, met_office.json, bank_holidays.json, tfl_network.json and parcels.json (it has parcels switched on). Its bus stop 490000123W has no notices stored, so its lines and stations are null; nor are any situations stored for its Entur stop NSR:StopPlace:58381, so they are null too.",
   "device_id": "0a1b2c3d4e60",
   "config": {
     "device_id": "0a1b2c3d4e60",
@@ -1040,6 +1040,12 @@
         }
       ]
     },
+    "entur_stops": [
+      {
+        "stop_id": "NSR:StopPlace:58381",
+        "situations": null
+      }
+    ],
     "parcels": {
       "fetched_at": "2026-10-17T12:00:00+00:00",
       "parcels": [

@@ -931,6 +931,13 @@ export interface components {
      * @description A background image file's own bytes (a JPEG).
      */
     BackgroundImage: string;
+    /** @description The value of v1:notices:entur:<stop id>: Entur's GraphQL `data` for the stop as it came, under Entur's own names: {"stopPlace": {"name", "situations", "quays": [{"lines": [{"id", "publicCode", "transportMode", "situations"}]}], "estimatedCalls": [{"serviceJourney": {"line": {...}}, "situations"}]}} ("quay" in place of "stopPlace", with its "lines", for a quay), each situation's "id", "summary" and "description" (texts with their "language"), "validityPeriod" ("startTime", "endTime"), "severity" and "reportType". */
+    StoredEnturSituations: {
+      /** Format: date-time */
+      fetched_at: string;
+      stop_id: string;
+      data: Record<string, never>;
+    };
     /** @description The value of v1:notices:bank-holidays, gov.uk's bank holidays for every part of the UK. */
     StoredBankHolidays: {
       /** Format: date-time */
@@ -998,7 +1005,7 @@ export interface components {
       /** @description The stop's departures, or null with none stored (its provider is down, or the stop is new). */
       departures: components["schemas"]["StopDepartures"] | null;
     };
-    /** @description A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK one), as is one with nothing stored. */
+    /** @description A device's notices (getNotices), as the store has them: what the notice board makes its notices from, not the notices themselves. A source that doesn't apply to the device is empty or null (TfL's for a device with no TfL stops, Entur's for one with no Entur stops; the Met Office's, TfL's roads and the bank holidays for one whose postcode isn't a UK one), as is one with nothing stored. */
     DeviceNotices: {
       /** @description The config's notice_board.postcode. */
       postcode: string | null;
@@ -1013,10 +1020,20 @@ export interface components {
       /** @description Every Tube line's status and the Elizabeth line's, for a device with a TfL stop or a UK postcode; null for any other, or with none stored. */
       tfl_network: components["schemas"]["StoredNetworkStatus"] | null;
       /**
+       * @description Each of the device's Entur stops, in the owner's order.
+       * @default []
+       */
+      entur_stops: components["schemas"]["EnturStopNotices"][];
+      /**
        * @description The owner's parcels as the parcel provider stored them (v1:parcels:<device id>), already narrowed to those the device's settings show, for a device with parcels switched on; null for any other, or with none stored. The device makes its notices from them as the e-paper notice board does.
        * @default null
        */
       parcels: components["schemas"]["ParcelList"] | null;
+    };
+    /** @description An Entur stop's situations, null with none stored. */
+    EnturStopNotices: {
+      stop_id: string;
+      situations: components["schemas"]["StoredEnturSituations"] | null;
     };
     /** @description A TfL stop's line statuses and station disruptions, each null with none stored. */
     TflStopNotices: {
@@ -1101,6 +1118,7 @@ export type BackgroundPlace = components["schemas"]["BackgroundPlace"];
 export type BackgroundPhase = components["schemas"]["BackgroundPhase"];
 export type BackgroundDigest = components["schemas"]["BackgroundDigest"];
 export type BackgroundImage = components["schemas"]["BackgroundImage"];
+export type StoredEnturSituations = components["schemas"]["StoredEnturSituations"];
 export type StoredBankHolidays = components["schemas"]["StoredBankHolidays"];
 export type BankHolidayDivision = components["schemas"]["BankHolidayDivision"];
 export type BankHoliday = components["schemas"]["BankHoliday"];
@@ -1109,6 +1127,7 @@ export type DeviceWeather = components["schemas"]["DeviceWeather"];
 export type DeviceArrivals = components["schemas"]["DeviceArrivals"];
 export type StopArrivals = components["schemas"]["StopArrivals"];
 export type DeviceNotices = components["schemas"]["DeviceNotices"];
+export type EnturStopNotices = components["schemas"]["EnturStopNotices"];
 export type TflStopNotices = components["schemas"]["TflStopNotices"];
 export type $defs = Record<string, never>;
 export interface operations {
