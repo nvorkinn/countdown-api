@@ -58,6 +58,14 @@ class Arrivals(BaseModel):
     stops: list[DepartureStop] = Field(
         description="Every stop whose departures the device shows, from any source, in the owner's order.",
     )
+    group_by_route: bool | None = Field(
+        default=None,
+        description=(
+            "Whether a stop's departures are grouped by route (line and destination), each route on one row with its "
+            "next few times, rather than one row per departure. Left out of a save, it stays as it is; the server "
+            "always sends it, and left out is false, so a config from before it was added reads the same."
+        ),
+    )
 
 
 BackgroundDigest = Annotated[str, Field(pattern="^[0-9a-f]{64}$")]
