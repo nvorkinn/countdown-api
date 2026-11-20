@@ -7,6 +7,7 @@
     "width": 1280,
     "height": 800,
     "clock_format": "24h",
+    "language": "en",
     "arrivals": {
       "stops": [
         {

@@ -297,6 +297,7 @@ def test_a_config_takes_only_its_types_style() -> None:
         {key: value for key, value in touchscreen.items() if key != "display"},
         {**epaper, "type": "kiosk"},
         {**touchscreen, "display": {"sleep_minutes": 10}},
+        {**touchscreen, "language": "de"},
         {**touchscreen, "lyrics": {"size": "huge", "align": "left"}},
         {**touchscreen, "lyrics": {"size": "medium", "align": "justify"}},
         {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
@@ -316,15 +317,22 @@ def test_a_touchscreen_config_from_before_lyrics_is_still_one() -> None:
     assert check("TouchscreenConfig", older).lyrics is None
 
 
+def test_a_touchscreen_config_from_before_its_language_is_english() -> None:
+    older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "language"}
+    check_schema("ConfigResponse", older)
+    assert check("TouchscreenConfig", older).language == "en"
+
+
 def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
-    # The flat fields, the panels it shows, its look, its screen's sleep and its parcel notices: no language, pairing
-    # code, time zone, interval, music or other integrations, which only an e-paper screen has.
+    # The flat fields, its language, the panels it shows, its look, its screen's sleep and its parcel notices: no
+    # pairing code, time zone, interval, music or other integrations, which only an e-paper screen has.
     assert set(models.TouchscreenConfig.model_fields) == {
         "device_id",
         "type",
         "width",
         "height",
         "clock_format",
+        "language",
         "arrivals",
         "weather",
         "notice_board",
@@ -338,7 +346,6 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
     assert epaper_only == {
         "pairing_code",
         "interval",
-        "language",
         "timezone",
         "format",
         "spotify",

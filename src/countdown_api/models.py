@@ -217,8 +217,8 @@ ConfigSection = Literal[
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
-type has: a touchscreen has `clock_format`, `arrivals`, `weather`, `notice_board`, `parcels`,
-`style`, `display` and `lyrics`.
+type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`,
+`parcels`, `style`, `display` and `lyrics`.
 """
 
 
@@ -1345,13 +1345,19 @@ class TouchscreenConfig(ConfigBase):
     """A touchscreen's config (ConfigResponse with type touchscreen).
 
     It draws itself from it, and saves it from its own settings, as its owner does on the settings site.
-    It is English only and paired by token, so it has no language and no pairing code; it keeps its own
-    time, so it has no time zone or interval; and it plays music itself, so it has no music or other
-    integrations' sections but parcels, whose notices join its notice board. Its Wi-Fi stays on the
-    device, never here.
+    It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or
+    interval; and it plays music itself, so it has no music or other integrations' sections but parcels,
+    whose notices join its notice board. Its Wi-Fi stays on the device, never here.
     """
 
     type: Literal["touchscreen"]
+    language: Literal["en", "nb"] = Field(
+        default="en",
+        description=(
+            "The language of everything the touchscreen shows, as a BCP 47 code (nb is Norwegian Bokmål). The server "
+            "always sends it; left out is en, so a config from before it was added reads the same."
+        ),
+    )
     style: TouchscreenStyle = Field(description="How a touchscreen looks.")
     display: TouchscreenDisplay = Field(description="A touchscreen's screen itself.")
     lyrics: TouchscreenLyrics | None = Field(
@@ -1402,10 +1408,10 @@ ConfigResponse = Annotated[EpaperConfig | TouchscreenConfig, Field(discriminator
 pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and
 take. A few flat fields (who and what the device is, its size, and its clock format), then a section
 per panel, each its own schema, and `style`, which every type has but whose schema is the type's
-own. A touchscreen's has only what it shows itself: the arrivals, the weather and the notice board,
-its look, its screen's sleep and its lyrics; an e-paper screen's also has its language, time zone,
-pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a
-touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the
+own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the
+notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its time
+zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig)
+or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the
 owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the
 device said at registration, and isn't changed by a save.
 """
