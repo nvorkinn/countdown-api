@@ -2332,6 +2332,11 @@
             "$ref": "#/$defs/DepartureStop"
           },
           "description": "Every stop whose departures the device shows, from any source, in the owner's order."
+        },
+        "group_by_route": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether a stop's departures are grouped by route (line and destination), each route on one row with its next few times, rather than one row per departure. Left out of a save, it stays as it is; the server always sends it, and left out is false, so a config from before it was added reads the same."
         }
       },
       "required": ["stops"]
