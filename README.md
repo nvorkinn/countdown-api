@@ -109,12 +109,13 @@ device_id })` and `connectParcelPageUrl(server)`. It's plain `fetch`, typed by `
 - every type's sections: `arrivals`, `weather` and `notice_board`;
 - `style`, on every type, but its type's own schema: an e-paper screen's (`EpaperStyle`: orientation, drawing style,
   weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour);
-- an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval`, `language` and `timezone`,
-  and the sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
+- `language` (en or nb), on every type; a touchscreen's config from before it has none, which reads as en;
+- an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval` and `timezone`, and the
+  sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
 - a touchscreen's own: `display` (when its screen sleeps), `lyrics` (the synced lyrics' size and alignment; a config
   from before it has none, which a touchscreen shows as medium, on the left) and `parcels` (whether its notice board
-  has its owner's parcels). That is all of it: a touchscreen is English only, keeps its own time, plays music itself
-  and has no other integrations. Every setting a device has lives here on the server, but for its Wi-Fi, which stays
+  has its owner's parcels). That is all of it: a touchscreen keeps its own time, plays music itself and has no other
+  integrations. Every setting a device has lives here on the server, but for its Wi-Fi, which stays
   on the device.
 
 It's a `oneOf` of `EpaperConfig` and `TouchscreenConfig` with a `discriminator` on `type`, so both languages get a
