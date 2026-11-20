@@ -53,7 +53,8 @@
           "source": "entur",
           "id": "NSR:StopPlace:58381"
         }
-      ]
+      ],
+      "group_by_route": false
     },
     "weather": {
       "location": "London",
