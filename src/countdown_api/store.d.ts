@@ -760,11 +760,8 @@ export interface components {
     Arrivals: {
       /** @description Every stop whose departures the device shows, from any source, in the owner's order. */
       stops: components["schemas"]["DepartureStop"][];
-      /**
-       * @description Whether a stop's departures are grouped by route (line and destination), each route on one row with its next few times, rather than one row per departure. Left out of a save, it stays as it is; the server always sends it, and left out is false, so a config from before it was added reads the same.
-       * @default false
-       */
-      group_by_route: boolean;
+      /** @description Whether a stop's departures are grouped by route (line and destination), each route on one row with its next few times, rather than one row per departure. Left out of a save, it stays as it is; the server always sends it, and left out is false, so a config from before it was added reads the same. */
+      group_by_route?: boolean;
     };
     /** @description The weather panel. */
     Weather: {
