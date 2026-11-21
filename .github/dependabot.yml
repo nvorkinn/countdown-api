@@ -1,13 +1,24 @@
 version: 2
+
+# One daily PR for the whole project: every entry below feeds the `dependencies` multi-ecosystem group, which sets the
+# schedule and the commit message for all of them, and `patterns: ['*']` puts each of an entry's dependencies in it,
+# major updates included. Security updates are opened separately by GitHub and are not affected by the schedule.
+multi-ecosystem-groups:
+  dependencies:
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: 'chore(deps)'
+
 updates:
   - package-ecosystem: uv
     directory: /
-    schedule:
-      interval: daily
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
   - package-ecosystem: npm
     directory: /
-    schedule:
-      interval: weekly
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
     # openapi-typescript's peer dependency is typescript ^5, so a newer major breaks `npm ci`. Drop this once it
     # allows one.
     ignore:
@@ -15,9 +26,9 @@ updates:
         update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
   - package-ecosystem: pre-commit
     directory: /
-    schedule:
-      interval: weekly
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
