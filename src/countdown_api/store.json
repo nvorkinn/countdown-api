@@ -1251,6 +1251,15 @@
             }
           },
           {
+            "name": "brightness_control",
+            "in": "query",
+            "required": true,
+            "description": "Whether the touchscreen can set its screen's brightness.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "return_to",
             "in": "query",
             "required": false,
@@ -2048,13 +2057,17 @@
         "height": {
           "$ref": "#/$defs/ScreenSize"
         },
+        "brightness_control": {
+          "type": "boolean",
+          "description": "Whether the touchscreen can set its screen's brightness."
+        },
         "return_to": {
           "type": "string",
           "format": "uri",
           "description": "A URL of the tablet's own app to come back to, on an origin the server allows; it gets `device_id` (or `error=taken`) added to its query."
         }
       },
-      "required": ["secret_hash", "width", "height"]
+      "required": ["secret_hash", "width", "height", "brightness_control"]
     },
     "ConfigResponse": {
       "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",
@@ -2240,6 +2253,12 @@
         "type": {
           "const": "touchscreen",
           "readOnly": true
+        },
+        "brightness_control": {
+          "type": "boolean",
+          "default": false,
+          "readOnly": true,
+          "description": "Whether the touchscreen can set its screen's brightness, as it reported at registration. The server always sends it; left out is false."
         },
         "language": {
           "enum": ["en", "nb"],
