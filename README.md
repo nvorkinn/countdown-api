@@ -191,7 +191,13 @@ later PR here.
 
 The schema reference is at https://nvorkinn.github.io/countdown-api/: the keys, the sources, the scripts and every
 schema, shown with [Scalar](https://scalar.com). The Pages workflow publishes it on every push to main, so it is
-main's contract. It needs Settings > Pages > Source set to "GitHub Actions", and the `github-pages` environment to
+main's contract. Every push to main also sends a `countdown-api-main`
+[repository_dispatch](.github/workflows/dispatch-submodule-bumps.yml) to countdown, countdown-server and the-max-mix,
+whose "Bump countdown-api" workflow points their submodule at main on the branch `chore/bump-countdown-api` and opens
+a PR for it, or updates the one already open. Both ends use the `COUNTDOWN_API_BUMP_TOKEN` secret, a fine-grained PAT
+with Contents and Pull requests read and write on the three consumers.
+
+Pages needs Settings > Pages > Source set to "GitHub Actions", and the `github-pages` environment to
 allow the branch `main`.
 
 ## Changing it
