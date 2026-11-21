@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [[package]]
@@ -62,7 +62,7 @@ requires-dist = [{ name = "pydantic" }]
 [package.metadata.requires-dev]
 dev = [
     { name = "jsonschema", specifier = ">=4.25" },
-    { name = "openapi-codegen", extras = ["yaml"], url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl" },
+    { name = "openapi-codegen", extras = ["yaml"], git = "https://github.com/nvorkinn/openapi-codegen?tag=v2.1.0" },
     { name = "pre-commit" },
     { name = "pyicumessageformat", specifier = ">=1.0.0" },
     { name = "pytest", specifier = ">=8.4" },
@@ -143,20 +143,13 @@ wheels = [
 
 [[package]]
 name = "openapi-codegen"
-version = "2.1.0"
-source = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl" }
-wheels = [
-    { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl", hash = "sha256:21c3255366388d25373d5cd44ad854d6b3e0686fd03e9c44f7a8073c2ac273f5" },
-]
+version = "0.1.0"
+source = { git = "https://github.com/nvorkinn/openapi-codegen?tag=v2.1.0#93ce003d8bf0747a82625d2c2afcbd404095d5b8" }
 
 [package.optional-dependencies]
 yaml = [
     { name = "pyyaml" },
 ]
-
-[package.metadata]
-requires-dist = [{ name = "pyyaml", marker = "extra == 'yaml'" }]
-provides-extras = ["yaml"]
 
 [[package]]
 name = "packaging"

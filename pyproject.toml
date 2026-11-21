@@ -15,11 +15,12 @@ build-backend = "uv_build"
 # models): run `python generate.py` after changing the contract. CI fails if it is out of date.
 # src/countdown_api/fixtures/ is not generated: those are the contract's canonical examples.
 
-# openapi-codegen is a dependency like any other, but of a released file, not a git ref: the lock records the
-# wheel's hash, so a build fails if that file ever changes. To move to a newer release, change the URL here and
-# run `uv lock --upgrade-package openapi-codegen`.
+# openapi-codegen comes from its release tag. The lock records the commit the tag named, so installs stay on it even if
+# the tag moves. Not the release's wheel: Dependabot's uv updates can't download GitHub release files (they fail with
+# private_source_authentication_failure), which stopped every update of uv.lock here and in countdown. To move to a
+# newer release, change the tag here and run `uv lock --upgrade-package openapi-codegen`.
 [tool.uv.sources]
-openapi-codegen = { url = "https://github.com/nvorkinn/openapi-codegen/releases/download/v2.1.0/openapi_codegen-2.1.0-py3-none-any.whl" }
+openapi-codegen = { git = "https://github.com/nvorkinn/openapi-codegen", tag = "v2.1.0" }
 
 [dependency-groups]
 # pytest and jsonschema for the contract's own tests (tests/), which check every example against the schemas.
