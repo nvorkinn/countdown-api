@@ -5,7 +5,7 @@
   "description": "The Node tools: openapi-typescript writes src/countdown_api/store.d.ts from the contract's schemas, TypeScript checks it and client.ts (tsconfig.json), Biome lints and formats the TypeScript and JSON (biome.json), and `node --test` runs client.ts's tests.",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "2.6.7",
+    "@biomejs/biome": "2.6.8",
     "openapi-typescript": "7.13.0",
     "typescript": "^5.9.3"
   }
