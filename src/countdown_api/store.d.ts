@@ -614,6 +614,8 @@ export interface components {
       secret_hash: components["schemas"]["SecretHash"];
       width: components["schemas"]["ScreenSize"];
       height: components["schemas"]["ScreenSize"];
+      /** @description Whether the touchscreen can set its screen's brightness. */
+      brightness_control: boolean;
       /**
        * Format: uri
        * @description A URL of the tablet's own app to come back to, on an origin the server allows; it gets `device_id` (or `error=taken`) added to its query.
@@ -696,6 +698,11 @@ export interface components {
     TouchscreenConfig: {
       /** @constant */
       readonly type: "touchscreen";
+      /**
+       * @description Whether the touchscreen can set its screen's brightness, as it reported at registration. The server always sends it; left out is false.
+       * @default false
+       */
+      readonly brightness_control: boolean;
       /**
        * @description The language of everything the touchscreen shows, as a BCP 47 code (nb is Norwegian Bokmål). The server always sends it; left out is en, so a config from before it was added reads the same.
        * @default en
@@ -1992,6 +1999,8 @@ export interface operations {
         width: components["schemas"]["ScreenSize"];
         /** @description The touchscreen's height, in pixels. */
         height: components["schemas"]["ScreenSize"];
+        /** @description Whether the touchscreen can set its screen's brightness. */
+        brightness_control: boolean;
         /** @description A URL of the tablet's own app to come back to once registered, on one of the origins the server allows (its setting TOUCHSCREEN_RETURN_ORIGINS); any other is a 400, before anything is registered. */
         return_to?: string;
       };

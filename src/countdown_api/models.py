@@ -1359,6 +1359,13 @@ class TouchscreenConfig(ConfigBase):
     """
 
     type: Literal["touchscreen"]
+    brightness_control: bool = Field(
+        default=False,
+        description=(
+            "Whether the touchscreen can set its screen's brightness, as it reported at registration. The server "
+            "always sends it; left out is false."
+        ),
+    )
     language: Literal["en", "nb"] = Field(
         default="en",
         description=(
@@ -1402,6 +1409,7 @@ class TouchscreenRegistration(BaseModel):
     )
     width: ScreenSize = Field(description="A screen's width or height, in pixels.")
     height: ScreenSize = Field(description="A screen's width or height, in pixels.")
+    brightness_control: bool = Field(description="Whether the touchscreen can set its screen's brightness.")
     return_to: str | None = Field(
         default=None,
         description=(

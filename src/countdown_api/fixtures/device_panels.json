@@ -6,6 +6,7 @@
     "type": "touchscreen",
     "width": 1280,
     "height": 800,
+    "brightness_control": false,
     "clock_format": "24h",
     "language": "en",
     "arrivals": {

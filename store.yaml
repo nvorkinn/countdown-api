@@ -1107,6 +1107,12 @@ paths:
         description: The touchscreen's height, in pixels.
         schema:
           $ref: '#/$defs/ScreenSize'
+      - name: brightness_control
+        in: query
+        required: true
+        description: Whether the touchscreen can set its screen's brightness.
+        schema:
+          type: boolean
       - name: return_to
         in: query
         required: false
@@ -1821,6 +1827,9 @@ $defs:
         $ref: '#/$defs/ScreenSize'
       height:
         $ref: '#/$defs/ScreenSize'
+      brightness_control:
+        type: boolean
+        description: Whether the touchscreen can set its screen's brightness.
       return_to:
         type: string
         format: uri
@@ -1831,6 +1840,7 @@ $defs:
     - secret_hash
     - width
     - height
+    - brightness_control
   ConfigResponse:
     description: >-
       A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of
@@ -2033,6 +2043,13 @@ $defs:
       type:
         const: touchscreen
         readOnly: true
+      brightness_control:
+        type: boolean
+        default: false
+        readOnly: true
+        description: >-
+          Whether the touchscreen can set its screen's brightness, as it reported at registration. The server always
+          sends it; left out is false.
       language:
         enum:
         - en
