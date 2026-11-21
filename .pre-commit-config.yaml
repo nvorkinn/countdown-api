@@ -1,10 +1,19 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.5
+  # Ruff from uv.lock, so commits are checked by the same version as CI and Dependabot's uv updates bump it.
+  - repo: local
     hooks:
       - id: ruff-check
-        args: [--fix]
+        name: ruff check
+        entry: uv run --frozen ruff check --force-exclude --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
       - id: ruff-format
+        name: ruff format
+        entry: uv run --frozen ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
   # Biome lints and formats the TypeScript and JSON. It runs the version package-lock.json pins, so `npm ci` first.
   - repo: local
     hooks:
