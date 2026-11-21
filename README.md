@@ -96,8 +96,8 @@ For TypeScript, `client.ts` has a function per route, named by its `operationId`
 (each answers `{ data, response }` for a 2xx and `{ error, response }` otherwise, and sends `client.secret` as the
 bearer where the route takes it), and a URL builder for each page a device sends a browser to,
 `registerTouchscreenUrl(server, { secret_hash, width, height, brightness_control, return_to })`,
-`deviceSettingsPageUrl(server, { device_id })` and `connectParcelPageUrl(server)`. It's plain `fetch`, typed by `store.d.ts`, with nothing to install;
-`generate.py` writes it with the rest, so a new route gets its function in the same PR.
+`deviceSettingsPageUrl(server, { device_id })` and `connectParcelPageUrl(server)`. It's plain `fetch`, typed by
+`store.d.ts`, with nothing to install; `generate.py` writes it with the rest, so a new route gets its function in the same PR.
 
 ### A device's config
 
