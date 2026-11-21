@@ -1,0 +1,40 @@
+name: Dispatch submodule bumps
+
+# Tells each project that vendors this repository as a submodule that main has moved, with a `countdown-api-main`
+# repository_dispatch. Each one's "Bump countdown-api" workflow then points its submodule at main on one fixed branch,
+# chore/bump-countdown-api, and opens a PR for it, or updates the PR already open: later pushes here land on the same
+# branch and PR.
+#
+# Sending a repository_dispatch to another repository takes a token with Contents read and write on it: set the
+# COUNTDOWN_API_BUMP_TOKEN secret to a fine-grained PAT with that on countdown, countdown-server and the-max-mix (the
+# same PAT, with Pull requests read and write as well, serves as their COUNTDOWN_API_BUMP_TOKEN).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        repository: [nvorkinn/countdown, nvorkinn/countdown-server, nvorkinn/the-max-mix]
+    steps:
+      - name: Send countdown-api-main to ${{ matrix.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.COUNTDOWN_API_BUMP_TOKEN }}
+          REPOSITORY: ${{ matrix.repository }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Set the COUNTDOWN_API_BUMP_TOKEN secret (see the top of this workflow)."
+            exit 1
+          fi
+          # The receiver moves to main's head when it runs, not to this SHA, so dispatches that arrive out of order
+          # still end on the newest main. The SHA is for its logs.
+          gh api --method POST "repos/$REPOSITORY/dispatches" \
+            -f event_type=countdown-api-main \
+            -f "client_payload[sha]=$GITHUB_SHA"
