@@ -317,6 +317,12 @@ def test_a_touchscreen_config_from_before_lyrics_is_still_one() -> None:
     assert check("TouchscreenConfig", older).lyrics is None
 
 
+def test_a_touchscreen_config_from_before_brightness_control_cannot_set_it() -> None:
+    older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "brightness_control"}
+    check_schema("ConfigResponse", older)
+    assert check("TouchscreenConfig", older).brightness_control is False
+
+
 def test_a_touchscreen_config_from_before_its_language_is_english() -> None:
     older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "language"}
     check_schema("ConfigResponse", older)
@@ -324,13 +330,15 @@ def test_a_touchscreen_config_from_before_its_language_is_english() -> None:
 
 
 def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
-    # The flat fields, its language, the panels it shows, its look, its screen's sleep and its parcel notices: no
-    # pairing code, time zone, interval, music or other integrations, which only an e-paper screen has.
+    # The flat fields, whether its brightness can be set, its language, the panels it shows, its look, its screen's
+    # sleep and its parcel notices: no pairing code, time zone, interval, music or other integrations, which only an
+    # e-paper screen has.
     assert set(models.TouchscreenConfig.model_fields) == {
         "device_id",
         "type",
         "width",
         "height",
+        "brightness_control",
         "clock_format",
         "language",
         "arrivals",
