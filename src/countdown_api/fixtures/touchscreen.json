@@ -39,7 +39,12 @@
     },
     "notice_board": {
       "postcode": "0150",
-      "country": "NO"
+      "country": "NO",
+      "address": {
+        "street": "Dronning Eufemias gate",
+        "house_number": "1",
+        "city": "Oslo"
+      }
     },
     "style": {
       "skin": "auto",
@@ -88,7 +93,12 @@
     },
     "notice_board": {
       "postcode": "0150",
-      "country": "NO"
+      "country": "NO",
+      "address": {
+        "street": "Dronning Eufemias gate",
+        "house_number": "1",
+        "city": "Oslo"
+      }
     },
     "style": {
       "skin": "night",
@@ -169,7 +179,12 @@
       },
       "notice_board": {
         "postcode": "0150",
-        "country": "NO"
+        "country": "NO",
+        "address": {
+          "street": "Dronning Eufemias gate",
+          "house_number": "1",
+          "city": "Oslo"
+        }
       },
       "style": {
         "skin": "night",

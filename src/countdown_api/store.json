@@ -465,7 +465,7 @@
       "ttl_s": 129600,
       "ttl": "renewed every 12 hours, while the address is in v1:sub:address.",
       "written_by": "countdown's bins provider, for every address in v1:sub:address",
-      "read_by": "the notice board",
+      "read_by": "the notice board, and the broker's getNotices",
       "examples": ["bins.json"],
       "description": "When a household's bins are next emptied, as Binable (https://binable.app) has its municipality's collection calendar: the days ahead, about three months of them, for each kind of waste collected there. An address Binable has no calendar for is written too, as not found, so a board shows no bin notice rather than wait. The address is hashed so that no key names a home."
     }
@@ -3492,6 +3492,18 @@
           ],
           "default": null,
           "description": "MET Norway's weather warnings for the postcode's place, for a device with a Norwegian postcode: what the MetAlerts provider stored for all of Norway (v1:notices:metalerts), narrowed by the server to the Features whose area covers the postcode's location (v1:location:<place>), in both answers (`no` and `en`) alike, each answer's other members as they came. So the device needs no geometry of its own: every Feature it gets is about its place, and it words them as the e-paper notice board does. Null for any other device, for a postcode whose location isn't known (not looked up yet, or not found), or with none stored; a place with no warnings has answers with no Features. A Feature covers the place when the location, at four decimals, is in its geometry's Polygon (or any of its MultiPolygon's), in its outer ring and none of its holes, as the e-paper notice board has it. Null from a server that predates it, too."
+        },
+        "bins": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StoredBinCollections"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The household's bin collection days, for a device with a Norwegian postcode and an address set (notice_board.address): what the bins provider stored for it (v1:bins:<SHA1 of its v1:sub:address member>), as it came. The device shows the next collection day, and what's emptied then, in the week before it, as the e-paper notice board does (notice.bins.*). Null for any other device, or with none stored; an address Binable has no calendar for has found false and no collections. Null from a server that predates it, too."
         }
       },
       "required": ["postcode", "country", "tfl_stops", "tfl_roads", "met_office", "bank_holidays", "tfl_network"]

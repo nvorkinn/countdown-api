@@ -697,7 +697,8 @@ def bins(address: str) -> str:
     A Redis string of models.StoredBinCollections (json), with a TTL of 129600 s: renewed every 12 hours, while the
     address is in v1:sub:address.
 
-    Written by countdown's bins provider, for every address in v1:sub:address. Read by the notice board.
+    Written by countdown's bins provider, for every address in v1:sub:address. Read by the notice board, and the
+    broker's getNotices.
 
     Example: countdown_api.fixtures, bins.json.
     """
