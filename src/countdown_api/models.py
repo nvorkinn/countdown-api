@@ -556,6 +556,25 @@ class StoredBankHolidays(BaseModel):
     )
 
 
+class StoredBinCollections(BaseModel):
+    """The ``StoredBinCollections`` object.
+
+    The value of v1:bins:<SHA1 of the address>: a household's bin collection days as Binable had them at
+    fetched_at, or that Binable has none for it. `found` and `collections` go together: an address not
+    found has no collections.
+    """
+
+    fetched_at: datetime
+    found: bool = Field(description="False when Binable knows no collection calendar for the address.")
+    provider: str | None = Field(
+        default=None,
+        description="Who empties the bins, as Binable names them (Oslo kommune's waste agency).",
+    )
+    collections: list[BinCollection] = Field(
+        description="Each kind of waste with a collection ahead, in Binable's order; empty when not found.",
+    )
+
+
 class FloodWarning(BaseModel):
     """The ``FloodWarning`` object.
 
@@ -831,6 +850,17 @@ class DeviceNotices(BaseModel):
             "stored; a place with no warnings has answers with no Features. A Feature covers the place when the "
             "location, at four decimals, is in its geometry's Polygon (or any of its MultiPolygon's), in its outer "
             "ring and none of its holes, as the e-paper notice board has it. Null from a server that predates it, too."
+        ),
+    )
+    bins: StoredBinCollections | None = Field(
+        default=None,
+        description=(
+            "The household's bin collection days, for a device with a Norwegian postcode and an address set "
+            "(notice_board.address): what the bins provider stored for it (v1:bins:<SHA1 of its v1:sub:address "
+            "member>), as it came. The device shows the next collection day, and what's emptied then, in the week "
+            "before it, as the e-paper notice board does (notice.bins.*). Null for any other device, or with none "
+            "stored; an address Binable has no calendar for has found false and no collections. Null from a server "
+            "that predates it, too."
         ),
     )
 
@@ -1227,25 +1257,6 @@ class StopSearchResult(SearchResult):
     )
     letter: str = Field(description="Its stop letter or platform code; may be empty.")
     lines: list[str] = Field(description="The lines that stop there.")
-
-
-class StoredBinCollections(BaseModel):
-    """The ``StoredBinCollections`` object.
-
-    The value of v1:bins:<SHA1 of the address>: a household's bin collection days as Binable had them at
-    fetched_at, or that Binable has none for it. `found` and `collections` go together: an address not
-    found has no collections.
-    """
-
-    fetched_at: datetime
-    found: bool = Field(description="False when Binable knows no collection calendar for the address.")
-    provider: str | None = Field(
-        default=None,
-        description="Who empties the bins, as Binable names them (Oslo kommune's waste agency).",
-    )
-    collections: list[BinCollection] = Field(
-        description="Each kind of waste with a collection ahead, in Binable's order; empty when not found.",
-    )
 
 
 class StoredDeveloper(BaseModel):

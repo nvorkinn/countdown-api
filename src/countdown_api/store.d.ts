@@ -1241,6 +1241,11 @@ export interface components {
        * @default null
        */
       metalerts: components["schemas"]["StoredMetAlerts"] | null;
+      /**
+       * @description The household's bin collection days, for a device with a Norwegian postcode and an address set (notice_board.address): what the bins provider stored for it (v1:bins:<SHA1 of its v1:sub:address member>), as it came. The device shows the next collection day, and what's emptied then, in the week before it, as the e-paper notice board does (notice.bins.*). Null for any other device, or with none stored; an address Binable has no calendar for has found false and no collections. Null from a server that predates it, too.
+       * @default null
+       */
+      bins: components["schemas"]["StoredBinCollections"] | null;
     };
     /** @description An Entur stop's situations, null with none stored. */
     EnturStopNotices: {

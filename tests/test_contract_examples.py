@@ -687,6 +687,12 @@ def test_get_notices_for_a_norwegian_postcode_has_mets_warnings_covering_its_pla
         for language in ("no", "en")
     }
     assert ids["no"] == ids["en"]
+    # Its household's bin collection days, as the bins provider stored them for its address.
+    board = fixtures.load("touchscreen.json")["config"]["notice_board"]
+    address = board["address"]
+    member = f"{address['street']}|{address['house_number']}|{board['postcode']}|{address['city']}"
+    stored_bins = {entry["key"]: entry["value"] for entry in fixtures.load("bins.json")["addresses"]}
+    assert NORWAY["notices"]["bins"] == stored_bins[keys.bins(member)]
 
 
 def test_a_touchscreens_parcels_are_off_and_its_notices_have_none_when_left_out() -> None:

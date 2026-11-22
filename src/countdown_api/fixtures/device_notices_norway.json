@@ -1,5 +1,5 @@
 {
-  "about": "An Oslo touchscreen's notices (getNotices), for the postcode 0150 and the Entur stop in entur_situations.json: MET Norway's warnings from metalerts.json narrowed to the three whose area covers 0150's location in location.json (wind and ice for Oslo and Akershus, rain for Bergen and Oslo), in both answers alike, each answer's other members as they came; the Skagerrak, Troms and Eastern Norway warnings are left out. Its UK sources (TfL's, the Met Office's, the flood warnings, the bank holidays and the Tube's status) are null, as its postcode is a Norwegian one, and it has no parcels switched on.",
+  "about": "An Oslo touchscreen's notices (getNotices), for the postcode 0150 and the Entur stop in entur_situations.json: MET Norway's warnings from metalerts.json narrowed to the three whose area covers 0150's location in location.json (wind and ice for Oslo and Akershus, rain for Bergen and Oslo), in both answers alike, each answer's other members as they came; the Skagerrak, Troms and Eastern Norway warnings are left out. Its UK sources (TfL's, the Met Office's, the flood warnings, the bank holidays and the Tube's status) are null, as its postcode is a Norwegian one, and it has no parcels switched on. Its address (touchscreen.json's notice_board.address, Dronning Eufemias gate 1) has the bins provider's value from bins.json, which Binable has no calendar for.",
   "postcode": "0150",
   "location": "v1:location:0150",
   "notices": {
@@ -475,6 +475,11 @@
         "lastChange": "2026-10-16T07:00:00+00:00",
         "type": "FeatureCollection"
       }
+    },
+    "bins": {
+      "fetched_at": "2026-11-22T12:00:00Z",
+      "found": false,
+      "collections": []
     }
   }
 }
