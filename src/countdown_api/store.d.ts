@@ -749,7 +749,22 @@ export interface components {
        * @enum {integer}
        */
       sleep_minutes: 0 | 2 | 5 | 15 | 30;
+      /**
+       * @description How bright the screen is while someone uses it, as a percentage of its full brightness. Only a touchscreen that can set its screen's brightness (its config's brightness_control) uses it: any other keeps the setting but ignores it. The server always sends it; left out is 100, so a config from before it was added reads the same.
+       * @default 100
+       */
+      brightness: number;
+      quiet_hours?: components["schemas"]["TouchscreenQuietHours"];
     };
+    /** @description A stretch of the day when a touchscreen's screen sleeps soon after the last touch, whatever sleep_minutes says. The times are the touchscreen's own local time, as minutes after midnight; an end before the start runs past midnight, and equal times are never quiet. Off keeps the times for next time. A display without it (one saved before it existed) has no quiet hours. Only a Raspberry Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it. */
+    TouchscreenQuietHours: {
+      /** @description Whether the quiet hours apply. */
+      on: boolean;
+      start: components["schemas"]["MinuteOfDay"];
+      end: components["schemas"]["MinuteOfDay"];
+    };
+    /** @description A time of day, as minutes after midnight (0 to 1439). */
+    MinuteOfDay: number;
     /** @description How a touchscreen shows a song's synced lyrics. A config without it (one saved before it existed) shows them at medium size, lined up on the left. */
     TouchscreenLyrics: {
       /**
@@ -1257,6 +1272,8 @@ export type EpaperStyle = components["schemas"]["EpaperStyle"];
 export type TouchscreenConfig = components["schemas"]["TouchscreenConfig"];
 export type TouchscreenStyle = components["schemas"]["TouchscreenStyle"];
 export type TouchscreenDisplay = components["schemas"]["TouchscreenDisplay"];
+export type TouchscreenQuietHours = components["schemas"]["TouchscreenQuietHours"];
+export type MinuteOfDay = components["schemas"]["MinuteOfDay"];
 export type TouchscreenLyrics = components["schemas"]["TouchscreenLyrics"];
 export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
