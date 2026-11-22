@@ -2965,13 +2965,13 @@ $defs:
         description: Who empties the bins, as Binable names them (Oslo kommune's waste agency).
       collections:
         type: array
-        default: []
         items:
           $ref: '#/$defs/BinCollection'
-        description: Each kind of waste with a collection ahead, in Binable's order.
+        description: Each kind of waste with a collection ahead, in Binable's order; empty when not found.
     required:
     - fetched_at
     - found
+    - collections
   BinCollection:
     description: One kind of waste's collection days.
     type: object

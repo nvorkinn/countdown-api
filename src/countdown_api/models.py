@@ -1243,9 +1243,8 @@ class StoredBinCollections(BaseModel):
         default=None,
         description="Who empties the bins, as Binable names them (Oslo kommune's waste agency).",
     )
-    collections: list[BinCollection] | None = Field(
-        default=None,
-        description="Each kind of waste with a collection ahead, in Binable's order.",
+    collections: list[BinCollection] = Field(
+        description="Each kind of waste with a collection ahead, in Binable's order; empty when not found.",
     )
 
 

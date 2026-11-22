@@ -1145,10 +1145,7 @@ export interface components {
        * @default null
        */
       provider: string | null;
-      /**
-       * @description Each kind of waste with a collection ahead, in Binable's order.
-       * @default []
-       */
+      /** @description Each kind of waste with a collection ahead, in Binable's order; empty when not found. */
       collections: components["schemas"]["BinCollection"][];
     };
     /** @description One kind of waste's collection days. */

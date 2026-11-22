@@ -26,7 +26,8 @@
       "key": "v1:bins:247ef0f3cb8abe6085a7c14632382f17ff4c8d41",
       "value": {
         "fetched_at": "2026-11-22T12:00:00Z",
-        "found": false
+        "found": false,
+        "collections": []
       }
     }
   ]
