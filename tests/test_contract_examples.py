@@ -297,6 +297,10 @@ def test_a_config_takes_only_its_types_style() -> None:
         {key: value for key, value in touchscreen.items() if key != "display"},
         {**epaper, "type": "kiosk"},
         {**touchscreen, "display": {"sleep_minutes": 10}},
+        {**touchscreen, "display": {**touchscreen["display"], "brightness": 5}},
+        {**touchscreen, "display": {**touchscreen["display"], "brightness": 101}},
+        {**touchscreen, "display": {**touchscreen["display"], "quiet_hours": {"on": True, "start": 1320}}},
+        {**touchscreen, "display": {**touchscreen["display"], "quiet_hours": {"on": True, "start": 1320, "end": 1440}}},
         {**touchscreen, "language": "de"},
         {**touchscreen, "lyrics": {"size": "huge", "align": "left"}},
         {**touchscreen, "lyrics": {"size": "medium", "align": "justify"}},
@@ -315,6 +319,19 @@ def test_a_touchscreen_config_from_before_lyrics_is_still_one() -> None:
     older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "lyrics"}
     check_schema("ConfigResponse", older)
     assert check("TouchscreenConfig", older).lyrics is None
+
+
+def test_a_touchscreen_config_from_before_brightness_and_quiet_hours_is_at_full_brightness_with_none() -> None:
+    older = TOUCHSCREEN["config"] | {"display": {"sleep_minutes": 15}}
+    check_schema("ConfigResponse", older)
+    display = check("TouchscreenConfig", older).display
+    assert display.brightness == 100
+    assert display.quiet_hours is None
+
+
+def test_a_touchscreens_quiet_hours_may_run_past_midnight() -> None:
+    quiet = check("TouchscreenConfig", TOUCHSCREEN["config"]).display.quiet_hours
+    assert (quiet.on, quiet.start, quiet.end) == (True, 22 * 60, 7 * 60)
 
 
 def test_a_touchscreen_config_from_before_brightness_control_cannot_set_it() -> None:

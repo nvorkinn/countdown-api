@@ -47,7 +47,13 @@
       "dynamic": true
     },
     "display": {
-      "sleep_minutes": 15
+      "sleep_minutes": 15,
+      "brightness": 80,
+      "quiet_hours": {
+        "on": true,
+        "start": 1320,
+        "end": 420
+      }
     },
     "lyrics": {
       "size": "large",
@@ -90,7 +96,13 @@
       "dynamic": true
     },
     "display": {
-      "sleep_minutes": 30
+      "sleep_minutes": 30,
+      "brightness": 80,
+      "quiet_hours": {
+        "on": true,
+        "start": 1320,
+        "end": 420
+      }
     },
     "lyrics": {
       "size": "large",
@@ -165,7 +177,13 @@
         "dynamic": true
       },
       "display": {
-        "sleep_minutes": 15
+        "sleep_minutes": 15,
+        "brightness": 80,
+        "quiet_hours": {
+          "on": true,
+          "start": 1320,
+          "end": 420
+        }
       },
       "lyrics": {
         "size": "large",

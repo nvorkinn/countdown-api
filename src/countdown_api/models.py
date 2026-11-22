@@ -1031,6 +1031,10 @@ pairs. The renderer reads it with its own model of Glowmarkt's answer.
 """
 
 
+MinuteOfDay = Annotated[int, Field(ge=0, le=1439)]
+"""A time of day, as minutes after midnight (0 to 1439)."""
+
+
 MusicQueue = dict[str, Any]
 """Spotify's /me/player/queue answer (or Apple Music's, made to look like it), as the provider got it."""
 
@@ -1297,6 +1301,21 @@ Subscription = list[Annotated[str, Field(min_length=1)]]
 """A subscription set's members, in no order. See `sources` for each source's."""
 
 
+class TouchscreenQuietHours(BaseModel):
+    """The ``TouchscreenQuietHours`` object.
+
+    A stretch of the day when a touchscreen's screen sleeps soon after the last touch, whatever
+    sleep_minutes says. The times are the touchscreen's own local time, as minutes after midnight; an
+    end before the start runs past midnight, and equal times are never quiet. Off keeps the times for
+    next time. A display without it (one saved before it existed) has no quiet hours. Only a Raspberry
+    Pi kiosk sleeps its screen: a touchscreen in a browser keeps the setting but ignores it.
+    """
+
+    on: bool = Field(description="Whether the quiet hours apply.")
+    start: MinuteOfDay = Field(description="A time of day, as minutes after midnight (0 to 1439).")
+    end: MinuteOfDay = Field(description="A time of day, as minutes after midnight (0 to 1439).")
+
+
 class TouchscreenDisplay(BaseModel):
     """A touchscreen's screen itself."""
 
@@ -1304,6 +1323,25 @@ class TouchscreenDisplay(BaseModel):
         description=(
             "Idle minutes, with no music playing, before the screen sleeps; 0 keeps it on. Only a Raspberry Pi kiosk "
             "sleeps its screen: a touchscreen in a browser keeps the setting but ignores it."
+        ),
+    )
+    brightness: Annotated[int, Field(ge=10, le=100)] = Field(
+        default=100,
+        description=(
+            "How bright the screen is while someone uses it, as a percentage of its full brightness. Only a "
+            "touchscreen that can set its screen's brightness (its config's brightness_control) uses it: any other "
+            "keeps the setting but ignores it. The server always sends it; left out is 100, so a config from before it"
+            " was added reads the same."
+        ),
+    )
+    quiet_hours: TouchscreenQuietHours | None = Field(
+        default=None,
+        description=(
+            "A stretch of the day when a touchscreen's screen sleeps soon after the last touch, whatever sleep_minutes"
+            " says. The times are the touchscreen's own local time, as minutes after midnight; an end before the start"
+            " runs past midnight, and equal times are never quiet. Off keeps the times for next time. A display "
+            "without it (one saved before it existed) has no quiet hours. Only a Raspberry Pi kiosk sleeps its screen:"
+            " a touchscreen in a browser keeps the setting but ignores it."
         ),
     )
 
