@@ -15,6 +15,9 @@
     "weather_lat": 59.91273,
     "weather_lon": 10.74609,
     "postcode": "0150",
+    "address_street": "Dronning Eufemias gate",
+    "address_house_number": "1",
+    "address_city": "Oslo",
     "spotify_enabled": false,
     "apple_music_enabled": false,
     "developer_enabled": false,
@@ -51,7 +54,12 @@
     },
     "notice_board": {
       "postcode": "0150",
-      "country": "NO"
+      "country": "NO",
+      "address": {
+        "street": "Dronning Eufemias gate",
+        "house_number": "1",
+        "city": "Oslo"
+      }
     },
     "spotify": {
       "enabled": false

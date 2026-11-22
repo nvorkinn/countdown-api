@@ -169,6 +169,11 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
     for value in (CONFIG["value"], PAIRING["value"]):
         assert value["weather"]["key"] in sets[keys.subscription(keys.WEATHER)]
         assert value["notice_board"]["postcode"] in sets[keys.subscription(keys.POSTCODE)]
+        if address := value["notice_board"].get("address"):
+            member = "|".join(
+                (address["street"], address["house_number"], value["notice_board"]["postcode"], address["city"])
+            )
+            assert member in sets[keys.subscription(keys.ADDRESS)]
         for stop in value["arrivals"]["stops"]:
             assert stop["id"] in sets[keys.subscription(stop["source"])]
         for source, section in ((keys.SPOTIFY, "spotify"), (keys.DEVELOPER, "developer"), (keys.PARCEL, "parcels")):
@@ -572,6 +577,23 @@ def test_floods_are_the_eas_warnings_near_the_postcodes_place_under_its_names() 
     levels = [warning["severityLevel"] for warning in example["places"][0]["value"]["floods"]["items"]]
     assert sorted(levels) == [1, 2, 3, 4]
     assert example["places"][-1]["value"]["floods"]["items"] == []  # all clear is still written
+
+
+def test_bins_are_each_addresss_collection_days_or_that_binable_has_none() -> None:
+    example = fixtures.load("bins.json")
+    assert example["ttl_s"] == keys.BINS_TTL_S
+    found = {}
+    for entry in example["addresses"]:
+        assert entry["key"] == keys.bins(entry["address"])
+        assert entry["address"].count("|") == 3
+        stored = check("StoredBinCollections", entry["value"])
+        assert stored.found == bool(stored.collections)
+        for collection in stored.collections:
+            assert collection.dates == sorted(collection.dates)
+        found[entry["address"]] = stored
+    assert set(fixtures.load("subscriptions.json")["sets"][keys.subscription(keys.ADDRESS)]) <= set(found)
+    oslo = found["Thorvald Meyers gate|10|0555|Oslo"]
+    assert [collection.fraction for collection in oslo.collections] == ["paper", "residualWaste"]
 
 
 def test_metalerts_are_mets_answers_for_all_of_norway_in_both_languages() -> None:
