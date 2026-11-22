@@ -1994,7 +1994,7 @@
       "description": "What kind of device: an e-paper screen (countdown-esp32), which shows the frames the render pool draws, or a touchscreen, which draws itself from its config."
     },
     "DeviceRegistration": {
-      "description": "What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's format), while a touchscreen draws itself, so says no format.",
+      "description": "What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's format), while a touchscreen draws itself, so says no format, and may say whether it can set its screen's brightness.",
       "type": "object",
       "if": {
         "properties": {
@@ -2010,7 +2010,10 @@
         }
       },
       "else": {
-        "required": ["format"]
+        "required": ["format"],
+        "not": {
+          "required": ["brightness_control"]
+        }
       },
       "properties": {
         "secret": {
@@ -2036,6 +2039,11 @@
           "enum": ["mono-1bpp-packed", "png"],
           "type": "string",
           "description": "The format an e-paper screen takes its frame in, as its config's format."
+        },
+        "brightness_control": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether a touchscreen can set its screen's brightness (its config's brightness_control). Only a touchscreen says; left out is false."
         }
       },
       "required": ["secret", "width", "height"]

@@ -901,7 +901,8 @@ class DeviceRegistration(BaseModel):
     """What POST /api/devices/register takes.
 
     Every device says its size; an e-paper screen also says the format it takes its frame in (its
-    config's format), while a touchscreen draws itself, so says no format.
+    config's format), while a touchscreen draws itself, so says no format, and may say whether it can
+    set its screen's brightness.
     """
 
     secret: Annotated[str, Field(min_length=16)] = Field(
@@ -922,6 +923,13 @@ class DeviceRegistration(BaseModel):
     format: Literal["mono-1bpp-packed", "png"] | None = Field(
         default=None,
         description="The format an e-paper screen takes its frame in, as its config's format.",
+    )
+    brightness_control: bool = Field(
+        default=False,
+        description=(
+            "Whether a touchscreen can set its screen's brightness (its config's brightness_control). Only a "
+            "touchscreen says; left out is false."
+        ),
     )
 
 

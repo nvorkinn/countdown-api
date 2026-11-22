@@ -585,7 +585,7 @@ export interface components {
      * @enum {string}
      */
     DeviceType: "epaper" | "touchscreen";
-    /** @description What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's format), while a touchscreen draws itself, so says no format. */
+    /** @description What POST /api/devices/register takes. Every device says its size; an e-paper screen also says the format it takes its frame in (its config's format), while a touchscreen draws itself, so says no format, and may say whether it can set its screen's brightness. */
     DeviceRegistration: {
       /** @description A random string the device generated and keeps, sent from then on as Authorization: Bearer <secret>. Never logged; the broker keeps only its hash. */
       secret: string;
@@ -600,6 +600,11 @@ export interface components {
        * @enum {string}
        */
       format?: "mono-1bpp-packed" | "png";
+      /**
+       * @description Whether a touchscreen can set its screen's brightness (its config's brightness_control). Only a touchscreen says; left out is false.
+       * @default false
+       */
+      brightness_control: boolean;
     };
     /** @description What POST /api/devices/register answers. */
     DeviceRegistered: {

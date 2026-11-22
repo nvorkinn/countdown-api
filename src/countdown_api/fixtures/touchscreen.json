@@ -5,7 +5,8 @@
     "secret": "example-not-a-real-secret-0001",
     "type": "touchscreen",
     "width": 1280,
-    "height": 800
+    "height": 800,
+    "brightness_control": false
   },
   "epaper_registration": {
     "secret": "example-not-a-real-secret-0002",
