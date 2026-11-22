@@ -1241,7 +1241,7 @@ class StoredBinCollections(BaseModel):
     found: bool = Field(description="False when Binable knows no collection calendar for the address.")
     provider: str | None = Field(
         default=None,
-        description='Who empties the bins, as Binable names them ("Oslo kommune – Renovasjons- og gjenvinningsetaten").',
+        description="Who empties the bins, as Binable names them (Oslo kommune's waste agency).",
     )
     collections: list[BinCollection] | None = Field(
         default=None,

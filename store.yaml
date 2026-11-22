@@ -2962,7 +2962,7 @@ $defs:
         - type: string
         - type: 'null'
         default: null
-        description: Who empties the bins, as Binable names them ("Oslo kommune – Renovasjons- og gjenvinningsetaten").
+        description: Who empties the bins, as Binable names them (Oslo kommune's waste agency).
       collections:
         type: array
         default: []

@@ -1141,7 +1141,7 @@ export interface components {
       /** @description False when Binable knows no collection calendar for the address. */
       found: boolean;
       /**
-       * @description Who empties the bins, as Binable names them ("Oslo kommune – Renovasjons- og gjenvinningsetaten").
+       * @description Who empties the bins, as Binable names them (Oslo kommune's waste agency).
        * @default null
        */
       provider: string | null;
