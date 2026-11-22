@@ -150,6 +150,7 @@ def test_the_keys_are_what_they_were() -> None:
         "parcel",
         "postcode",
         "background",
+        "address",
     )
     assert keys.background_place("london-gb-2643743") == "v1:background-place:london-gb-2643743"
     assert keys.CONFIG_PREFIX == "v1:config:"
@@ -179,6 +180,8 @@ def test_the_keys_are_what_they_were() -> None:
     assert keys.floods("se17 3ll") == "v1:notices:floods:SE173LL"
     assert keys.METALERTS == "v1:notices:metalerts"
     assert (keys.LOCATION_TTL_S, keys.FLOODS_TTL_S, keys.METALERTS_TTL_S) == (604_800, 1_800, 1_800)
+    assert keys.bins("Thorvald Meyers gate|10|0555|Oslo") == "v1:bins:58be698a862d2efb43a9ac0b5a1749f42cd20fee"
+    assert keys.BINS_TTL_S == 129_600
 
 
 def test_store_json_is_store_yaml() -> None:
