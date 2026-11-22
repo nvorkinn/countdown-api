@@ -34,6 +34,10 @@ sources:
     Weather keys (WeatherKey) of the places the paired touchscreens show, a subset of `weather`'s: the places the
     background provider makes pictures for. An e-paper screen draws no background, so its place isn't here. Each
     member has a v1:background-place:<key> beside it, written in the same transaction.
+  address: >-
+    The notice board's household address, for a Norwegian board with one set (NoticeBoardAddress), as
+    "<street>|<house_number>|<postcode>|<city>" ("Thorvald Meyers gate|10|0555|Oslo"): what the bins provider asks
+    Binable for its collection days. Never logged.
 
 # Every key and channel that crosses the boundary. Each becomes a builder (or, with no parameter, a constant) of the
 # same name in countdown_api.keys; a TTL becomes <NAME>_TTL_S or <NAME>_TTL_MS there. `redis` is the Redis type;
@@ -494,6 +498,24 @@ keys:
     description: >-
       MET Norway's current weather warnings (MetAlerts' current.json) for all of Norway, in Norwegian and in English:
       one key, not one per place, as MetAlerts answers for the whole country at once.
+  bins:
+    pattern: "v1:bins:{address}"
+    params:
+      address: a member of v1:sub:address ("Thorvald Meyers gate|10|0555|Oslo"); the key holds its SHA1 in hex.
+    hash: {address: sha1}
+    redis: string
+    value: StoredBinCollections
+    encoding: json
+    ttl_s: 129600
+    ttl: renewed every 12 hours, while the address is in v1:sub:address.
+    written_by: countdown's bins provider, for every address in v1:sub:address
+    read_by: the notice board
+    examples: [bins.json]
+    description: >-
+      When a household's bins are next emptied, as Binable (https://binable.app) has its municipality's collection
+      calendar: the days ahead, about three months of them, for each kind of waste collected there. An address
+      Binable has no calendar for is written too, as not found, so a board shows no bin notice rather than wait.
+      The address is hashed so that no key names a home.
 
 # The Lua scripts both sides run. Each becomes a countdown_api.scripts.Script of the same name (upper case), carrying
 # the source byte for byte and its SHA1, which EVALSHA calls it by.
@@ -2244,9 +2266,37 @@ $defs:
           type: string
         - type: 'null'
         description: The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.
+      address:
+        anyOf:
+        - $ref: '#/$defs/NoticeBoardAddress'
+        - type: 'null'
+        default: null
+        description: >-
+          The household's address, for its bin collection days: only for a Norwegian postcode, and null with none
+          set (or from a broker that predates it).
     required:
     - postcode
     - country
+  NoticeBoardAddress:
+    description: >-
+      A Norwegian household's address, in the postcode of its notice board, spelled as Kartverket's address register
+      has it (the broker checks it there when it's saved). Its v1:sub:address member is
+      "<street>|<house_number>|<postcode>|<city>", the postcode being its notice board's.
+    type: object
+    properties:
+      street:
+        type: string
+        description: The street's name, Kartverket's adressenavn ("Thorvald Meyers gate").
+      house_number:
+        type: string
+        description: The house number with its letter, if any ("10", "12B").
+      city:
+        type: string
+        description: The postal town, Kartverket's poststed, in title case ("Oslo").
+    required:
+    - street
+    - house_number
+    - city
   Spotify:
     description: The Spotify area.
     type: object
@@ -2894,6 +2944,54 @@ $defs:
     - severity
     - severityLevel
     - floodAreaID
+  StoredBinCollections:
+    description: >-
+      The value of v1:bins:<SHA1 of the address>: a household's bin collection days as Binable had them at
+      fetched_at, or that Binable has none for it. `found` and `collections` go together: an address not found has
+      no collections.
+    type: object
+    properties:
+      fetched_at:
+        type: string
+        format: date-time
+      found:
+        type: boolean
+        description: False when Binable knows no collection calendar for the address.
+      provider:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Who empties the bins, as Binable names them ("Oslo kommune – Renovasjons- og gjenvinningsetaten").
+      collections:
+        type: array
+        default: []
+        items:
+          $ref: '#/$defs/BinCollection'
+        description: Each kind of waste with a collection ahead, in Binable's order.
+    required:
+    - fetched_at
+    - found
+  BinCollection:
+    description: One kind of waste's collection days.
+    type: object
+    properties:
+      fraction:
+        type: string
+        description: >-
+          Binable's key for the kind of waste: paper, bio, residualWaste, residualWasteLessFrequent,
+          residualWasteContainer, residualWasteContainerLessFrequent, reusableMaterials, glassContainer,
+          collectionStation, christmasTree, toxic, diaper, hedgeTreeTrimming or fleaMarket; a reader shows one it
+          doesn't know by notice.bins.fraction's other.
+      dates:
+        type: array
+        items:
+          type: string
+          format: date
+        description: The collection days ahead, earliest first, as local dates.
+    required:
+    - fraction
+    - dates
   StoredMetAlerts:
     description: >-
       The value of v1:notices:metalerts: MET Norway's current weather warnings, MetAlerts' current.json as it came, a

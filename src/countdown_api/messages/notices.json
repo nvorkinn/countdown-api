@@ -148,5 +148,30 @@
     "description": "The day something is on, when it's tomorrow; starts a line.",
     "en": "Tomorrow",
     "nb": "I morgen"
+  },
+  "notice.bins.title": {
+    "description": "The title of the notice for a household's next bin collection, for a Norwegian board with an address set. Its summary is notice.bins.summary's.",
+    "en": "Bin collection",
+    "nb": "Avfallstømming"
+  },
+  "notice.bins.tag": {
+    "description": "The tag in front of the next bin collection's notice where a notice is one line (an e-paper screen). Its text is notice.bins.text's.",
+    "en": "Bins",
+    "nb": "Avfall"
+  },
+  "notice.bins.summary": {
+    "description": "The next bin collection under its title: `when` is notice.day.today's, notice.day.tomorrow's or its date, `fractions` the kinds of waste emptied that day, each notice.bins.fraction's, joined with commas (\"Thu 26 Nov – Paper, Residual waste\").",
+    "en": "{when} – {fractions}",
+    "nb": "{when} – {fractions}"
+  },
+  "notice.bins.text": {
+    "description": "The next bin collection in one line, after notice.bins.tag: `when` and `fractions` as notice.bins.summary's (\"Tomorrow: Paper, Residual waste\").",
+    "en": "{when}: {fractions}",
+    "nb": "{when}: {fractions}"
+  },
+  "notice.bins.fraction": {
+    "description": "A kind of waste, by Binable's key for it (BinCollection's fraction): paper, bio (food waste), residualWaste (and its less frequent and container collections), reusableMaterials (plastic and other packaging), glassContainer (glass and metal), christmasTree, toxic (hazardous waste), diaper, hedgeTreeTrimming (garden waste), collectionStation (a mobile collection point) or fleaMarket (reusable items); in the middle of a list.",
+    "en": "{fraction, select, paper {Paper} bio {Food waste} residualWaste {Residual waste} residualWasteLessFrequent {Residual waste} residualWasteContainer {Residual waste} residualWasteContainerLessFrequent {Residual waste} reusableMaterials {Plastic} glassContainer {Glass and metal} christmasTree {Christmas trees} toxic {Hazardous waste} diaper {Nappies} hedgeTreeTrimming {Garden waste} collectionStation {Collection point} fleaMarket {Reuse} other {Other waste}}",
+    "nb": "{fraction, select, paper {Papir} bio {Matavfall} residualWaste {Restavfall} residualWasteLessFrequent {Restavfall} residualWasteContainer {Restavfall} residualWasteContainerLessFrequent {Restavfall} reusableMaterials {Plast} glassContainer {Glass og metall} christmasTree {Juletrær} toxic {Farlig avfall} diaper {Bleier} hedgeTreeTrimming {Hageavfall} collectionStation {Miljøstasjon} fleaMarket {Ombruk} other {Annet avfall}}"
   }
 }

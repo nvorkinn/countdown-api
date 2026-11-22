@@ -140,6 +140,20 @@ class BankHolidayDivision(BaseModel):
     events: list[BankHoliday]
 
 
+class BinCollection(BaseModel):
+    """One kind of waste's collection days."""
+
+    fraction: str = Field(
+        description=(
+            "Binable's key for the kind of waste: paper, bio, residualWaste, residualWasteLessFrequent, "
+            "residualWasteContainer, residualWasteContainerLessFrequent, reusableMaterials, glassContainer, "
+            "collectionStation, christmasTree, toxic, diaper, hedgeTreeTrimming or fleaMarket; a reader shows one it "
+            "doesn't know by notice.bins.fraction's other."
+        ),
+    )
+    dates: list[date] = Field(description="The collection days ahead, earliest first, as local dates.")
+
+
 DeviceId = Annotated[str, Field(pattern="^[0-9a-f]{12}$")]
 """A device's id, 12 hex digits (six random bytes), as the broker registered it."""
 
@@ -150,12 +164,32 @@ draws, or a touchscreen, which draws itself from its config.
 """
 
 
+class NoticeBoardAddress(BaseModel):
+    """The ``NoticeBoardAddress`` object.
+
+    A Norwegian household's address, in the postcode of its notice board, spelled as Kartverket's
+    address register has it (the broker checks it there when it's saved). Its v1:sub:address member is
+    "<street>|<house_number>|<postcode>|<city>", the postcode being its notice board's.
+    """
+
+    street: str = Field(description="The street's name, Kartverket's adressenavn (\"Thorvald Meyers gate\").")
+    house_number: str = Field(description='The house number with its letter, if any ("10", "12B").')
+    city: str = Field(description='The postal town, Kartverket\'s poststed, in title case ("Oslo").')
+
+
 class NoticeBoard(BaseModel):
     """The notice board, of notices about the device's place."""
 
     postcode: str | None = Field(description="The place's postcode, or null for no local notices.")
     country: Literal["GB", "NO"] | None = Field(
         description="The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none.",
+    )
+    address: NoticeBoardAddress | None = Field(
+        default=None,
+        description=(
+            "The household's address, for its bin collection days: only for a Norwegian postcode, and null with none "
+            "set (or from a broker that predates it)."
+        ),
     )
 
 
@@ -1193,6 +1227,26 @@ class StopSearchResult(SearchResult):
     )
     letter: str = Field(description="Its stop letter or platform code; may be empty.")
     lines: list[str] = Field(description="The lines that stop there.")
+
+
+class StoredBinCollections(BaseModel):
+    """The ``StoredBinCollections`` object.
+
+    The value of v1:bins:<SHA1 of the address>: a household's bin collection days as Binable had them at
+    fetched_at, or that Binable has none for it. `found` and `collections` go together: an address not
+    found has no collections.
+    """
+
+    fetched_at: datetime
+    found: bool = Field(description="False when Binable knows no collection calendar for the address.")
+    provider: str | None = Field(
+        default=None,
+        description='Who empties the bins, as Binable names them ("Oslo kommune – Renovasjons- og gjenvinningsetaten").',
+    )
+    collections: list[BinCollection] | None = Field(
+        default=None,
+        description="Each kind of waste with a collection ahead, in Binable's order.",
+    )
 
 
 class StoredDeveloper(BaseModel):

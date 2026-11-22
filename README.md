@@ -46,6 +46,7 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:location:<place>` | string, JSON | `StoredLocation` | 604,800 s | countdown's locations provider | the notice board and countdown's providers of notices about a place, the broker's `getNotices` |
 | `v1:notices:floods:<place>` | string, JSON | `StoredFloods` | 1,800 s | countdown's floods provider | the notice board, the broker's `getNotices` |
 | `v1:notices:metalerts` | string, JSON | `StoredMetAlerts` | 1,800 s | countdown's MetAlerts provider | the notice board, the broker's `getNotices` |
+| `v1:bins:<sha1 of the address>` | string, JSON | `StoredBinCollections` | 129,600 s | countdown's bins provider | the notice board |
 
 `store.yaml` says more about each (its `keys`), and about the subscription sources (`sources`). The schemas (its
 `$defs`) are JSON Schema 2020-12. The values that are the upstream service's own answer (Glowmarkt's readings,

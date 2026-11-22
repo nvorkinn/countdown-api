@@ -10,7 +10,8 @@
     "v1:sub:developer": ["a1b2c3d4e5f6"],
     "v1:sub:parcel": ["a1b2c3d4e5f6"],
     "v1:sub:postcode": ["0150", "SE17 3LL"],
-    "v1:sub:background": ["oslo-no-3143244"]
+    "v1:sub:background": ["oslo-no-3143244"],
+    "v1:sub:address": ["Dronning Eufemias gate|1|0150|Oslo"]
   },
   "channel": "v1:sub:changed",
   "message": ""

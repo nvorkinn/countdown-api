@@ -1,0 +1,33 @@
+{
+  "about": "Two households' bin collection days as countdown's bins provider stores them under v1:bins:<SHA1 of the address>: Binable's answer for Thorvald Meyers gate 10, 0555 Oslo (Oslo kommune empties residual waste on Mondays and paper on Thursdays and Fridays; Binable's other kinds of waste had no days and are left out), and pairing_key.json's board's, Dronning Eufemias gate 1, 0150 Oslo, which Binable has no calendar for (\"Provider found, but no result\"), stored as not found. countdown's tests/fixtures/bins.json.",
+  "ttl_s": 129600,
+  "addresses": [
+    {
+      "address": "Thorvald Meyers gate|10|0555|Oslo",
+      "key": "v1:bins:58be698a862d2efb43a9ac0b5a1749f42cd20fee",
+      "value": {
+        "fetched_at": "2026-11-22T12:00:00Z",
+        "found": true,
+        "provider": "Oslo kommune – Renovasjons- og gjenvinningsetaten",
+        "collections": [
+          {
+            "fraction": "paper",
+            "dates": ["2026-11-26", "2026-11-27", "2026-12-03", "2026-12-04", "2026-12-10", "2026-12-11"]
+          },
+          {
+            "fraction": "residualWaste",
+            "dates": ["2026-11-23", "2026-11-30", "2026-12-07", "2026-12-14"]
+          }
+        ]
+      }
+    },
+    {
+      "address": "Dronning Eufemias gate|1|0150|Oslo",
+      "key": "v1:bins:247ef0f3cb8abe6085a7c14632382f17ff4c8d41",
+      "value": {
+        "fetched_at": "2026-11-22T12:00:00Z",
+        "found": false
+      }
+    }
+  ]
+}

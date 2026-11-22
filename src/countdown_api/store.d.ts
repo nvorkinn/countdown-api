@@ -798,6 +798,20 @@ export interface components {
       postcode: string | null;
       /** @description The postcode's country (ISO 3166-1 alpha-2), which decides the local notices, or null with none. */
       country: ("GB" | "NO") | null;
+      /**
+       * @description The household's address, for its bin collection days: only for a Norwegian postcode, and null with none set (or from a broker that predates it).
+       * @default null
+       */
+      address: components["schemas"]["NoticeBoardAddress"] | null;
+    };
+    /** @description A Norwegian household's address, in the postcode of its notice board, spelled as Kartverket's address register has it (the broker checks it there when it's saved). Its v1:sub:address member is "<street>|<house_number>|<postcode>|<city>", the postcode being its notice board's. */
+    NoticeBoardAddress: {
+      /** @description The street's name, Kartverket's adressenavn ("Thorvald Meyers gate"). */
+      street: string;
+      /** @description The house number with its letter, if any ("10", "12B"). */
+      house_number: string;
+      /** @description The postal town, Kartverket's poststed, in title case ("Oslo"). */
+      city: string;
     };
     /** @description The Spotify area. */
     Spotify: {
@@ -1120,6 +1134,30 @@ export interface components {
       /** @description The flood area it's for (the area's notation, "062FWF46Southwrk"). */
       floodAreaID: string;
     };
+    /** @description The value of v1:bins:<SHA1 of the address>: a household's bin collection days as Binable had them at fetched_at, or that Binable has none for it. `found` and `collections` go together: an address not found has no collections. */
+    StoredBinCollections: {
+      /** Format: date-time */
+      fetched_at: string;
+      /** @description False when Binable knows no collection calendar for the address. */
+      found: boolean;
+      /**
+       * @description Who empties the bins, as Binable names them ("Oslo kommune – Renovasjons- og gjenvinningsetaten").
+       * @default null
+       */
+      provider: string | null;
+      /**
+       * @description Each kind of waste with a collection ahead, in Binable's order.
+       * @default []
+       */
+      collections: components["schemas"]["BinCollection"][];
+    };
+    /** @description One kind of waste's collection days. */
+    BinCollection: {
+      /** @description Binable's key for the kind of waste: paper, bio, residualWaste, residualWasteLessFrequent, residualWasteContainer, residualWasteContainerLessFrequent, reusableMaterials, glassContainer, collectionStation, christmasTree, toxic, diaper, hedgeTreeTrimming or fleaMarket; a reader shows one it doesn't know by notice.bins.fraction's other. */
+      fraction: string;
+      /** @description The collection days ahead, earliest first, as local dates. */
+      dates: string[];
+    };
     /** @description The value of v1:notices:metalerts: MET Norway's current weather warnings, MetAlerts' current.json as it came, a GeoJSON FeatureCollection with one Feature per warning, the area it covers as its geometry (a Polygon or a MultiPolygon of [longitude, latitude] rings) and MET's own names in its properties (awareness_level such as "3; orange; Severe", awareness_type such as "1; Wind", event, area, title, description, instruction, consequences, eventEndingTime...); asked for without a place, so for all of Norway, once in each language. Each answer's Features are the same warnings in the same order. fetched_at is when MET last sent, or confirmed unchanged, the older of the two answers. */
     StoredMetAlerts: {
       /** Format: date-time */
@@ -1278,6 +1316,7 @@ export type TouchscreenLyrics = components["schemas"]["TouchscreenLyrics"];
 export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
+export type NoticeBoardAddress = components["schemas"]["NoticeBoardAddress"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
@@ -1308,6 +1347,8 @@ export type Postcode = components["schemas"]["Postcode"];
 export type StoredFloods = components["schemas"]["StoredFloods"];
 export type FloodWarningsResponse = components["schemas"]["FloodWarningsResponse"];
 export type FloodWarning = components["schemas"]["FloodWarning"];
+export type StoredBinCollections = components["schemas"]["StoredBinCollections"];
+export type BinCollection = components["schemas"]["BinCollection"];
 export type StoredMetAlerts = components["schemas"]["StoredMetAlerts"];
 export type DeviceFeedEvent = components["schemas"]["DeviceFeedEvent"];
 export type DeviceWeather = components["schemas"]["DeviceWeather"];

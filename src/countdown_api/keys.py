@@ -35,7 +35,11 @@ POSTCODE = "postcode"
 # the background provider makes pictures for. An e-paper screen draws no background, so its place isn't here. Each
 # member has a v1:background-place:<key> beside it, written in the same transaction.
 BACKGROUND = "background"
-SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND)
+# address: The notice board's household address, for a Norwegian board with one set (NoticeBoardAddress), as
+# "<street>|<house_number>|<postcode>|<city>" ("Thorvald Meyers gate|10|0555|Oslo"): what the bins provider asks Binable
+# for its collection days. Never logged.
+ADDRESS = "address"
+SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND, ADDRESS)
 
 
 def subscription(source: str) -> str:
@@ -680,3 +684,25 @@ METALERTS = "v1:notices:metalerts"
 
 # The TTL of `v1:notices:metalerts`, in seconds.
 METALERTS_TTL_S = 1800
+
+
+def bins(address: str) -> str:
+    """Return the key `v1:bins:{address}`.
+
+    When a household's bins are next emptied, as Binable (https://binable.app) has its municipality's collection
+    calendar: the days ahead, about three months of them, for each kind of waste collected there. An address Binable has
+    no calendar for is written too, as not found, so a board shows no bin notice rather than wait. The address is hashed
+    so that no key names a home.
+
+    A Redis string of models.StoredBinCollections (json), with a TTL of 129600 s: renewed every 12 hours, while the
+    address is in v1:sub:address.
+
+    Written by countdown's bins provider, for every address in v1:sub:address. Read by the notice board.
+
+    Example: countdown_api.fixtures, bins.json.
+    """
+    return f"v1:bins:{hashlib.sha1(address.encode(), usedforsecurity=False).hexdigest()}"
+
+
+# The TTL of `v1:bins:{address}`, in seconds.
+BINS_TTL_S = 129600
