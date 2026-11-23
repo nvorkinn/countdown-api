@@ -458,7 +458,8 @@ def test_backgrounds_are_a_places_day_under_its_weather_key() -> None:
 def test_a_background_image_is_its_webp_under_its_sha256() -> None:
     example = fixtures.load("background.json")
     image = fixtures.read_bytes(example["image"]["file"])
-    assert image[:4] == b"RIFF" and image[8:12] == b"WEBP"
+    assert image[:4] == b"RIFF"
+    assert image[8:12] == b"WEBP"
     digest = hashlib.sha256(image).hexdigest()
     check_schema("BackgroundDigest", digest)
     assert example["image"]["key"] == keys.background_image(digest)
