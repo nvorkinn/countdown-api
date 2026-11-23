@@ -1,11 +1,19 @@
 name: Regenerate
 
-# When a PR changes the contract (store.yaml or lua/), regenerate src/countdown_api and
-# push the result to the PR branch, so the reviewer sees the effect of the change in the same PR.
+# When a PR changes the contract (store.yaml or lua/) or the C++ templates, regenerate src/countdown_api and
+# cpp/countdown_api and push the result to the PR branch, so the reviewer sees the effect of the change in the same PR.
 on:
   pull_request:
     branches: [main]
-    paths: [store.yaml, lua/**, generate.py, package.json, package-lock.json, biome.json]
+    paths:
+      - store.yaml
+      - lua/**
+      - templates/**
+      - generate.py
+      - package.json
+      - package-lock.json
+      - openapitools.json
+      - biome.json
 
 # One run per PR; a newer push cancels the older run.
 concurrency:
@@ -32,20 +40,25 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Install openapi-codegen, ruff and openapi-typescript
+      # openapi-generator, which writes the C++ headers, is a Java program.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Install openapi-codegen, ruff, openapi-typescript and openapi-generator
         run: |
           uv sync --frozen --no-install-project
           npm ci
-      - name: Regenerate src/countdown_api
+      - name: Regenerate src/countdown_api and cpp/countdown_api
         run: uv run --frozen --no-sync python generate.py
       - name: Commit the changes to the PR branch
         run: |
-          if [ -z "$(git status --porcelain -- src/countdown_api)" ]; then
+          if [ -z "$(git status --porcelain -- src/countdown_api cpp/countdown_api)" ]; then
             echo "Generated code is already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/countdown_api
-          git commit -m "Regenerate src/countdown_api from store.yaml"
+          git add src/countdown_api cpp/countdown_api
+          git commit -m "Regenerate src/countdown_api and cpp/countdown_api from store.yaml"
           git push

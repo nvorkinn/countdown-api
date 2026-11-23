@@ -20,16 +20,22 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # openapi-generator, which writes the C++ headers (cpp/countdown_api), is a Java program.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
       # openapi-codegen comes from a release of its repository, whose hash uv.lock records; the dev group also has
       # ruff (which generate.py formats with), pytest and jsonschema.
       - name: Install the dev tools and the package
         run: uv sync --frozen
-      # openapi-typescript, TypeScript (to check what it writes) and Biome, pinned by package-lock.json.
-      - name: Install openapi-typescript, TypeScript and Biome
+      # openapi-typescript, TypeScript (to check what it writes), Biome and openapi-generator's command, pinned by
+      # package-lock.json; the command downloads the openapi-generator openapitools.json pins when it first runs.
+      - name: Install openapi-typescript, TypeScript, Biome and openapi-generator
         run: npm ci
-      # src/countdown_api is committed, so it has to be what generate.py writes from store.yaml (and lua/):
-      # `python generate.py` brings it up to date.
-      - name: Check src/countdown_api is up to date with store.yaml
+      # src/countdown_api and cpp/countdown_api are committed, so they have to be what generate.py writes from
+      # store.yaml (and lua/, and templates/cpp): `python generate.py` brings them up to date.
+      - name: Check src/countdown_api and cpp/countdown_api are up to date with store.yaml
         run: uv run --frozen python generate.py --check
       # tsconfig.json: strict, noUncheckedIndexedAccess and exactOptionalPropertyTypes.
       - name: Type-check the TypeScript types and client
@@ -45,7 +51,7 @@ jobs:
           uv run --frozen ruff check --output-format=github .
           uv run --frozen ruff format --check --diff .
       # Every canonical example is what the schemas allow (jsonschema and the generated models both), under the key
-      # and TTL the contract gives it.
+      # and TTL the contract gives it; and the C++ headers, built with the runner's compiler, write those examples.
       - name: Test the contract
         run: uv run --frozen pytest -q
       - name: Build the wheel

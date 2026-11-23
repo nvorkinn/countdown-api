@@ -1,0 +1,19 @@
+{
+  "about": "An e-paper screen's poll for its frame, POST /api/frame: the ETag of the frame on its panel, which it sends as If-None-Match, and its report (`report`, the body): what it measured, as InfluxDB line protocol with {device_id} where the broker puts the device's id, and the lines it logged since the last poll the broker answered. The screen's tests check what it sends against this, and the broker's tests what it takes. The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "if_none_match": "\"e8d4291f8ec7c9ac\"",
+  "report": {
+    "metrics": "esp32,device_id={device_id} uptime_s=3600i,free_heap=182344i,wifi_rssi=-61i,logs_dropped=0i",
+    "logs": [
+      {
+        "level": "info",
+        "_msg": "Frame response: HTTP 304 (0 bytes), Retry-After: \"27\" seconds",
+        "uptime_ms": 3570041
+      },
+      {
+        "level": "warn",
+        "_msg": "Couldn't fetch the frame: connection lost; sleeping for 60 seconds",
+        "uptime_ms": 3600512
+      }
+    ]
+  }
+}

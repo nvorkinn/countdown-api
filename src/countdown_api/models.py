@@ -1075,6 +1075,27 @@ class EpaperConfig(ConfigBase):
     parcels: Parcels
 
 
+class FrameLogEntry(BaseModel):
+    """A line of a screen's log, in a FrameReport.
+
+    The broker sets the line's service, host and device_id itself, from the device it authenticated, and
+    dates it from uptime_ms: the screen has no clock, so a line is as old as its uptime_ms is behind the
+    report's newest. Any other field is kept as it is.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    level: Literal["debug", "info", "warn", "error", "fatal"] = Field(
+        default="info",
+        description="How serious the line is, as VictoriaLogs names its levels.",
+    )
+    msg: str = Field(alias="_msg", description="The line itself.")
+    uptime_ms: Annotated[int, Field(ge=0)] | None = Field(
+        default=None,
+        description="How long the screen had been up when it logged the line, in milliseconds.",
+    )
+
+
 class FrameRecord(BaseModel):
     """The fields of the v1:frame:<device id> hash, all of them always there."""
 
@@ -1094,6 +1115,28 @@ class FrameRecord(BaseModel):
             "When this picture was first written, ISO 8601 in UTC to the millisecond, e.g. "
             "2026-10-18T12:00:00.000+00:00. It doesn't move while the picture stays the same."
         ),
+    )
+
+
+class FrameReport(BaseModel):
+    """The ``FrameReport`` object.
+
+    What POST /api/frame takes: what an e-paper screen measured and logged since its last poll. Both are
+    optional, and the broker forwards them as they are (the metrics to VictoriaMetrics, the logs to
+    VictoriaLogs); a report it can't forward never fails the poll.
+    """
+
+    metrics: str | None = Field(
+        default=None,
+        description=(
+            "The screen's readings as InfluxDB line protocol, one line a measurement. The broker replaces every "
+            "`{device_id}` in it with the device's id, which the screen needn't know: `esp32,device_id={device_id} "
+            "free_heap=123i`."
+        ),
+    )
+    logs: list[FrameLogEntry] | None = Field(
+        default=None,
+        description="The lines logged since the last poll the broker answered, oldest first.",
     )
 
 

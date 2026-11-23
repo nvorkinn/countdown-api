@@ -5,7 +5,7 @@ pool) don't talk to each other over HTTP: they share a Redis, and that is all th
 contract for it: every key and channel that crosses between them, what each holds, its TTL, who writes it and who reads
 it, the Lua script they run, and the canonical examples every consumer's tests check against. It is one file,
 [`store.yaml`](store.yaml), and the model code generated from it for Python (the `countdown_api` package, Pydantic
-models) and TypeScript (`store.d.ts`).
+models), TypeScript (`store.d.ts`) and, for the routes an e-paper screen's firmware calls, C++ (`cpp/countdown_api`).
 
 It also has the broker's HTTP routes for its devices (see [The devices' routes](#the-devices-routes)): registering a
 device, and reading and saving a device's config. A device is an e-paper screen (`epaper`) or a touchscreen
@@ -66,6 +66,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | route | takes | answers | what it is |
 | --- | --- | --- | --- |
 | `POST /api/devices/register` | `DeviceRegistration` | `DeviceRegistered` (201 new, 200 again) | a device's identity, from a secret it keeps, and its size; an e-paper screen's also says its frame format |
+| `POST /api/frame` | `FrameReport`, `If-None-Match` | the frame's bytes with its `ETag` (200), or 304, 404, 409; `Retry-After` | an e-paper screen's poll for its frame, in a loop, sleeping `Retry-After` between; its body is what it measured and logged since the last |
 | `GET /api/devices/config` | | `ConfigResponse`, its version as `ETag` | the device's config: for an e-paper screen, the pairing value (`pairing_code` set) until it's paired |
 | `PUT /api/devices/config` | `ConfigResponse` | `ConfigResponse` | save it whole, from a device's own settings panel; its read-only fields sent as they came; `If-Match` optional |
 | `PUT /api/devices/config/{section}` | a section (`ConfigSection` names it), `If-Match` | `ConfigResponse`, its new `ETag` | save one section whole; 409 when `If-Match` is stale, so the caller reloads instead of overwriting |
@@ -90,7 +91,7 @@ ones for the device their `device_id` query names. Both searches answer the same
 `name`, `subtitle`, `indent`) with a `value` that is what picking it saves, in the config's own shape.
 The routes are an OpenAPI 3.1 paths object in `store.yaml` (its `paths`), so `store.d.ts` types each route as well as
 its schemas (`paths["/api/devices/config"]["get"]`, `operations["getConfig"]`), and the reference lists them.
-`touchscreen.json`, `config_store.json` and `device_panels.json` are their examples.
+`touchscreen.json`, `config_store.json`, `device_panels.json` and `frame_poll.json` are their examples.
 
 For TypeScript, `client.ts` has a function per route, named by its `operationId`, so a caller never writes a path:
 `getConfig(client)`, `putConfig(client, config, { headers: { "If-Match": etag } })` and so on for the devices' API
@@ -100,6 +101,30 @@ bearer where the route takes it), and a URL builder for each page a device sends
 `deviceSettingsPageUrl(server, { device_id })` and `connectParcelPageUrl(server)`. It's plain `fetch`, typed by
 `store.d.ts`, with nothing to install; `generate.py` writes it with the rest, so a new route gets its function in the
 same PR.
+
+For C++ (countdown-esp32's firmware), `cpp/countdown_api` has the same for the two routes an e-paper screen calls,
+as headers of plain C++17 with nothing to install: `api.h` has a function per route, `registerDevice(registration)`
+and `pollFrame(report)`, and there is a header per schema they take (`DeviceRegistration.h`, `FrameReport.h`, ...),
+each a struct with `toJson()`. A function answers the request to send as data (`Request`: its method, path, JSON
+body and whether it takes the secret) and sends nothing itself, so it builds for the host as for a board, and the
+firmware sends it with the HTTP client it already has:
+
+```cpp
+#include "countdown_api/api.h"  // with -I <this repository>/cpp
+
+countdown_api::DeviceRegistration registration;
+registration.secret = secret;
+registration.width = 800;
+registration.height = 480;
+registration.format = countdown_api::DeviceRegistration::FormatEnum::Mono1bppPacked;
+const countdown_api::Request request = countdown_api::registerDevice(registration);
+http.request(request.method, brokerUrl + request.path, request.body, secret, "");
+```
+
+A field that isn't set (an empty `std::optional`) is left out of the JSON, so an e-paper screen sends no `type` and
+a touchscreen no `format`. The headers only write JSON: a screen reads an answer's status and headers, never a JSON
+body, so there is no model of an answer and no JSON library. Which routes get a function is `CPP_OPERATIONS` in
+`generate.py`.
 
 ### A device's config
 
@@ -216,7 +241,12 @@ the contract's schemas as an OpenAPI document's components: JSON Schema 2020-12 
 the models are the same classes they were when the contract was an HTTP API. `store.d.ts` comes from
 openapi-typescript (pinned in `package.json`/`package-lock.json`), from the same OpenAPI document. It writes `keys.py`,
 `scripts.py`, `store.json` and `__init__.py` itself, from the same file, and runs `ruff check --fix` and `ruff format`
-on the Python and `biome check --write` on `store.d.ts` and `store.json`. It writes each tagged union (a `oneOf` with a
+on the Python and `biome check --write` on `store.d.ts` and `store.json`. The C++ headers in `cpp/countdown_api` come
+from [openapi-generator](https://github.com/OpenAPITools/openapi-generator) (its command pinned in `package.json`,
+its own version in `openapitools.json`; it needs Java), given only the routes `CPP_OPERATIONS` names and the schemas
+they take. It runs its `cpp-tiny` generator, the one for a microcontroller, for the C++ types and names, but with the
+templates in [`templates/cpp`](templates/cpp) instead of its own, whose output needs Arduino's HTTP client and a JSON
+library and sends every optional field. It writes each tagged union (a `oneOf` with a
 `discriminator`) in `models.py` itself, after its members, as a Pydantic discriminated union: openapi-codegen would
 write a plain union, and can put it before its members.
 The models check the schemas' `pattern`s too, and the tests check every example against the schemas with jsonschema.
@@ -224,6 +254,7 @@ The models check the schemas' `pattern`s too, and the tests check every example 
 CI checks it's up to date (`python generate.py --check`), type-checks `store.d.ts` with `tsc` (`tsconfig.json`: strict,
 `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`), runs [Biome](https://biomejs.dev/) on the TypeScript and
 JSON (`biome.json`; lint and format, the fixtures included), runs ruff (`select = ["ALL"]`, generated code included) and
-the tests (`uv run --frozen pytest`), and builds the wheel. A PR that changes `store.yaml` gets the regenerated code
+the tests (`uv run --frozen pytest`, which also build the C++ headers with the host's compiler, warnings as errors,
+and check they write the examples), and builds the wheel. A PR that changes `store.yaml` gets the regenerated code
 pushed to it. There is no release: the project isn't released on its own, and a consumer builds what it needs from
 its submodule.
