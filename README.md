@@ -76,7 +76,7 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
 | `GET /api/devices/account` | | `DeviceAccount` | which services the owner's account has linked (Parcel, Spotify), so a device can tell one that's switched off from one never set up; never a login or key |
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
-| `GET /api/backgrounds/{digest}` | | a JPEG (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
+| `GET /api/backgrounds/{digest}` | | a WebP (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
 | `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
 | `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, the Environment Agency's flood warnings, bank holidays, MET Norway's warnings covering a Norwegian postcode, and its owner's parcels when switched on) and every Tube line's status, as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |

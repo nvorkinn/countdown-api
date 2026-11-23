@@ -1,5 +1,5 @@
 {
-  "about": "London's backgrounds on 2026-01-15 as the background provider stores them under v1:background:<weather key>, all four parts of the day made; and the night image's bytes under v1:background-image:<digest>, whose file is background.jpg. The other digests name no file here. The dusk image is a curated fallback.",
+  "about": "London's backgrounds on 2026-01-15 as the background provider stores them under v1:background:<weather key>, all four parts of the day made; and the night image's bytes under v1:background-image:<digest>, whose file is background.webp. The other digests name no file here. The dusk image is a curated fallback.",
   "weather_key": "london-gb-2643743",
   "key": "v1:background:london-gb-2643743",
   "ttl_s": 172800,
@@ -31,16 +31,16 @@
       {
         "phase": "night",
         "starts_at": "2026-01-15T17:05:00+00:00",
-        "digest": "8c365814bd20bc9b712c0696e9fe7299f5827db7251db539e6de8a2dcc29c3a9",
+        "digest": "19bfb9deecf05b7ef4bfe7a7c9cf6e8460f1e9f9d900bf2bd2ea4e294750095a",
         "made_at": "2026-01-15T16:20:27Z",
         "fallback": false
       }
     ]
   },
   "image": {
-    "key": "v1:background-image:8c365814bd20bc9b712c0696e9fe7299f5827db7251db539e6de8a2dcc29c3a9",
+    "key": "v1:background-image:19bfb9deecf05b7ef4bfe7a7c9cf6e8460f1e9f9d900bf2bd2ea4e294750095a",
     "ttl_s": 172800,
-    "file": "background.jpg",
-    "url": "/api/backgrounds/8c365814bd20bc9b712c0696e9fe7299f5827db7251db539e6de8a2dcc29c3a9"
+    "file": "background.webp",
+    "url": "/api/backgrounds/19bfb9deecf05b7ef4bfe7a7c9cf6e8460f1e9f9d900bf2bd2ea4e294750095a"
   }
 }
