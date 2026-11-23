@@ -336,6 +336,9 @@ class DeviceAccount(BaseModel):
     spotify: AccountLink = Field(
         description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
     )
+    soloist: AccountLink = Field(
+        description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
+    )
 
 
 class StopDepartures(BaseModel):
@@ -1257,6 +1260,16 @@ SecretHash = Annotated[str, Field(pattern="^[0-9a-f]{64}$")]
 It's what the broker stores, and doesn't authenticate anything, so it can go in a URL where the
 secret can't.
 """
+
+
+class SoloistApiKey(BaseModel):
+    """The ``SoloistApiKey`` object.
+
+    A Spotify Soloist API key (getSoloistKey): the owner's own, as they saved it on the Account page. A
+    secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs.
+    """
+
+    api_key: Annotated[str, Field(min_length=1)] = Field(description="The key, passed to Soloist as --api-key.")
 
 
 class SpotifyAccessToken(BaseModel):

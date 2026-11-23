@@ -984,6 +984,39 @@ paths:
         '502':
           description: Spotify couldn't be reached, or refused to renew the token.
       x-examples: [touchscreen.json]
+  /api/devices/soloist/key:
+    get:
+      operationId: getSoloistKey
+      summary: The owner's Spotify Soloist API key, for a touchscreen.
+      description: >-
+        The Spotify Soloist API key the account that owns the touchscreen saved on its Account page, which the
+        touchscreen starts its Soloist daemon with (Soloist takes it at every start). The key is the owner's own, from
+        their Spotify for Developers dashboard, and only their own paired touchscreens are sent it: the one route that
+        answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at each start and
+        keep it in memory only; the answer is `Cache-Control: no-store`. A screen that's unpaired or handed on is
+        refused from then on, but keeps what it was already sent, so its owner revokes the key in their dashboard.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The key.
+          headers:
+            Cache-Control:
+              description: Always `no-store`, so nothing between the server and the daemon keeps the key.
+              schema:
+                const: no-store
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/SoloistApiKey'
+        '401':
+          description: A missing or unknown secret.
+        '404':
+          description: The owner's account has no Soloist API key saved.
+        '409':
+          description: The device isn't paired yet, or isn't a touchscreen.
+      x-examples: [touchscreen.json]
   /api/devices/account:
     get:
       operationId: getAccount
@@ -993,7 +1026,7 @@ paths:
         of its own can tell a service that's switched off from one that was never set up, and say how to set it up.
         The links are the account's, not the device's: one covers every device the owner has, they're made on the
         settings site's Account page, and they aren't part of the device's config, which has only the device's own
-        switches (a service's `enabled`). Only whether each is there: no login, key or token is ever sent.
+        switches (a service's `enabled`). Only whether each is there: no login, key or token is sent here.
       security:
       - deviceSecret: []
       responses:
@@ -2430,6 +2463,18 @@ $defs:
     - token_type
     - expires_in
     - scope
+  SoloistApiKey:
+    description: >-
+      A Spotify Soloist API key (getSoloistKey): the owner's own, as they saved it on the Account page. A secret, which
+      a touchscreen passes to its Soloist daemon and neither stores nor logs.
+    type: object
+    properties:
+      api_key:
+        type: string
+        minLength: 1
+        description: The key, passed to Soloist as --api-key.
+    required:
+    - api_key
   DeviceAccount:
     description: >-
       The account that owns a device, as the device is told of it (getAccount): which of the services a device shows
@@ -2445,9 +2490,15 @@ $defs:
         $ref: '#/$defs/AccountLink'
         description: >-
           Spotify: linked while the account has signed in to Spotify on the Account page.
+      soloist:
+        $ref: '#/$defs/AccountLink'
+        description: >-
+          Spotify Soloist: linked while the account has a Soloist API key saved, which its touchscreens get with
+          getSoloistKey.
     required:
     - parcel
     - spotify
+    - soloist
   AccountLink:
     description: One of an account's services (DeviceAccount), by whether it's linked; never its login or key.
     type: object

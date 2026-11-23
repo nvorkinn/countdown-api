@@ -94,6 +94,7 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/feed", "get"),
         ("/api/devices/notices", "get"),
         ("/api/devices/register", "post"),
+        ("/api/devices/soloist/key", "get"),
         ("/api/devices/spotify/token", "get"),
         ("/api/devices/weather", "get"),
         ("/api/frame", "post"),
