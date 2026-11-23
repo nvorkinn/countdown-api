@@ -1259,6 +1259,14 @@ secret can't.
 """
 
 
+class SoloistApiKey(BaseModel):
+    """The Spotify Soloist API key a touchscreen's Soloist player starts with (getSoloistKey)."""
+
+    api_key: Annotated[str, Field(min_length=1)] = Field(
+        description="The key, as Spotify's developer dashboard gave it. A secret, so never logged or shown.",
+    )
+
+
 class SpotifyAccessToken(BaseModel):
     """The ``SpotifyAccessToken`` object.
 

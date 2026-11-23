@@ -203,6 +203,18 @@ export function getSpotifyToken(
 }
 
 /**
+ * The Spotify Soloist API key, for a touchscreen.
+ *
+ * `GET /api/devices/soloist/key`, with the device's secret.
+ */
+export function getSoloistKey(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getSoloistKey"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/soloist/key", secret: true, json: true });
+}
+
+/**
  * What the owner's account has linked.
  *
  * `GET /api/devices/account`, with the device's secret.

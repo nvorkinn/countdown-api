@@ -170,6 +170,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/soloist/key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The Spotify Soloist API key, for a touchscreen.
+     * @description The server's Spotify Soloist API key, which a touchscreen stores for its Soloist player (Spotify's headless Spotify Connect player, which won't start without one). The key lives in the server's own secrets, never in a release or on GitHub, so a touchscreen fetches it here with its secret, stores it where only its player reads it, and asks again when its player has none or rejects it. Only a paired touchscreen gets it.
+     */
+    get: operations["getSoloistKey"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/account": {
     parameters: {
       query?: never;
@@ -877,6 +897,11 @@ export interface components {
       /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
       scope: string;
     };
+    /** @description The Spotify Soloist API key a touchscreen's Soloist player starts with (getSoloistKey). */
+    SoloistApiKey: {
+      /** @description The key, as Spotify's developer dashboard gave it. A secret, so never logged or shown. */
+      api_key: string;
+    };
     /** @description The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink. */
     DeviceAccount: {
       /** @description Parcel: linked while the account has a Parcel API key saved, which the parcel provider reads the owner's deliveries with. */
@@ -1371,6 +1396,7 @@ export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type NoticeBoardAddress = components["schemas"]["NoticeBoardAddress"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
+export type SoloistApiKey = components["schemas"]["SoloistApiKey"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
 export type StopDepartures = components["schemas"]["StopDepartures"];
@@ -1922,6 +1948,47 @@ export interface operations {
       };
       /** @description Spotify couldn't be reached, or refused to renew the token. */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSoloistKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The key. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SoloistApiKey"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The server has no Soloist API key set up. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -1094,6 +1094,39 @@
         "x-examples": ["touchscreen.json"]
       }
     },
+    "/api/devices/soloist/key": {
+      "get": {
+        "operationId": "getSoloistKey",
+        "summary": "The Spotify Soloist API key, for a touchscreen.",
+        "description": "The server's Spotify Soloist API key, which a touchscreen stores for its Soloist player (Spotify's headless Spotify Connect player, which won't start without one). The key lives in the server's own secrets, never in a release or on GitHub, so a touchscreen fetches it here with its secret, stores it where only its player reads it, and asks again when its player has none or rejects it. Only a paired touchscreen gets it.",
+        "security": [
+          {
+            "deviceSecret": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/$defs/SoloistApiKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A missing or unknown secret."
+          },
+          "404": {
+            "description": "The server has no Soloist API key set up."
+          },
+          "409": {
+            "description": "The device isn't paired yet, or isn't a touchscreen."
+          }
+        }
+      }
+    },
     "/api/devices/account": {
       "get": {
         "operationId": "getAccount",
@@ -2639,6 +2672,18 @@
         }
       },
       "required": ["access_token", "token_type", "expires_in", "scope"]
+    },
+    "SoloistApiKey": {
+      "description": "The Spotify Soloist API key a touchscreen's Soloist player starts with (getSoloistKey).",
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The key, as Spotify's developer dashboard gave it. A secret, so never logged or shown."
+        }
+      },
+      "required": ["api_key"]
     },
     "DeviceAccount": {
       "description": "The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink.",
