@@ -26,6 +26,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/frame": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * An e-paper screen's poll for its frame, with its report.
+     * @description What an e-paper screen asks in a loop: its frame as the render pool last drew it (v1:frame:<device id>), with the frame's ETag, which the screen sends back as If-None-Match from then on so an unchanged frame is a 304. Every 200, 304 and 404 carries Retry-After, the seconds to sleep before the next poll. The body is the screen's report since its last poll (FrameReport), which the broker forwards without making the poll wait; a poll with no body is a poll all the same. A touchscreen draws itself, so has no frames (409).
+     */
+    post: operations["pollFrame"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/config": {
     parameters: {
       query?: never;
@@ -609,6 +629,29 @@ export interface components {
     /** @description What POST /api/devices/register answers. */
     DeviceRegistered: {
       device_id: components["schemas"]["DeviceId"];
+    };
+    /** @description What POST /api/frame takes: what an e-paper screen measured and logged since its last poll. Both are optional, and the broker forwards them as they are (the metrics to VictoriaMetrics, the logs to VictoriaLogs); a report it can't forward never fails the poll. */
+    FrameReport: {
+      /** @description The screen's readings as InfluxDB line protocol, one line a measurement. The broker replaces every `{device_id}` in it with the device's id, which the screen needn't know: `esp32,device_id={device_id} free_heap=123i`. */
+      metrics?: string;
+      /** @description The lines logged since the last poll the broker answered, oldest first. */
+      logs?: components["schemas"]["FrameLogEntry"][];
+    };
+    /** @description A line of a screen's log, in a FrameReport. The broker sets the line's service, host and device_id itself, from the device it authenticated, and dates it from uptime_ms: the screen has no clock, so a line is as old as its uptime_ms is behind the report's newest. Any other field is kept as it is. */
+    FrameLogEntry: {
+      /**
+       * @description How serious the line is, as VictoriaLogs names its levels.
+       * @default info
+       * @enum {string}
+       */
+      level: "debug" | "info" | "warn" | "error" | "fatal";
+      /** @description The line itself. */
+      _msg: string;
+      /**
+       * Format: int64
+       * @description How long the screen had been up when it logged the line, in milliseconds.
+       */
+      uptime_ms?: number;
     };
     /** @description A device's secret (DeviceRegistration's), hashed: the hex SHA-256 of its UTF-8 bytes, in lower case. It's what the broker stores, and doesn't authenticate anything, so it can go in a URL where the secret can't. */
     SecretHash: string;
@@ -1307,6 +1350,8 @@ export type Layout = components["schemas"]["Layout"];
 export type DeviceType = components["schemas"]["DeviceType"];
 export type DeviceRegistration = components["schemas"]["DeviceRegistration"];
 export type DeviceRegistered = components["schemas"]["DeviceRegistered"];
+export type FrameReport = components["schemas"]["FrameReport"];
+export type FrameLogEntry = components["schemas"]["FrameLogEntry"];
 export type SecretHash = components["schemas"]["SecretHash"];
 export type ScreenSize = components["schemas"]["ScreenSize"];
 export type TouchscreenRegistration = components["schemas"]["TouchscreenRegistration"];
@@ -1413,6 +1458,61 @@ export interface operations {
       };
       /** @description Too many devices waiting to be paired; try again after Retry-After. */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  pollFrame: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description The ETag of the frame on the panel, as the broker sent it, quotes and all. */
+        "If-None-Match"?: string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["FrameReport"];
+      };
+    };
+    responses: {
+      /** @description The frame, in the format the screen registered with, with its ETag and Retry-After. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/octet-stream": string;
+        };
+      };
+      /** @description The frame the screen has (its If-None-Match) is still the one; Retry-After as for a 200. */
+      304: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret; register again. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No frame yet (not paired, or not drawn yet); Retry-After is at most 10 s. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A touchscreen, which has no frames. */
+      409: {
         headers: {
           [name: string]: unknown;
         };

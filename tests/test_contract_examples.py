@@ -188,6 +188,17 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
     assert set(sets[keys.subscription(keys.BACKGROUND)]) <= set(sets[keys.subscription(keys.WEATHER)])
 
 
+def test_an_epaper_screens_poll_carries_its_report() -> None:
+    poll = fixtures.load("frame_poll.json")
+    # The ETag of the frame on its panel, as the broker served it: in quotes.
+    assert poll["if_none_match"] == fixtures.load("frame_record.json")["served_etag"]
+    report = check("FrameReport", poll["report"])
+    assert "{device_id}" in report.metrics
+    assert [line.level for line in report.logs] == ["info", "warn"]
+    # A poll with nothing to report is a poll all the same.
+    assert check("FrameReport", {}).logs is None
+
+
 TOUCHSCREEN = fixtures.load("touchscreen.json")
 
 
