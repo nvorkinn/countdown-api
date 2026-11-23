@@ -170,6 +170,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/soloist/key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The owner's Spotify Soloist API key, for a touchscreen.
+     * @description The Spotify Soloist API key the account that owns the touchscreen saved on its Account page, which the touchscreen starts its Soloist daemon with (Soloist takes it at every start). The key is the owner's own, from their Spotify for Developers dashboard, and only their own paired touchscreens are sent it: the one route that answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at each start and keep it in memory only; the answer is `Cache-Control: no-store`. A screen that's unpaired or handed on is refused from then on, but keeps what it was already sent, so its owner revokes the key in their dashboard.
+     */
+    get: operations["getSoloistKey"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/account": {
     parameters: {
       query?: never;
@@ -179,7 +199,7 @@ export interface paths {
     };
     /**
      * What the owner's account has linked.
-     * @description Which services the account that owns the device has linked (DeviceAccount), so a device with a settings panel of its own can tell a service that's switched off from one that was never set up, and say how to set it up. The links are the account's, not the device's: one covers every device the owner has, they're made on the settings site's Account page, and they aren't part of the device's config, which has only the device's own switches (a service's `enabled`). Only whether each is there: no login, key or token is ever sent.
+     * @description Which services the account that owns the device has linked (DeviceAccount), so a device with a settings panel of its own can tell a service that's switched off from one that was never set up, and say how to set it up. The links are the account's, not the device's: one covers every device the owner has, they're made on the settings site's Account page, and they aren't part of the device's config, which has only the device's own switches (a service's `enabled`). Only whether each is there: no login, key or token is sent here.
      */
     get: operations["getAccount"];
     put?: never;
@@ -877,12 +897,19 @@ export interface components {
       /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
       scope: string;
     };
+    /** @description A Spotify Soloist API key (getSoloistKey): the owner's own, as they saved it on the Account page. A secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs. */
+    SoloistApiKey: {
+      /** @description The key, passed to Soloist as --api-key. */
+      api_key: string;
+    };
     /** @description The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink. */
     DeviceAccount: {
       /** @description Parcel: linked while the account has a Parcel API key saved, which the parcel provider reads the owner's deliveries with. */
       parcel: components["schemas"]["AccountLink"];
       /** @description Spotify: linked while the account has signed in to Spotify on the Account page. */
       spotify: components["schemas"]["AccountLink"];
+      /** @description Spotify Soloist: linked while the account has a Soloist API key saved, which its touchscreens get with getSoloistKey. */
+      soloist: components["schemas"]["AccountLink"];
     };
     /** @description One of an account's services (DeviceAccount), by whether it's linked; never its login or key. */
     AccountLink: {
@@ -1371,6 +1398,7 @@ export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type NoticeBoardAddress = components["schemas"]["NoticeBoardAddress"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
+export type SoloistApiKey = components["schemas"]["SoloistApiKey"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
 export type StopDepartures = components["schemas"]["StopDepartures"];
@@ -1922,6 +1950,49 @@ export interface operations {
       };
       /** @description Spotify couldn't be reached, or refused to renew the token. */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSoloistKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The key. */
+      200: {
+        headers: {
+          /** @description Always `no-store`, so nothing between the server and the daemon keeps the key. */
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SoloistApiKey"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The owner's account has no Soloist API key saved. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
         headers: {
           [name: string]: unknown;
         };

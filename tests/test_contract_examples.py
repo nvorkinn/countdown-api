@@ -271,12 +271,23 @@ def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     assert "refresh_token" not in TOUCHSCREEN["spotify_token"]
 
 
+def test_a_touchscreen_gets_its_owners_soloist_api_key() -> None:
+    key = check("SoloistApiKey", TOUCHSCREEN["soloist_key"])
+
+    assert key.api_key
+    # The key alone: nothing else of the account goes with it.
+    assert set(TOUCHSCREEN["soloist_key"]) == {"api_key"}
+    # Only an account that has saved one is sent it.
+    assert check("DeviceAccount", TOUCHSCREEN["account"]).soloist.linked
+
+
 def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothing_more() -> None:
     account = check("DeviceAccount", TOUCHSCREEN["account"])
     # The example's owner has pasted no Parcel key, so its parcels are off whatever its own switch says.
     assert not account.parcel.linked
     assert not check("ConfigResponse", TOUCHSCREEN["config"]).parcels.enabled
     assert account.spotify.linked
+    assert account.soloist.linked
     # Only whether each is linked.
     assert all(set(link) == {"linked"} for link in TOUCHSCREEN["account"].values())
 

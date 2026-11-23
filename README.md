@@ -74,7 +74,8 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/places/search` | `q` | `PlaceSearchResult[]` | towns and cities (Open-Meteo), for the weather picker |
 | `GET /api/places/here` | `latitude`, `longitude` (optional) | `PlaceSearchResult[]` (at most one) | the town or city at the position sent, or with none where the caller's IP places it, for the weather picker's current location |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
-| `GET /api/devices/account` | | `DeviceAccount` | which services the owner's account has linked (Parcel, Spotify), so a device can tell one that's switched off from one never set up; never a login or key |
+| `GET /api/devices/soloist/key` | | `SoloistApiKey` | a touchscreen's owner's own Spotify Soloist API key, which it starts its Soloist daemon with; `Cache-Control: no-store`, and only for the owner's paired touchscreens |
+| `GET /api/devices/account` | | `DeviceAccount` | which services the owner's account has linked (Parcel, Spotify, Spotify Soloist), so a device can tell one that's switched off from one never set up; never a login or key |
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a WebP (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
 | `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
