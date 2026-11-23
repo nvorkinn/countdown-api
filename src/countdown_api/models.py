@@ -99,7 +99,7 @@ class Background(BaseModel):
 
 
 BackgroundImage = bytes
-"""A background image file's own bytes (a JPEG)."""
+"""A background image file's own bytes (a WebP, or a JPEG if made before WebP)."""
 
 
 class BackgroundPlace(BaseModel):

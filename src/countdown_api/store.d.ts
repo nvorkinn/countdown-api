@@ -279,7 +279,7 @@ export interface paths {
     };
     /**
      * A weather panel background.
-     * @description A background's JPEG (v1:background-image:<digest>), by the SHA-256 that getWeather's background names it by. The same digest is always the same bytes, so it's answered with Cache-Control immutable and a year's max-age.
+     * @description A background's WebP (v1:background-image:<digest>), by the SHA-256 that getWeather's background names it by. The same digest is always the same bytes, so it's answered with Cache-Control immutable and a year's max-age.
      */
     get: operations["getBackgroundImage"];
     put?: never;
@@ -1092,7 +1092,7 @@ export interface components {
     BackgroundDigest: string;
     /**
      * Format: binary
-     * @description A background image file's own bytes (a JPEG).
+     * @description A background image file's own bytes (a WebP, or a JPEG if made before WebP).
      */
     BackgroundImage: string;
     /** @description The value of v1:notices:entur:<stop id>: Entur's GraphQL `data` for the stop as it came, under Entur's own names: {"stopPlace": {"name", "situations", "quays": [{"lines": [{"id", "publicCode", "transportMode", "situations"}]}], "estimatedCalls": [{"serviceJourney": {"line": {...}}, "situations"}]}} ("quay" in place of "stopPlace", with its "lines", for a quay), each situation's "id", "summary" and "description" (texts with their "language"), "validityPeriod" ("startTime", "endTime"), "severity" and "reportType". */
@@ -2138,12 +2138,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The image. */
+      /** @description The image, as its own bytes say (a WebP; ones made before WebP are JPEGs until they expire). */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          "image/webp": components["schemas"]["BackgroundImage"];
           "image/jpeg": components["schemas"]["BackgroundImage"];
         };
       };

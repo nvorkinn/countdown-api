@@ -292,8 +292,8 @@
       "ttl_s": 172800,
       "written_by": "countdown's background provider, beside v1:background:<weather key>",
       "read_by": "the broker's getBackgroundImage",
-      "examples": ["background.json", "background.jpg"],
-      "description": "A background's own bytes (a JPEG), by its SHA-256, so its address names the picture and not the place, and never changes for the same bytes."
+      "examples": ["background.json", "background.webp"],
+      "description": "A background's own bytes (a WebP; ones made before WebP are JPEGs until they expire), by its SHA-256, so its address names the picture and not the place, and never changes for the same bytes."
     },
     "background_place": {
       "pattern": "v1:background-place:{weather_key}",
@@ -1264,7 +1264,7 @@
       "get": {
         "operationId": "getBackgroundImage",
         "summary": "A weather panel background.",
-        "description": "A background's JPEG (v1:background-image:<digest>), by the SHA-256 that getWeather's background names it by. The same digest is always the same bytes, so it's answered with Cache-Control immutable and a year's max-age.",
+        "description": "A background's WebP (v1:background-image:<digest>), by the SHA-256 that getWeather's background names it by. The same digest is always the same bytes, so it's answered with Cache-Control immutable and a year's max-age.",
         "security": [],
         "parameters": [
           {
@@ -1278,8 +1278,13 @@
         ],
         "responses": {
           "200": {
-            "description": "The image.",
+            "description": "The image, as its own bytes say (a WebP; ones made before WebP are JPEGs until they expire).",
             "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/$defs/BackgroundImage"
+                }
+              },
               "image/jpeg": {
                 "schema": {
                   "$ref": "#/$defs/BackgroundImage"
@@ -3078,7 +3083,7 @@
     "BackgroundImage": {
       "type": "string",
       "format": "binary",
-      "description": "A background image file's own bytes (a JPEG)."
+      "description": "A background image file's own bytes (a WebP, or a JPEG if made before WebP)."
     },
     "StoredEnturSituations": {
       "description": "The value of v1:notices:entur:<stop id>: Entur's GraphQL `data` for the stop as it came, under Entur's own names: {\"stopPlace\": {\"name\", \"situations\", \"quays\": [{\"lines\": [{\"id\", \"publicCode\", \"transportMode\", \"situations\"}]}], \"estimatedCalls\": [{\"serviceJourney\": {\"line\": {...}}, \"situations\"}]}} (\"quay\" in place of \"stopPlace\", with its \"lines\", for a quay), each situation's \"id\", \"summary\" and \"description\" (texts with their \"language\"), \"validityPeriod\" (\"startTime\", \"endTime\"), \"severity\" and \"reportType\".",

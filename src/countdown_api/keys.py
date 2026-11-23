@@ -433,15 +433,15 @@ BACKGROUND_TTL_S = 172800
 def background_image(digest: str) -> str:
     """Return the key `v1:background-image:{digest}`.
 
-    A background's own bytes (a JPEG), by its SHA-256, so its address names the picture and not the place, and never
-    changes for the same bytes.
+    A background's own bytes (a WebP; ones made before WebP are JPEGs until they expire), by its SHA-256, so its address
+    names the picture and not the place, and never changes for the same bytes.
 
     A Redis string of models.BackgroundImage (bytes), with a TTL of 172800 s.
 
     Written by countdown's background provider, beside v1:background:<weather key>. Read by the broker's
     getBackgroundImage.
 
-    Example: countdown_api.fixtures, background.json, background.jpg.
+    Example: countdown_api.fixtures, background.json, background.webp.
     """
     return f"v1:background-image:{digest}"
 
