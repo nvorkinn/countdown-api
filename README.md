@@ -78,6 +78,8 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/devices/soloist/keys` | | `SoloistKeys` | which of the touchscreen's people have a key saved; never a key |
 | `GET /api/devices/soloist/key` | `person` | `SoloistApiKey` | the key saved for one of the touchscreen's people, which it starts its Soloist daemon with for them; `Cache-Control: no-store`, and never answered cross-origin |
 | `DELETE /api/devices/soloist/keys/{person}` | | 204 | forget the key saved for one of the touchscreen's people |
+| `POST /api/devices/spotify/sign-ins` | `SpotifySignInRequest` | `SpotifySignIn` (201) | a Spotify sign-in a touchscreen shows as a code to scan: the phone signs in at Spotify through the settings site's `/spotify/sign-in`, with the touchscreen's PKCE challenge; ten minutes |
+| `GET /api/devices/spotify/sign-ins/{id}` | | `SpotifySignInResult` | `waiting`, or once the phone is back Spotify's code (`done`) or error (`failed`), answered once; the touchscreen exchanges the code with its own verifier |
 | `GET /api/devices/account` | | `DeviceAccount` | which services the owner's account has linked (Parcel, Spotify), so a device can tell one that's switched off from one never set up; never a login or key |
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a WebP (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
@@ -86,6 +88,8 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
 | `GET /soloist` | `code` | a page | on the settings site, with no login: where a person pastes their Spotify Soloist API key for the touchscreen and person the code names |
+| `GET /spotify/sign-in` | `id` | a redirect to Spotify, or a page | on the settings site, with no login: where the phone that scanned a touchscreen's Spotify sign-in starts |
+| `GET /spotify/sign-in/callback` | `state`, `code` or `error` | a page | on the settings site, with no login: Spotify's redirect address for those sign-ins, which keeps Spotify's answer for the touchscreen |
 | `GET /account/parcel` | | a page | on the settings site, behind the login: where the person finds their Parcel API key and pastes it, for a device to send a phone to while its owner's account has none |
 
 All but the registrations and the backgrounds take the device's secret as `Authorization: Bearer <secret>`

@@ -289,6 +289,27 @@ def test_each_of_a_touchscreens_people_saves_their_own_soloist_key_with_a_code()
     assert key.api_key not in str(TOUCHSCREEN["soloist_keys"])
 
 
+def test_a_touchscreens_people_sign_in_to_spotify_on_their_phones() -> None:
+    asked = check("SpotifySignInRequest", TOUCHSCREEN["spotify_sign_in_request"])
+    sign_in = check("SpotifySignIn", TOUCHSCREEN["spotify_sign_in"])
+    assert sign_in.expires_in == 600
+    assert str(sign_in.redirect_uri).endswith("/spotify/sign-in/callback")
+    # The touchscreen's verifier stays on it: it sends only the challenge.
+    assert "code_verifier" not in TOUCHSCREEN["spotify_sign_in_request"]
+    assert asked.code_challenge
+    # The code to scan opens the page with the sign-in's id, and nothing of the device's secret.
+    assert TOUCHSCREEN["spotify_sign_in_page"] == {"id": sign_in.id}
+    assert TOUCHSCREEN["registration"]["secret"] not in str(TOUCHSCREEN["spotify_sign_in_page"])
+
+    # Spotify sends the phone back with the id as its state, and the touchscreen is then answered Spotify's code.
+    back = TOUCHSCREEN["spotify_sign_in_callback"]
+    assert back["state"] == sign_in.id
+    assert check("SpotifySignInResult", TOUCHSCREEN["spotify_sign_in_waiting"]).status == "waiting"
+    done = check("SpotifySignInResult", TOUCHSCREEN["spotify_sign_in_done"])
+    assert done.status == "done"
+    assert done.code == back["code"]
+
+
 def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothing_more() -> None:
     account = check("DeviceAccount", TOUCHSCREEN["account"])
     # The example's owner has pasted no Parcel key, so its parcels are off whatever its own switch says.

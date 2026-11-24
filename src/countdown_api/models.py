@@ -1348,6 +1348,65 @@ class SpotifyPlayback(BaseModel):
     track_id: str | None = None
 
 
+SpotifySignInId = Annotated[str, Field(pattern="^[0-9a-f]{32}$")]
+"""A touchscreen's Spotify sign-in, 32 hex digits. Opened as a link and sent to Spotify as the state."""
+
+
+class SpotifySignIn(BaseModel):
+    """A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan."""
+
+    id: SpotifySignInId = Field(
+        description="A touchscreen's Spotify sign-in, 32 hex digits. Opened as a link and sent to Spotify as the state.",
+    )
+    redirect_uri: str = Field(
+        description=(
+            "The redirect address the phone signs in with (spotifySignInCallbackPage, on the settings site), which the"
+            " touchscreen sends again when it exchanges the code."
+        ),
+    )
+    expires_in: Annotated[int, Field(ge=0)] = Field(description="Seconds until it lapses, counted from the answer.")
+
+
+class SpotifySignInRequest(BaseModel):
+    """The ``SpotifySignInRequest`` object.
+
+    What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing
+    of it is secret.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    client_id: Annotated[str, Field(pattern="^[0-9a-zA-Z]{1,64}$")] = Field(
+        description="The touchscreen's Spotify app's client id.",
+    )
+    code_challenge: Annotated[str, Field(pattern="^[A-Za-z0-9_-]{43,128}$")] = Field(
+        description="The SHA-256 challenge of the touchscreen's PKCE verifier (S256), base64url without padding.",
+    )
+    scope: Annotated[str, Field(max_length=1024, pattern="^[a-z-]+( [a-z-]+)*$")] = Field(
+        description="The scopes it asks for, space-separated.",
+    )
+
+
+class SpotifySignInResult(BaseModel):
+    """The ``SpotifySignInResult`` object.
+
+    Where a touchscreen's Spotify sign-in stands (getSpotifySignIn): `waiting` for the phone, `done`
+    with Spotify's code, or `failed` with Spotify's error (as Spotify names it, such as access_denied).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["waiting", "done", "failed"]
+    code: Annotated[str, Field(min_length=1)] | None = Field(
+        default=None,
+        description="Spotify's authorization code, when `done`.",
+    )
+    error: Annotated[str, Field(min_length=1)] | None = Field(
+        default=None,
+        description="Spotify's error, when `failed`.",
+    )
+
+
 class StopSearchResult(SearchResult):
     """A station or stop that searchStops found (SearchResult)."""
 
