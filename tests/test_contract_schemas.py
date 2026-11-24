@@ -62,8 +62,16 @@ def test_each_routes_schemas_security_and_examples_exist(path: str, method: str)
     operation = OPERATIONS[path, method]
     assert method in {"get", "post", "put", "delete"}
     # The devices' API, or the settings site's pages a touchscreen opens or sends a phone to: registering through the
-    # login, a device's settings, which it shows in a frame, and saving a Parcel key or a person's Soloist key.
-    pages = {"/register", "/device/{device_id}", "/account/parcel", "/soloist"}
+    # login, a device's settings, which it shows in a frame, saving a Parcel key or a person's Soloist key, and a
+    # person's Spotify sign-in on their phone, with the callback Spotify sends the phone back to.
+    pages = {
+        "/register",
+        "/device/{device_id}",
+        "/account/parcel",
+        "/soloist",
+        "/spotify/sign-in",
+        "/spotify/sign-in/callback",
+    }
     assert path.startswith("/api/") or path in pages
     refs = _refs(operation)
     # A page may take nothing and answer only itself; every route of the API has a schema.
@@ -98,6 +106,8 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/soloist/key", "get"),
         ("/api/devices/soloist/keys", "get"),
         ("/api/devices/soloist/keys/{person}", "delete"),
+        ("/api/devices/spotify/sign-ins", "post"),
+        ("/api/devices/spotify/sign-ins/{id}", "get"),
         ("/api/devices/spotify/token", "get"),
         ("/api/devices/weather", "get"),
         ("/api/frame", "post"),
@@ -108,6 +118,8 @@ def test_the_routes_are_what_they_were() -> None:
         ("/register", "get"),
         ("/register", "post"),
         ("/soloist", "get"),
+        ("/spotify/sign-in", "get"),
+        ("/spotify/sign-in/callback", "get"),
     ]
 
 
