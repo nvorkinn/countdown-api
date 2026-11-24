@@ -250,6 +250,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/spotify/sign-ins": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * A Spotify sign-in a touchscreen hands to a phone, by a code to scan.
+     * @description A touchscreen signs its people in to Spotify on their phones, not on its own screen. It makes a PKCE verifier of its own (RFC 7636), which never leaves it, and asks here for a sign-in with the verifier's challenge, its Spotify app's client id and the scopes it wants. It shows the settings site's page for the answer's id (spotifySignInPage) as a code to scan; the phone goes on to Spotify with those, and Spotify sends it back to the settings site's callback (spotifySignInCallbackPage), which keeps what Spotify answered. The touchscreen asks for that (getSpotifySignIn), and exchanges Spotify's code at Spotify itself, with its verifier and the answer's redirect_uri. The server holds no Spotify secret for it, and a code it keeps is no use without the verifier. A sign-in lasts ten minutes and gives its result once.
+     */
+    post: operations["createSpotifySignIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/spotify/sign-ins/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What Spotify answered a touchscreen's sign-in, once the phone is back.
+     * @description Whether the phone has come back from Spotify yet, and if so with Spotify's code or its refusal (SpotifySignInResult). Ask every few seconds while the code to scan is up. Once it has answered `done` or `failed` the sign-in is gone, so the code is answered once. Only the touchscreen that made it is answered.
+     */
+    get: operations["getSpotifySignIn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/account": {
     parameters: {
       query?: never;
@@ -426,6 +466,46 @@ export interface paths {
      * @description On the settings site, with no login: the page a touchscreen's code (createSoloistKeyCode) opens on a person's phone. It says where they make their key and has a field to paste it into; saving it, a post from the page itself, stores it for the touchscreen and person the code names and uses the code up. The key is never shown again. A code that has lapsed or been used is said so on the page. The page's own form posts are the page's.
      */
     get: operations["saveSoloistKeyPage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/spotify/sign-in": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Where a phone that scanned a touchscreen's Spotify sign-in code starts.
+     * @description On the settings site, with no login: the address a touchscreen's code to scan opens (createSpotifySignIn). It sends the phone on to Spotify's own sign-in (a redirect), with the touchscreen's client id, challenge and scopes, the sign-in's id as the state, and the callback page as the redirect address. A sign-in that has lapsed or answered is said so on the page instead.
+     */
+    get: operations["spotifySignInPage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/spotify/sign-in/callback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Where Spotify sends the phone back to after a touchscreen's sign-in.
+     * @description On the settings site, with no login: Spotify's redirect address for a touchscreen's sign-in, which is registered in the touchscreen's Spotify app exactly as createSpotifySignIn answers it. It keeps Spotify's code, or its error, for the sign-in its state names, for the touchscreen to ask for (getSpotifySignIn), and tells the person they can close the page.
+     */
+    get: operations["spotifySignInCallbackPage"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1001,6 +1081,37 @@ export interface components {
       /** @description The key, passed to Soloist as --api-key. */
       api_key: string;
     };
+    /** @description A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state. */
+    SpotifySignInId: string;
+    /** @description What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing of it is secret. */
+    SpotifySignInRequest: {
+      /** @description The touchscreen's Spotify app's client id. */
+      client_id: string;
+      /** @description The SHA-256 challenge of the touchscreen's PKCE verifier (S256), base64url without padding. */
+      code_challenge: string;
+      /** @description The scopes it asks for, space-separated. */
+      scope: string;
+    };
+    /** @description A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan. */
+    SpotifySignIn: {
+      id: components["schemas"]["SpotifySignInId"];
+      /**
+       * Format: uri
+       * @description The redirect address the phone signs in with (spotifySignInCallbackPage, on the settings site), which the touchscreen sends again when it exchanges the code.
+       */
+      redirect_uri: string;
+      /** @description Seconds until it lapses, counted from the answer. */
+      expires_in: number;
+    };
+    /** @description Where a touchscreen's Spotify sign-in stands (getSpotifySignIn): `waiting` for the phone, `done` with Spotify's code, or `failed` with Spotify's error (as Spotify names it, such as access_denied). */
+    SpotifySignInResult: {
+      /** @enum {string} */
+      status: "waiting" | "done" | "failed";
+      /** @description Spotify's authorization code, when `done`. */
+      code?: string;
+      /** @description Spotify's error, when `failed`. */
+      error?: string;
+    };
     /** @description The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink. */
     DeviceAccount: {
       /** @description Parcel: linked while the account has a Parcel API key saved, which the parcel provider reads the owner's deliveries with. */
@@ -1501,6 +1612,10 @@ export type SoloistKeyCodeRequest = components["schemas"]["SoloistKeyCodeRequest
 export type SoloistKeyCode = components["schemas"]["SoloistKeyCode"];
 export type SoloistKeys = components["schemas"]["SoloistKeys"];
 export type SoloistApiKey = components["schemas"]["SoloistApiKey"];
+export type SpotifySignInId = components["schemas"]["SpotifySignInId"];
+export type SpotifySignInRequest = components["schemas"]["SpotifySignInRequest"];
+export type SpotifySignIn = components["schemas"]["SpotifySignIn"];
+export type SpotifySignInResult = components["schemas"]["SpotifySignInResult"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
 export type StopDepartures = components["schemas"]["StopDepartures"];
@@ -2225,6 +2340,87 @@ export interface operations {
       };
     };
   };
+  createSpotifySignIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SpotifySignInRequest"];
+      };
+    };
+    responses: {
+      /** @description The sign-in. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SpotifySignIn"];
+        };
+      };
+      /** @description A request that isn't a SpotifySignInRequest. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSpotifySignIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["schemas"]["SpotifySignInId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Where the sign-in stands. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SpotifySignInResult"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No such sign-in for this touchscreen, one that has lapsed, or one that has already answered. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   getAccount: {
     parameters: {
       query?: never;
@@ -2608,6 +2804,59 @@ export interface operations {
     parameters: {
       query: {
         code: components["schemas"]["SoloistKeyCodeValue"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+    };
+  };
+  spotifySignInPage: {
+    parameters: {
+      query: {
+        id: components["schemas"]["SpotifySignInId"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page, for a sign-in that has lapsed or answered. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+      /** @description On to Spotify. */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  spotifySignInCallbackPage: {
+    parameters: {
+      query: {
+        state: components["schemas"]["SpotifySignInId"];
+        code?: string;
+        error?: string;
       };
       header?: never;
       path?: never;

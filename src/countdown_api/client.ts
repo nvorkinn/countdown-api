@@ -274,6 +274,45 @@ export function getSoloistKey(
 }
 
 /**
+ * A Spotify sign-in a touchscreen hands to a phone, by a code to scan.
+ *
+ * `POST /api/devices/spotify/sign-ins`, with the device's secret.
+ */
+export function createSpotifySignIn(
+  client: Client,
+  body: operations["createSpotifySignIn"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<operations["createSpotifySignIn"]["responses"][201]["content"]["application/json"]>> {
+  return request(client, {
+    ...options,
+    method: "POST",
+    path: "/api/devices/spotify/sign-ins",
+    body,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
+ * What Spotify answered a touchscreen's sign-in, once the phone is back.
+ *
+ * `GET /api/devices/spotify/sign-ins/{id}`, with the device's secret.
+ */
+export function getSpotifySignIn(
+  client: Client,
+  path: operations["getSpotifySignIn"]["parameters"]["path"],
+  options: RequestOptions = {},
+): Promise<Result<operations["getSpotifySignIn"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, {
+    ...options,
+    method: "GET",
+    path: `/api/devices/spotify/sign-ins/${encodeURIComponent(path.id)}`,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
  * What the owner's account has linked.
  *
  * `GET /api/devices/account`, with the device's secret.
@@ -377,6 +416,30 @@ export function saveSoloistKeyPageUrl(
   query: NonNullable<operations["saveSoloistKeyPage"]["parameters"]["query"]>,
 ): URL {
   return url(baseUrl, "/soloist", query);
+}
+
+/**
+ * Where a phone that scanned a touchscreen's Spotify sign-in code starts.
+ *
+ * The address of the page `GET /spotify/sign-in`, to send a browser to.
+ */
+export function spotifySignInPageUrl(
+  baseUrl: string | URL,
+  query: NonNullable<operations["spotifySignInPage"]["parameters"]["query"]>,
+): URL {
+  return url(baseUrl, "/spotify/sign-in", query);
+}
+
+/**
+ * Where Spotify sends the phone back to after a touchscreen's sign-in.
+ *
+ * The address of the page `GET /spotify/sign-in/callback`, to send a browser to.
+ */
+export function spotifySignInCallbackPageUrl(
+  baseUrl: string | URL,
+  query: NonNullable<operations["spotifySignInCallbackPage"]["parameters"]["query"]>,
+): URL {
+  return url(baseUrl, "/spotify/sign-in/callback", query);
 }
 
 /**

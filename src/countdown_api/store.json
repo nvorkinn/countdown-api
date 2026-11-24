@@ -1259,6 +1259,91 @@
         "x-examples": ["touchscreen.json"]
       }
     },
+    "/api/devices/spotify/sign-ins": {
+      "post": {
+        "operationId": "createSpotifySignIn",
+        "summary": "A Spotify sign-in a touchscreen hands to a phone, by a code to scan.",
+        "description": "A touchscreen signs its people in to Spotify on their phones, not on its own screen. It makes a PKCE verifier of its own (RFC 7636), which never leaves it, and asks here for a sign-in with the verifier's challenge, its Spotify app's client id and the scopes it wants. It shows the settings site's page for the answer's id (spotifySignInPage) as a code to scan; the phone goes on to Spotify with those, and Spotify sends it back to the settings site's callback (spotifySignInCallbackPage), which keeps what Spotify answered. The touchscreen asks for that (getSpotifySignIn), and exchanges Spotify's code at Spotify itself, with its verifier and the answer's redirect_uri. The server holds no Spotify secret for it, and a code it keeps is no use without the verifier. A sign-in lasts ten minutes and gives its result once.",
+        "security": [
+          {
+            "deviceSecret": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/$defs/SpotifySignInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The sign-in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/$defs/SpotifySignIn"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A request that isn't a SpotifySignInRequest."
+          },
+          "401": {
+            "description": "A missing or unknown secret."
+          },
+          "409": {
+            "description": "The device isn't a touchscreen."
+          }
+        },
+        "x-examples": ["touchscreen.json"]
+      }
+    },
+    "/api/devices/spotify/sign-ins/{id}": {
+      "get": {
+        "operationId": "getSpotifySignIn",
+        "summary": "What Spotify answered a touchscreen's sign-in, once the phone is back.",
+        "description": "Whether the phone has come back from Spotify yet, and if so with Spotify's code or its refusal (SpotifySignInResult). Ask every few seconds while the code to scan is up. Once it has answered `done` or `failed` the sign-in is gone, so the code is answered once. Only the touchscreen that made it is answered.",
+        "security": [
+          {
+            "deviceSecret": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/$defs/SpotifySignInId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where the sign-in stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/$defs/SpotifySignInResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A missing or unknown secret."
+          },
+          "404": {
+            "description": "No such sign-in for this touchscreen, one that has lapsed, or one that has already answered."
+          }
+        },
+        "x-examples": ["touchscreen.json"]
+      }
+    },
     "/api/devices/account": {
       "get": {
         "operationId": "getAccount",
@@ -1671,6 +1756,84 @@
           }
         },
         "x-examples": ["touchscreen.json"]
+      }
+    },
+    "/spotify/sign-in": {
+      "get": {
+        "operationId": "spotifySignInPage",
+        "summary": "Where a phone that scanned a touchscreen's Spotify sign-in code starts.",
+        "description": "On the settings site, with no login: the address a touchscreen's code to scan opens (createSpotifySignIn). It sends the phone on to Spotify's own sign-in (a redirect), with the touchscreen's client id, challenge and scopes, the sign-in's id as the state, and the callback page as the redirect address. A sign-in that has lapsed or answered is said so on the page instead.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/$defs/SpotifySignInId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page, for a sign-in that has lapsed or answered.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "On to Spotify."
+          }
+        },
+        "x-examples": ["touchscreen.json"]
+      }
+    },
+    "/spotify/sign-in/callback": {
+      "get": {
+        "operationId": "spotifySignInCallbackPage",
+        "summary": "Where Spotify sends the phone back to after a touchscreen's sign-in.",
+        "description": "On the settings site, with no login: Spotify's redirect address for a touchscreen's sign-in, which is registered in the touchscreen's Spotify app exactly as createSpotifySignIn answers it. It keeps Spotify's code, or its error, for the sign-in its state names, for the touchscreen to ask for (getSpotifySignIn), and tells the person they can close the page.",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/$defs/SpotifySignInId"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/account/parcel": {
@@ -2898,6 +3061,77 @@
         }
       },
       "required": ["api_key"]
+    },
+    "SpotifySignInId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state."
+    },
+    "SpotifySignInRequest": {
+      "description": "What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing of it is secret.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "type": "string",
+          "pattern": "^[0-9a-zA-Z]{1,64}$",
+          "description": "The touchscreen's Spotify app's client id."
+        },
+        "code_challenge": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43,128}$",
+          "description": "The SHA-256 challenge of the touchscreen's PKCE verifier (S256), base64url without padding."
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^[a-z-]+( [a-z-]+)*$",
+          "maxLength": 1024,
+          "description": "The scopes it asks for, space-separated."
+        }
+      },
+      "required": ["client_id", "code_challenge", "scope"]
+    },
+    "SpotifySignIn": {
+      "description": "A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SpotifySignInId"
+        },
+        "redirect_uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "The redirect address the phone signs in with (spotifySignInCallbackPage, on the settings site), which the touchscreen sends again when it exchanges the code."
+        },
+        "expires_in": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Seconds until it lapses, counted from the answer."
+        }
+      },
+      "required": ["id", "redirect_uri", "expires_in"]
+    },
+    "SpotifySignInResult": {
+      "description": "Where a touchscreen's Spotify sign-in stands (getSpotifySignIn): `waiting` for the phone, `done` with Spotify's code, or `failed` with Spotify's error (as Spotify names it, such as access_denied).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "done", "failed"]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Spotify's authorization code, when `done`."
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Spotify's error, when `failed`."
+        }
+      },
+      "required": ["status"]
     },
     "DeviceAccount": {
       "description": "The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink.",
