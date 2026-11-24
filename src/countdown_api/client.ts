@@ -203,15 +203,73 @@ export function getSpotifyToken(
 }
 
 /**
- * The owner's Spotify Soloist API key, for a touchscreen.
+ * The Spotify Soloist API key of one of a touchscreen's people.
  *
  * `GET /api/devices/soloist/key`, with the device's secret.
  */
 export function getSoloistKey(
   client: Client,
+  query: NonNullable<operations["getSoloistKey"]["parameters"]["query"]> = {},
   options: RequestOptions = {},
 ): Promise<Result<operations["getSoloistKey"]["responses"][200]["content"]["application/json"]>> {
-  return request(client, { ...options, method: "GET", path: "/api/devices/soloist/key", secret: true, json: true });
+  return request(client, {
+    ...options,
+    method: "GET",
+    path: "/api/devices/soloist/key",
+    query,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
+ * A code a person joins the touchscreen with.
+ *
+ * `POST /api/devices/members/codes`, with the device's secret.
+ */
+export function createMemberCode(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["createMemberCode"]["responses"][201]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "POST", path: "/api/devices/members/codes", secret: true, json: true });
+}
+
+/**
+ * Whether someone has joined with a code, and who.
+ *
+ * `GET /api/devices/members/codes/{code}`, with the device's secret.
+ */
+export function getMemberCode(
+  client: Client,
+  path: operations["getMemberCode"]["parameters"]["path"],
+  options: RequestOptions = {},
+): Promise<Result<operations["getMemberCode"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, {
+    ...options,
+    method: "GET",
+    path: `/api/devices/members/codes/${encodeURIComponent(path.code)}`,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
+ * Remove a member from the touchscreen.
+ *
+ * `DELETE /api/devices/members/{user_id}`, with the device's secret.
+ */
+export function removeMember(
+  client: Client,
+  path: operations["removeMember"]["parameters"]["path"],
+  options: RequestOptions = {},
+): Promise<Result<undefined>> {
+  return request(client, {
+    ...options,
+    method: "DELETE",
+    path: `/api/devices/members/${encodeURIComponent(path.user_id)}`,
+    secret: true,
+    json: false,
+  });
 }
 
 /**
@@ -306,6 +364,18 @@ export function deviceSettingsPageUrl(
   query: NonNullable<operations["deviceSettingsPage"]["parameters"]["query"]> = {},
 ): URL {
   return url(baseUrl, `/device/${encodeURIComponent(path.device_id)}`, query);
+}
+
+/**
+ * The page where the signed-in person joins a touchscreen as a member.
+ *
+ * The address of the page `GET /join`, to send a browser to.
+ */
+export function joinScreenPageUrl(
+  baseUrl: string | URL,
+  query: NonNullable<operations["joinScreenPage"]["parameters"]["query"]>,
+): URL {
+  return url(baseUrl, "/join", query);
 }
 
 /**
