@@ -987,16 +987,27 @@ paths:
   /api/devices/soloist/key:
     get:
       operationId: getSoloistKey
-      summary: The owner's Spotify Soloist API key, for a touchscreen.
+      summary: The Spotify Soloist API key of one of a touchscreen's people.
       description: >-
-        The Spotify Soloist API key the account that owns the touchscreen saved on its Account page, which the
-        touchscreen starts its Soloist daemon with (Soloist takes it at every start). The key is the owner's own, from
-        their Spotify for Developers dashboard, and only their own paired touchscreens are sent it: the one route that
-        answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at each start and
-        keep it in memory only; the answer is `Cache-Control: no-store`. A screen that's unpaired or handed on is
-        refused from then on, but keeps what it was already sent, so its owner revokes the key in their dashboard.
+        The Spotify Soloist API key one of the touchscreen's people saved on their own Account page, which the
+        touchscreen starts its Soloist daemon with for them (Soloist takes it at every start). A key is its person's
+        own, from their Spotify for Developers dashboard, and never anyone else's to use, so the touchscreen asks for
+        the key of whoever is playing: `user_id` names them, and without it it's the owner's. Only a person linked to
+        the touchscreen can be named: its owner, or a member who joined it themselves (joinScreenPage). It is the one
+        route that answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at
+        each start and keep it in memory only; the answer is `Cache-Control: no-store`, and it is never answered to a
+        web page on another origin (no CORS headers), so the touchscreen's own service asks for it, not its page. A
+        screen that's unpaired or handed on, or a member who has left or been removed, is refused from then on, but the
+        screen keeps what it was already sent, so the key's owner revokes it in their dashboard.
       security:
       - deviceSecret: []
+      parameters:
+      - name: user_id
+        in: query
+        required: false
+        description: Whose key, of the people linked to the touchscreen; its owner's when left out.
+        schema:
+          $ref: '#/$defs/UserId'
       responses:
         '200':
           description: The key.
@@ -1013,10 +1024,89 @@ paths:
         '401':
           description: A missing or unknown secret.
         '404':
-          description: The owner's account has no Soloist API key saved.
+          description: >-
+            The person's account has no Soloist API key saved, or `user_id` names no one linked to the touchscreen
+            (the two aren't told apart).
         '409':
           description: The device isn't paired yet, or isn't a touchscreen.
       x-examples: [touchscreen.json]
+  /api/devices/members/codes:
+    post:
+      operationId: createMemberCode
+      summary: A code a person joins the touchscreen with.
+      description: >-
+        A touchscreen is its owner's, and other people of the household join it as its members, each with their own
+        account: what a member has saved for themselves (their Spotify Soloist API key, getSoloistKey) the touchscreen
+        can then ask for. Joining is the person's own doing. The touchscreen asks for a code here and shows it as a
+        link to the settings site's join page (joinScreenPage); the person opens it on their phone, signs in and
+        confirms. The code is long and random, lasts ten minutes and works once. The touchscreen then learns who
+        joined from getMemberCode. Its owner can use a code too: they are linked already, so it only tells the
+        touchscreen who they are.
+      security:
+      - deviceSecret: []
+      responses:
+        '201':
+          description: The code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/MemberCode'
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, or isn't a touchscreen.
+      x-examples: [touchscreen.json]
+  /api/devices/members/codes/{code}:
+    get:
+      operationId: getMemberCode
+      summary: Whether someone has joined with a code, and who.
+      description: >-
+        What became of a code the touchscreen asked for (createMemberCode), for it to poll while it shows the code:
+        waiting, or joined, with the user id of the person who did. That id is how the touchscreen names them from
+        then on (getSoloistKey's `user_id`, removeMember). A code is answered until it lapses, joined or not.
+      security:
+      - deviceSecret: []
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          $ref: '#/$defs/MemberCodeValue'
+      responses:
+        '200':
+          description: The code's status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/MemberCodeStatus'
+        '401':
+          description: A missing or unknown secret.
+        '404':
+          description: No such code. It has lapsed, or isn't this device's.
+      x-examples: [touchscreen.json]
+  /api/devices/members/{user_id}:
+    delete:
+      operationId: removeMember
+      summary: Remove a member from the touchscreen.
+      description: >-
+        Unlinks a member, as when the touchscreen removes the person from its own list: nothing of theirs is answered
+        to it from then on. Removing someone who isn't a member changes nothing and is answered the same. The owner
+        isn't a member and can't be removed here: a touchscreen changes hands on the settings site.
+      security:
+      - deviceSecret: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/$defs/UserId'
+      responses:
+        '204':
+          description: They aren't a member of the touchscreen (any more).
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: They are the touchscreen's owner; or the device isn't paired yet, or isn't a touchscreen.
   /api/devices/account:
     get:
       operationId: getAccount
@@ -1312,6 +1402,30 @@ paths:
                 type: string
         '404':
           description: No such device, or not one of the signed-in person's.
+  /join:
+    get:
+      operationId: joinScreenPage
+      summary: The page where the signed-in person joins a touchscreen as a member.
+      description: >-
+        On the settings site, behind the login: the page a touchscreen's member code (createMemberCode) opens on a
+        person's phone. It names the touchscreen, says what joining lets it do (ask for what the person has saved for
+        themselves, their Spotify Soloist API key), and asks them to confirm; the visit alone changes nothing.
+        Confirming, a post from the page itself, links them to the touchscreen as a member and uses the code up. A
+        code that has lapsed or been used is said so on the page. The page's own form posts are the page's.
+      parameters:
+      - name: code
+        in: query
+        required: true
+        schema:
+          $ref: '#/$defs/MemberCodeValue'
+      responses:
+        '200':
+          description: The page.
+          content:
+            text/html:
+              schema:
+                type: string
+      x-examples: [touchscreen.json]
   /account/parcel:
     get:
       operationId: connectParcelPage
@@ -2463,10 +2577,45 @@ $defs:
     - token_type
     - expires_in
     - scope
+  UserId:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: >-
+      A person's account, by the id the login gives it. It never changes, unlike their name, and says nothing of
+      them.
+  MemberCodeValue:
+    type: string
+    pattern: ^[0-9a-f]{32}$
+    description: A member code, 32 hex digits (16 random bytes). Opened as a link, never typed.
+  MemberCode:
+    description: A code a person joins a touchscreen with (createMemberCode), and how long it lasts.
+    type: object
+    properties:
+      code:
+        $ref: '#/$defs/MemberCodeValue'
+      expires_in:
+        type: integer
+        minimum: 0
+        description: Seconds until it lapses, counted from the answer.
+    required:
+    - code
+    - expires_in
+  MemberCodeStatus:
+    description: What became of a member code (getMemberCode).
+    type: object
+    properties:
+      user_id:
+        description: Who joined with it; null while no one has.
+        oneOf:
+        - $ref: '#/$defs/UserId'
+        - type: 'null'
+    required:
+    - user_id
   SoloistApiKey:
     description: >-
-      A Spotify Soloist API key (getSoloistKey): the owner's own, as they saved it on the Account page. A secret, which
-      a touchscreen passes to its Soloist daemon and neither stores nor logs.
+      A Spotify Soloist API key (getSoloistKey): its person's own, as they saved it on their Account page. A secret,
+      which a touchscreen passes to its Soloist daemon and neither stores nor logs.
     type: object
     properties:
       api_key:

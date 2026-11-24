@@ -281,6 +281,19 @@ def test_a_touchscreen_gets_its_owners_soloist_api_key() -> None:
     assert check("DeviceAccount", TOUCHSCREEN["account"]).soloist.linked
 
 
+def test_a_person_joins_a_touchscreen_with_a_code_it_then_names_them_by() -> None:
+    code = check("MemberCode", TOUCHSCREEN["member_code"])
+    assert code.expires_in == 600
+    # The link the touchscreen shows opens the join page with that code, and nothing of the device's secret.
+    assert TOUCHSCREEN["join"] == {"code": code.code}
+    assert TOUCHSCREEN["registration"]["secret"] not in str(TOUCHSCREEN["join"])
+
+    assert check("MemberCodeStatus", TOUCHSCREEN["member_code_waiting"]).user_id is None
+    joined = check("MemberCodeStatus", TOUCHSCREEN["member_code_joined"])
+    # Who joined is who the touchscreen then asks for the Soloist API key of.
+    assert joined.user_id == TOUCHSCREEN["soloist_key_query"]["user_id"]
+
+
 def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothing_more() -> None:
     account = check("DeviceAccount", TOUCHSCREEN["account"])
     # The example's owner has pasted no Parcel key, so its parcels are off whatever its own switch says.

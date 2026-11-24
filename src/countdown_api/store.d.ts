@@ -178,13 +178,73 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The owner's Spotify Soloist API key, for a touchscreen.
-     * @description The Spotify Soloist API key the account that owns the touchscreen saved on its Account page, which the touchscreen starts its Soloist daemon with (Soloist takes it at every start). The key is the owner's own, from their Spotify for Developers dashboard, and only their own paired touchscreens are sent it: the one route that answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at each start and keep it in memory only; the answer is `Cache-Control: no-store`. A screen that's unpaired or handed on is refused from then on, but keeps what it was already sent, so its owner revokes the key in their dashboard.
+     * The Spotify Soloist API key of one of a touchscreen's people.
+     * @description The Spotify Soloist API key one of the touchscreen's people saved on their own Account page, which the touchscreen starts its Soloist daemon with for them (Soloist takes it at every start). A key is its person's own, from their Spotify for Developers dashboard, and never anyone else's to use, so the touchscreen asks for the key of whoever is playing: `user_id` names them, and without it it's the owner's. Only a person linked to the touchscreen can be named: its owner, or a member who joined it themselves (joinScreenPage). It is the one route that answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at each start and keep it in memory only; the answer is `Cache-Control: no-store`, and it is never answered to a web page on another origin (no CORS headers), so the touchscreen's own service asks for it, not its page. A screen that's unpaired or handed on, or a member who has left or been removed, is refused from then on, but the screen keeps what it was already sent, so the key's owner revokes it in their dashboard.
      */
     get: operations["getSoloistKey"];
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/members/codes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * A code a person joins the touchscreen with.
+     * @description A touchscreen is its owner's, and other people of the household join it as its members, each with their own account: what a member has saved for themselves (their Spotify Soloist API key, getSoloistKey) the touchscreen can then ask for. Joining is the person's own doing. The touchscreen asks for a code here and shows it as a link to the settings site's join page (joinScreenPage); the person opens it on their phone, signs in and confirms. The code is long and random, lasts ten minutes and works once. The touchscreen then learns who joined from getMemberCode. Its owner can use a code too: they are linked already, so it only tells the touchscreen who they are.
+     */
+    post: operations["createMemberCode"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/members/codes/{code}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Whether someone has joined with a code, and who.
+     * @description What became of a code the touchscreen asked for (createMemberCode), for it to poll while it shows the code: waiting, or joined, with the user id of the person who did. That id is how the touchscreen names them from then on (getSoloistKey's `user_id`, removeMember). A code is answered until it lapses, joined or not.
+     */
+    get: operations["getMemberCode"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/members/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove a member from the touchscreen.
+     * @description Unlinks a member, as when the touchscreen removes the person from its own list: nothing of theirs is answered to it from then on. Removing someone who isn't a member changes nothing and is answered the same. The owner isn't a member and can't be removed here: a touchscreen changes hands on the settings site.
+     */
+    delete: operations["removeMember"];
     options?: never;
     head?: never;
     patch?: never;
@@ -346,6 +406,26 @@ export interface paths {
      * @description The device's settings, as its owner sees them on the settings site; a device that isn't theirs is a 404. With `embed=1` the page has no site navigation and no list of their screens, only the page itself, for a frame in the device's own settings, and its forms and redirects keep `embed=1`. A frame only has the person's login when the page around it is on the same site as the settings site (the login's cookies are SameSite=Lax); without it the frame gets the login's redirect, which the login provider refuses to show in a frame.
      */
     get: operations["deviceSettingsPage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/join": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The page where the signed-in person joins a touchscreen as a member.
+     * @description On the settings site, behind the login: the page a touchscreen's member code (createMemberCode) opens on a person's phone. It names the touchscreen, says what joining lets it do (ask for what the person has saved for themselves, their Spotify Soloist API key), and asks them to confirm; the visit alone changes nothing. Confirming, a post from the page itself, links them to the touchscreen as a member and uses the code up. A code that has lapsed or been used is said so on the page. The page's own form posts are the page's.
+     */
+    get: operations["joinScreenPage"];
     put?: never;
     post?: never;
     delete?: never;
@@ -897,7 +977,22 @@ export interface components {
       /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
       scope: string;
     };
-    /** @description A Spotify Soloist API key (getSoloistKey): the owner's own, as they saved it on the Account page. A secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs. */
+    /** @description A person's account, by the id the login gives it. It never changes, unlike their name, and says nothing of them. */
+    UserId: string;
+    /** @description A member code, 32 hex digits (16 random bytes). Opened as a link, never typed. */
+    MemberCodeValue: string;
+    /** @description A code a person joins a touchscreen with (createMemberCode), and how long it lasts. */
+    MemberCode: {
+      code: components["schemas"]["MemberCodeValue"];
+      /** @description Seconds until it lapses, counted from the answer. */
+      expires_in: number;
+    };
+    /** @description What became of a member code (getMemberCode). */
+    MemberCodeStatus: {
+      /** @description Who joined with it; null while no one has. */
+      user_id: components["schemas"]["UserId"] | null;
+    };
+    /** @description A Spotify Soloist API key (getSoloistKey): its person's own, as they saved it on their Account page. A secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs. */
     SoloistApiKey: {
       /** @description The key, passed to Soloist as --api-key. */
       api_key: string;
@@ -1398,6 +1493,10 @@ export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type NoticeBoardAddress = components["schemas"]["NoticeBoardAddress"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
+export type UserId = components["schemas"]["UserId"];
+export type MemberCodeValue = components["schemas"]["MemberCodeValue"];
+export type MemberCode = components["schemas"]["MemberCode"];
+export type MemberCodeStatus = components["schemas"]["MemberCodeStatus"];
 export type SoloistApiKey = components["schemas"]["SoloistApiKey"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
@@ -1959,7 +2058,10 @@ export interface operations {
   };
   getSoloistKey: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Whose key, of the people linked to the touchscreen; its owner's when left out. */
+        user_id?: components["schemas"]["UserId"];
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -1984,7 +2086,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The owner's account has no Soloist API key saved. */
+      /** @description The person's account has no Soloist API key saved, or `user_id` names no one linked to the touchscreen (the two aren't told apart). */
       404: {
         headers: {
           [name: string]: unknown;
@@ -1992,6 +2094,110 @@ export interface operations {
         content?: never;
       };
       /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  createMemberCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The code. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberCode"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getMemberCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        code: components["schemas"]["MemberCodeValue"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The code's status. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberCodeStatus"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No such code. It has lapsed, or isn't this device's. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  removeMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: components["schemas"]["UserId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description They aren't a member of the touchscreen (any more). */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description They are the touchscreen's owner; or the device isn't paired yet, or isn't a touchscreen. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -2376,6 +2582,28 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  joinScreenPage: {
+    parameters: {
+      query: {
+        code: components["schemas"]["MemberCodeValue"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
       };
     };
   };

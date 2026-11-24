@@ -1149,6 +1149,31 @@ pairs. The renderer reads it with its own model of Glowmarkt's answer.
 """
 
 
+MemberCodeValue = Annotated[str, Field(pattern="^[0-9a-f]{32}$")]
+"""A member code, 32 hex digits (16 random bytes). Opened as a link, never typed."""
+
+
+class MemberCode(BaseModel):
+    """A code a person joins a touchscreen with (createMemberCode), and how long it lasts."""
+
+    code: MemberCodeValue = Field(
+        description="A member code, 32 hex digits (16 random bytes). Opened as a link, never typed.",
+    )
+    expires_in: Annotated[int, Field(ge=0)] = Field(description="Seconds until it lapses, counted from the answer.")
+
+
+UserId = Annotated[str, Field(min_length=1, max_length=255)]
+"""A person's account, by the id the login gives it. It never changes, unlike their name, and says
+nothing of them.
+"""
+
+
+class MemberCodeStatus(BaseModel):
+    """What became of a member code (getMemberCode)."""
+
+    user_id: UserId | None = Field(description="Who joined with it; null while no one has.")
+
+
 MinuteOfDay = Annotated[int, Field(ge=0, le=1439)]
 """A time of day, as minutes after midnight (0 to 1439)."""
 
@@ -1265,8 +1290,8 @@ secret can't.
 class SoloistApiKey(BaseModel):
     """The ``SoloistApiKey`` object.
 
-    A Spotify Soloist API key (getSoloistKey): the owner's own, as they saved it on the Account page. A
-    secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs.
+    A Spotify Soloist API key (getSoloistKey): its person's own, as they saved it on their Account page.
+    A secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs.
     """
 
     api_key: Annotated[str, Field(min_length=1)] = Field(description="The key, passed to Soloist as --api-key.")

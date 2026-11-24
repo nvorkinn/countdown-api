@@ -5,13 +5,18 @@ import { test } from "node:test";
 import {
   type Client,
   connectParcelPageUrl,
+  createMemberCode,
   deviceSettingsPageUrl,
   getBackgroundImageUrl,
   getConfig,
   getFeedUrl,
+  getMemberCode,
+  getSoloistKey,
+  joinScreenPageUrl,
   putConfig,
   registerDevice,
   registerTouchscreenUrl,
+  removeMember,
 } from "../src/countdown_api/client.ts";
 
 interface Sent {
@@ -31,7 +36,8 @@ function fakeServer(status: number, body: unknown, contentType = "application/js
       body: init.body === undefined ? undefined : JSON.parse(String(init.body)),
     });
     const text = typeof body === "string" ? body : JSON.stringify(body);
-    return new Response(text, { status, headers: { "Content-Type": contentType } });
+    // A 204 has no body, and Response refuses one.
+    return new Response(status === 204 ? null : text, { status, headers: { "Content-Type": contentType } });
   };
   return { client: { baseUrl: "https://api.example.com", secret: "s3cret-s3cret-s3cret", fetch }, sent };
 }
@@ -106,4 +112,32 @@ test("an image's address is its digest on the devices' API", () => {
 
 test("the event stream is an address the device reads itself", () => {
   assert.equal(getFeedUrl("https://api.example.com").href, "https://api.example.com/api/devices/feed");
+});
+
+test("a person joins by a code the device asks for, polls and shows as a link", async () => {
+  const code = "9f2c4e6a8b0d1f3a5c7e9b1d3f5a7c9e";
+  const made = fakeServer(201, { code, expires_in: 600 });
+  assert.equal((await createMemberCode(made.client)).data?.code, code);
+  assert.equal(made.sent[0]?.method, "POST");
+  assert.equal(made.sent[0]?.url, "https://api.example.com/api/devices/members/codes");
+
+  assert.equal(joinScreenPageUrl("https://example.com/", { code }).href, `https://example.com/join?code=${code}`);
+
+  const polled = fakeServer(200, { user_id: "user/1" });
+  assert.equal((await getMemberCode(polled.client, { code })).data?.user_id, "user/1");
+  assert.equal(polled.sent[0]?.url, `https://api.example.com/api/devices/members/codes/${code}`);
+});
+
+test("a member's key is asked for by their user id, and a member removed by it", async () => {
+  const key = fakeServer(200, { api_key: "k" });
+  await getSoloistKey(key.client, { user_id: "user/1" });
+  assert.equal(key.sent[0]?.url, "https://api.example.com/api/devices/soloist/key?user_id=user%2F1");
+  await getSoloistKey(key.client);
+  assert.equal(key.sent[1]?.url, "https://api.example.com/api/devices/soloist/key");
+
+  const removed = fakeServer(204, "");
+  const { response } = await removeMember(removed.client, { user_id: "user/1" });
+  assert.equal(response.status, 204);
+  assert.equal(removed.sent[0]?.method, "DELETE");
+  assert.equal(removed.sent[0]?.url, "https://api.example.com/api/devices/members/user%2F1");
 });
