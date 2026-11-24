@@ -1349,14 +1349,14 @@ class SpotifyPlayback(BaseModel):
 
 
 SpotifySignInId = Annotated[str, Field(pattern="^[0-9a-f]{32}$")]
-"""A touchscreen's Spotify sign-in, 32 hex digits. Opened as a link and sent to Spotify as the state."""
+"""A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state."""
 
 
 class SpotifySignIn(BaseModel):
     """A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan."""
 
     id: SpotifySignInId = Field(
-        description="A touchscreen's Spotify sign-in, 32 hex digits. Opened as a link and sent to Spotify as the state.",
+        description="A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state.",
     )
     redirect_uri: str = Field(
         description=(

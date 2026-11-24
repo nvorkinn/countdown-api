@@ -1081,7 +1081,7 @@ export interface components {
       /** @description The key, passed to Soloist as --api-key. */
       api_key: string;
     };
-    /** @description A touchscreen's Spotify sign-in, 32 hex digits. Opened as a link and sent to Spotify as the state. */
+    /** @description A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state. */
     SpotifySignInId: string;
     /** @description What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing of it is secret. */
     SpotifySignInRequest: {
