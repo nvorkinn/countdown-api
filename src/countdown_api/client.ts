@@ -203,13 +203,64 @@ export function getSpotifyToken(
 }
 
 /**
- * The Spotify Soloist API key of one of a touchscreen's people.
+ * A code one of the touchscreen's people saves their Spotify Soloist API key with.
+ *
+ * `POST /api/devices/soloist/codes`, with the device's secret.
+ */
+export function createSoloistKeyCode(
+  client: Client,
+  body: operations["createSoloistKeyCode"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<operations["createSoloistKeyCode"]["responses"][201]["content"]["application/json"]>> {
+  return request(client, {
+    ...options,
+    method: "POST",
+    path: "/api/devices/soloist/codes",
+    body,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
+ * Which of the touchscreen's people have a Spotify Soloist API key saved.
+ *
+ * `GET /api/devices/soloist/keys`, with the device's secret.
+ */
+export function listSoloistKeys(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["listSoloistKeys"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/soloist/keys", secret: true, json: true });
+}
+
+/**
+ * Forget one of the touchscreen's people's Spotify Soloist API key.
+ *
+ * `DELETE /api/devices/soloist/keys/{person}`, with the device's secret.
+ */
+export function deleteSoloistKey(
+  client: Client,
+  path: operations["deleteSoloistKey"]["parameters"]["path"],
+  options: RequestOptions = {},
+): Promise<Result<undefined>> {
+  return request(client, {
+    ...options,
+    method: "DELETE",
+    path: `/api/devices/soloist/keys/${encodeURIComponent(path.person)}`,
+    secret: true,
+    json: false,
+  });
+}
+
+/**
+ * The Spotify Soloist API key of one of the touchscreen's people.
  *
  * `GET /api/devices/soloist/key`, with the device's secret.
  */
 export function getSoloistKey(
   client: Client,
-  query: NonNullable<operations["getSoloistKey"]["parameters"]["query"]> = {},
+  query: NonNullable<operations["getSoloistKey"]["parameters"]["query"]>,
   options: RequestOptions = {},
 ): Promise<Result<operations["getSoloistKey"]["responses"][200]["content"]["application/json"]>> {
   return request(client, {
@@ -219,56 +270,6 @@ export function getSoloistKey(
     query,
     secret: true,
     json: true,
-  });
-}
-
-/**
- * A code a person joins the touchscreen with.
- *
- * `POST /api/devices/members/codes`, with the device's secret.
- */
-export function createMemberCode(
-  client: Client,
-  options: RequestOptions = {},
-): Promise<Result<operations["createMemberCode"]["responses"][201]["content"]["application/json"]>> {
-  return request(client, { ...options, method: "POST", path: "/api/devices/members/codes", secret: true, json: true });
-}
-
-/**
- * Whether someone has joined with a code, and who.
- *
- * `GET /api/devices/members/codes/{code}`, with the device's secret.
- */
-export function getMemberCode(
-  client: Client,
-  path: operations["getMemberCode"]["parameters"]["path"],
-  options: RequestOptions = {},
-): Promise<Result<operations["getMemberCode"]["responses"][200]["content"]["application/json"]>> {
-  return request(client, {
-    ...options,
-    method: "GET",
-    path: `/api/devices/members/codes/${encodeURIComponent(path.code)}`,
-    secret: true,
-    json: true,
-  });
-}
-
-/**
- * Remove a member from the touchscreen.
- *
- * `DELETE /api/devices/members/{user_id}`, with the device's secret.
- */
-export function removeMember(
-  client: Client,
-  path: operations["removeMember"]["parameters"]["path"],
-  options: RequestOptions = {},
-): Promise<Result<undefined>> {
-  return request(client, {
-    ...options,
-    method: "DELETE",
-    path: `/api/devices/members/${encodeURIComponent(path.user_id)}`,
-    secret: true,
-    json: false,
   });
 }
 
@@ -367,15 +368,15 @@ export function deviceSettingsPageUrl(
 }
 
 /**
- * The page where the signed-in person joins a touchscreen as a member.
+ * The page where a person pastes their Spotify Soloist API key for a touchscreen.
  *
- * The address of the page `GET /join`, to send a browser to.
+ * The address of the page `GET /soloist`, to send a browser to.
  */
-export function joinScreenPageUrl(
+export function saveSoloistKeyPageUrl(
   baseUrl: string | URL,
-  query: NonNullable<operations["joinScreenPage"]["parameters"]["query"]>,
+  query: NonNullable<operations["saveSoloistKeyPage"]["parameters"]["query"]>,
 ): URL {
-  return url(baseUrl, "/join", query);
+  return url(baseUrl, "/soloist", query);
 }
 
 /**

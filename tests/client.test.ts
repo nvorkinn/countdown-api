@@ -5,18 +5,18 @@ import { test } from "node:test";
 import {
   type Client,
   connectParcelPageUrl,
-  createMemberCode,
+  createSoloistKeyCode,
+  deleteSoloistKey,
   deviceSettingsPageUrl,
   getBackgroundImageUrl,
   getConfig,
   getFeedUrl,
-  getMemberCode,
   getSoloistKey,
-  joinScreenPageUrl,
+  listSoloistKeys,
   putConfig,
   registerDevice,
   registerTouchscreenUrl,
-  removeMember,
+  saveSoloistKeyPageUrl,
 } from "../src/countdown_api/client.ts";
 
 interface Sent {
@@ -114,30 +114,32 @@ test("the event stream is an address the device reads itself", () => {
   assert.equal(getFeedUrl("https://api.example.com").href, "https://api.example.com/api/devices/feed");
 });
 
-test("a person joins by a code the device asks for, polls and shows as a link", async () => {
+test("a person's Soloist key is saved by a code the device asks for and shows as a link", async () => {
   const code = "9f2c4e6a8b0d1f3a5c7e9b1d3f5a7c9e";
   const made = fakeServer(201, { code, expires_in: 600 });
-  assert.equal((await createMemberCode(made.client)).data?.code, code);
+  assert.equal((await createSoloistKeyCode(made.client, { person: "wizzler" })).data?.code, code);
   assert.equal(made.sent[0]?.method, "POST");
-  assert.equal(made.sent[0]?.url, "https://api.example.com/api/devices/members/codes");
+  assert.equal(made.sent[0]?.url, "https://api.example.com/api/devices/soloist/codes");
+  assert.deepEqual(made.sent[0]?.body, { person: "wizzler" });
 
-  assert.equal(joinScreenPageUrl("https://example.com/", { code }).href, `https://example.com/join?code=${code}`);
+  assert.equal(
+    saveSoloistKeyPageUrl("https://example.com/", { code }).href,
+    `https://example.com/soloist?code=${code}`,
+  );
 
-  const polled = fakeServer(200, { user_id: "user/1" });
-  assert.equal((await getMemberCode(polled.client, { code })).data?.user_id, "user/1");
-  assert.equal(polled.sent[0]?.url, `https://api.example.com/api/devices/members/codes/${code}`);
+  const listed = fakeServer(200, { people: ["wizzler"] });
+  assert.deepEqual((await listSoloistKeys(listed.client)).data?.people, ["wizzler"]);
+  assert.equal(listed.sent[0]?.url, "https://api.example.com/api/devices/soloist/keys");
 });
 
-test("a member's key is asked for by their user id, and a member removed by it", async () => {
+test("a person's key is asked for and forgotten by the device's name for them", async () => {
   const key = fakeServer(200, { api_key: "k" });
-  await getSoloistKey(key.client, { user_id: "user/1" });
-  assert.equal(key.sent[0]?.url, "https://api.example.com/api/devices/soloist/key?user_id=user%2F1");
-  await getSoloistKey(key.client);
-  assert.equal(key.sent[1]?.url, "https://api.example.com/api/devices/soloist/key");
+  await getSoloistKey(key.client, { person: "a b" });
+  assert.equal(key.sent[0]?.url, "https://api.example.com/api/devices/soloist/key?person=a+b");
 
   const removed = fakeServer(204, "");
-  const { response } = await removeMember(removed.client, { user_id: "user/1" });
+  const { response } = await deleteSoloistKey(removed.client, { person: "wizzler" });
   assert.equal(response.status, 204);
   assert.equal(removed.sent[0]?.method, "DELETE");
-  assert.equal(removed.sent[0]?.url, "https://api.example.com/api/devices/members/user%2F1");
+  assert.equal(removed.sent[0]?.url, "https://api.example.com/api/devices/soloist/keys/wizzler");
 });
