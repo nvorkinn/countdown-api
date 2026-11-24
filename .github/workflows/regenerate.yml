@@ -41,7 +41,7 @@ jobs:
           node-version: 24
           cache: npm
       # openapi-generator, which writes the C++ headers, is a Java program.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
