@@ -271,27 +271,22 @@ def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     assert "refresh_token" not in TOUCHSCREEN["spotify_token"]
 
 
-def test_a_touchscreen_gets_its_owners_soloist_api_key() -> None:
-    key = check("SoloistApiKey", TOUCHSCREEN["soloist_key"])
-
-    assert key.api_key
-    # The key alone: nothing else of the account goes with it.
-    assert set(TOUCHSCREEN["soloist_key"]) == {"api_key"}
-    # Only an account that has saved one is sent it.
-    assert check("DeviceAccount", TOUCHSCREEN["account"]).soloist.linked
-
-
-def test_a_person_joins_a_touchscreen_with_a_code_it_then_names_them_by() -> None:
-    code = check("MemberCode", TOUCHSCREEN["member_code"])
+def test_each_of_a_touchscreens_people_saves_their_own_soloist_key_with_a_code() -> None:
+    asked = check("SoloistKeyCodeRequest", TOUCHSCREEN["soloist_code_request"])
+    code = check("SoloistKeyCode", TOUCHSCREEN["soloist_code"])
     assert code.expires_in == 600
-    # The link the touchscreen shows opens the join page with that code, and nothing of the device's secret.
-    assert TOUCHSCREEN["join"] == {"code": code.code}
-    assert TOUCHSCREEN["registration"]["secret"] not in str(TOUCHSCREEN["join"])
+    # The link the touchscreen shows opens the page with that code, and nothing of the device's secret or the person.
+    assert TOUCHSCREEN["soloist_page"] == {"code": code.code}
+    assert TOUCHSCREEN["registration"]["secret"] not in str(TOUCHSCREEN["soloist_page"])
 
-    assert check("MemberCodeStatus", TOUCHSCREEN["member_code_waiting"]).user_id is None
-    joined = check("MemberCodeStatus", TOUCHSCREEN["member_code_joined"])
-    # Who joined is who the touchscreen then asks for the Soloist API key of.
-    assert joined.user_id == TOUCHSCREEN["soloist_key_query"]["user_id"]
+    # Once saved, the person is listed, and the touchscreen asks for their key by the same name.
+    assert check("SoloistKeys", TOUCHSCREEN["soloist_keys"]).people == [asked.person]
+    assert TOUCHSCREEN["soloist_key_query"] == {"person": asked.person}
+    key = check("SoloistApiKey", TOUCHSCREEN["soloist_key"])
+    assert key.api_key
+    # The key alone, and the list never has one.
+    assert set(TOUCHSCREEN["soloist_key"]) == {"api_key"}
+    assert key.api_key not in str(TOUCHSCREEN["soloist_keys"])
 
 
 def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothing_more() -> None:
@@ -300,7 +295,6 @@ def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothi
     assert not account.parcel.linked
     assert not check("ConfigResponse", TOUCHSCREEN["config"]).parcels.enabled
     assert account.spotify.linked
-    assert account.soloist.linked
     # Only whether each is linked.
     assert all(set(link) == {"linked"} for link in TOUCHSCREEN["account"].values())
 

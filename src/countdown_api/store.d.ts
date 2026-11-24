@@ -170,6 +170,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/soloist/codes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * A code one of the touchscreen's people saves their Spotify Soloist API key with.
+     * @description Spotify Soloist runs on a touchscreen's Pi and takes an API key at every start. A key is its person's own (each makes theirs in their Spotify for Developers dashboard, and it isn't shared), and a touchscreen has several people on it, so the server keeps a key per person for each touchscreen. The touchscreen names its people itself (SoloistPerson). To get someone's key saved, it asks for a code for them here and shows it as a link to the settings site's page (saveSoloistKeyPage), which they open on their phone and paste their key into, with no login: the code is what says which touchscreen and which person the key is for. It is long and random, lasts ten minutes and works once; a new one for the same person replaces theirs that wasn't used. The touchscreen sees the key has been saved in listSoloistKeys.
+     */
+    post: operations["createSoloistKeyCode"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/soloist/keys": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Which of the touchscreen's people have a Spotify Soloist API key saved.
+     * @description The people the server has a key for on this touchscreen (SoloistKeys), and never a key: for the touchscreen to see that a code it showed has been used, and to tell someone who still has to save theirs.
+     */
+    get: operations["listSoloistKeys"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/soloist/keys/{person}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Forget one of the touchscreen's people's Spotify Soloist API key.
+     * @description Deletes the key saved for the person on this touchscreen, and any code of theirs not yet used, as when the touchscreen removes them from its own list. Answered the same whether or not they had one. The key itself stays good until its person revokes it in their Spotify for Developers dashboard.
+     */
+    delete: operations["deleteSoloistKey"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/soloist/key": {
     parameters: {
       query?: never;
@@ -178,73 +238,13 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The Spotify Soloist API key of one of a touchscreen's people.
-     * @description The Spotify Soloist API key one of the touchscreen's people saved on their own Account page, which the touchscreen starts its Soloist daemon with for them (Soloist takes it at every start). A key is its person's own, from their Spotify for Developers dashboard, and never anyone else's to use, so the touchscreen asks for the key of whoever is playing: `user_id` names them, and without it it's the owner's. Only a person linked to the touchscreen can be named: its owner, or a member who joined it themselves (joinScreenPage). It is the one route that answers a saved key rather than whether there is one (getAccount's soloist.linked). Ask for it at each start and keep it in memory only; the answer is `Cache-Control: no-store`, and it is never answered to a web page on another origin (no CORS headers), so the touchscreen's own service asks for it, not its page. A screen that's unpaired or handed on, or a member who has left or been removed, is refused from then on, but the screen keeps what it was already sent, so the key's owner revokes it in their dashboard.
+     * The Spotify Soloist API key of one of the touchscreen's people.
+     * @description The key saved for `person` on this touchscreen (createSoloistKeyCode), which it starts its Soloist daemon with for them. It is the one route that answers a saved key rather than whether there is one (listSoloistKeys), and a touchscreen is only ever answered keys that were saved for it. Ask for it at each start and keep it in memory only; the answer is `Cache-Control: no-store`, and it is never answered to a web page on another origin (no CORS headers), so the touchscreen's own service asks for it, not its page. A touchscreen that's unpaired or changes hands loses every key saved for it.
      */
     get: operations["getSoloistKey"];
     put?: never;
     post?: never;
     delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/devices/members/codes": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * A code a person joins the touchscreen with.
-     * @description A touchscreen is its owner's, and other people of the household join it as its members, each with their own account: what a member has saved for themselves (their Spotify Soloist API key, getSoloistKey) the touchscreen can then ask for. Joining is the person's own doing. The touchscreen asks for a code here and shows it as a link to the settings site's join page (joinScreenPage); the person opens it on their phone, signs in and confirms. The code is long and random, lasts ten minutes and works once. The touchscreen then learns who joined from getMemberCode. Its owner can use a code too: they are linked already, so it only tells the touchscreen who they are.
-     */
-    post: operations["createMemberCode"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/devices/members/codes/{code}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Whether someone has joined with a code, and who.
-     * @description What became of a code the touchscreen asked for (createMemberCode), for it to poll while it shows the code: waiting, or joined, with the user id of the person who did. That id is how the touchscreen names them from then on (getSoloistKey's `user_id`, removeMember). A code is answered until it lapses, joined or not.
-     */
-    get: operations["getMemberCode"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/devices/members/{user_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove a member from the touchscreen.
-     * @description Unlinks a member, as when the touchscreen removes the person from its own list: nothing of theirs is answered to it from then on. Removing someone who isn't a member changes nothing and is answered the same. The owner isn't a member and can't be removed here: a touchscreen changes hands on the settings site.
-     */
-    delete: operations["removeMember"];
     options?: never;
     head?: never;
     patch?: never;
@@ -414,7 +414,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/join": {
+  "/soloist": {
     parameters: {
       query?: never;
       header?: never;
@@ -422,10 +422,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The page where the signed-in person joins a touchscreen as a member.
-     * @description On the settings site, behind the login: the page a touchscreen's member code (createMemberCode) opens on a person's phone. It names the touchscreen, says what joining lets it do (ask for what the person has saved for themselves, their Spotify Soloist API key), and asks them to confirm; the visit alone changes nothing. Confirming, a post from the page itself, links them to the touchscreen as a member and uses the code up. A code that has lapsed or been used is said so on the page. The page's own form posts are the page's.
+     * The page where a person pastes their Spotify Soloist API key for a touchscreen.
+     * @description On the settings site, with no login: the page a touchscreen's code (createSoloistKeyCode) opens on a person's phone. It says where they make their key and has a field to paste it into; saving it, a post from the page itself, stores it for the touchscreen and person the code names and uses the code up. The key is never shown again. A code that has lapsed or been used is said so on the page. The page's own form posts are the page's.
      */
-    get: operations["joinScreenPage"];
+    get: operations["saveSoloistKeyPage"];
     put?: never;
     post?: never;
     delete?: never;
@@ -977,22 +977,26 @@ export interface components {
       /** @description The scopes it carries, space-separated, as Spotify granted them: what the settings site's link asks for, which a touchscreen's playback (streaming, user-modify-playback-state and the rest) is part of. */
       scope: string;
     };
-    /** @description A person's account, by the id the login gives it. It never changes, unlike their name, and says nothing of them. */
-    UserId: string;
-    /** @description A member code, 32 hex digits (16 random bytes). Opened as a link, never typed. */
-    MemberCodeValue: string;
-    /** @description A code a person joins a touchscreen with (createMemberCode), and how long it lasts. */
-    MemberCode: {
-      code: components["schemas"]["MemberCodeValue"];
+    /** @description One of a touchscreen's people, as the touchscreen names them: any name of its own that stays the same (it uses their Spotify id). The server only keeps keys by it, and never reads anything into it. */
+    SoloistPerson: string;
+    /** @description A code to save a Soloist API key with, 32 hex digits. Opened as a link, never typed. */
+    SoloistKeyCodeValue: string;
+    /** @description What createSoloistKeyCode takes, the person the code is for. */
+    SoloistKeyCodeRequest: {
+      person: components["schemas"]["SoloistPerson"];
+    };
+    /** @description A code a person saves their Soloist API key with (createSoloistKeyCode), and how long it lasts. */
+    SoloistKeyCode: {
+      code: components["schemas"]["SoloistKeyCodeValue"];
       /** @description Seconds until it lapses, counted from the answer. */
       expires_in: number;
     };
-    /** @description What became of a member code (getMemberCode). */
-    MemberCodeStatus: {
-      /** @description Who joined with it; null while no one has. */
-      user_id: components["schemas"]["UserId"] | null;
+    /** @description Which of a touchscreen's people have a Soloist API key saved (listSoloistKeys); never the keys. */
+    SoloistKeys: {
+      /** @description The people with a key saved, in no particular order. */
+      people: components["schemas"]["SoloistPerson"][];
     };
-    /** @description A Spotify Soloist API key (getSoloistKey): its person's own, as they saved it on their Account page. A secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs. */
+    /** @description A Spotify Soloist API key (getSoloistKey): its person's own, as they saved it for the touchscreen. A secret, which a touchscreen passes to its Soloist daemon and neither stores nor logs. */
     SoloistApiKey: {
       /** @description The key, passed to Soloist as --api-key. */
       api_key: string;
@@ -1003,8 +1007,6 @@ export interface components {
       parcel: components["schemas"]["AccountLink"];
       /** @description Spotify: linked while the account has signed in to Spotify on the Account page. */
       spotify: components["schemas"]["AccountLink"];
-      /** @description Spotify Soloist: linked while the account has a Soloist API key saved, which its touchscreens get with getSoloistKey. */
-      soloist: components["schemas"]["AccountLink"];
     };
     /** @description One of an account's services (DeviceAccount), by whether it's linked; never its login or key. */
     AccountLink: {
@@ -1493,10 +1495,11 @@ export type NoticeBoard = components["schemas"]["NoticeBoard"];
 export type NoticeBoardAddress = components["schemas"]["NoticeBoardAddress"];
 export type Spotify = components["schemas"]["Spotify"];
 export type SpotifyAccessToken = components["schemas"]["SpotifyAccessToken"];
-export type UserId = components["schemas"]["UserId"];
-export type MemberCodeValue = components["schemas"]["MemberCodeValue"];
-export type MemberCode = components["schemas"]["MemberCode"];
-export type MemberCodeStatus = components["schemas"]["MemberCodeStatus"];
+export type SoloistPerson = components["schemas"]["SoloistPerson"];
+export type SoloistKeyCodeValue = components["schemas"]["SoloistKeyCodeValue"];
+export type SoloistKeyCodeRequest = components["schemas"]["SoloistKeyCodeRequest"];
+export type SoloistKeyCode = components["schemas"]["SoloistKeyCode"];
+export type SoloistKeys = components["schemas"]["SoloistKeys"];
 export type SoloistApiKey = components["schemas"]["SoloistApiKey"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
@@ -2056,11 +2059,124 @@ export interface operations {
       };
     };
   };
+  createSoloistKeyCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SoloistKeyCodeRequest"];
+      };
+    };
+    responses: {
+      /** @description The code. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SoloistKeyCode"];
+        };
+      };
+      /** @description No person, or one that isn't a SoloistPerson. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listSoloistKeys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people with a key saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SoloistKeys"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  deleteSoloistKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        person: components["schemas"]["SoloistPerson"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The touchscreen has no key for them (any more). */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   getSoloistKey: {
     parameters: {
-      query?: {
-        /** @description Whose key, of the people linked to the touchscreen; its owner's when left out. */
-        user_id?: components["schemas"]["UserId"];
+      query: {
+        /** @description Whose key, as the touchscreen named them when it asked for their code. */
+        person: components["schemas"]["SoloistPerson"];
       };
       header?: never;
       path?: never;
@@ -2079,6 +2195,13 @@ export interface operations {
           "application/json": components["schemas"]["SoloistApiKey"];
         };
       };
+      /** @description No `person`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description A missing or unknown secret. */
       401: {
         headers: {
@@ -2086,7 +2209,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The person's account has no Soloist API key saved, or `user_id` names no one linked to the touchscreen (the two aren't told apart). */
+      /** @description The touchscreen has no key saved for them. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -2094,110 +2217,6 @@ export interface operations {
         content?: never;
       };
       /** @description The device isn't paired yet, or isn't a touchscreen. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  createMemberCode: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The code. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MemberCode"];
-        };
-      };
-      /** @description A missing or unknown secret. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description The device isn't paired yet, or isn't a touchscreen. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getMemberCode: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        code: components["schemas"]["MemberCodeValue"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The code's status. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MemberCodeStatus"];
-        };
-      };
-      /** @description A missing or unknown secret. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No such code. It has lapsed, or isn't this device's. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  removeMember: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: components["schemas"]["UserId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description They aren't a member of the touchscreen (any more). */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description A missing or unknown secret. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description They are the touchscreen's owner; or the device isn't paired yet, or isn't a touchscreen. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -2585,10 +2604,10 @@ export interface operations {
       };
     };
   };
-  joinScreenPage: {
+  saveSoloistKeyPage: {
     parameters: {
       query: {
-        code: components["schemas"]["MemberCodeValue"];
+        code: components["schemas"]["SoloistKeyCodeValue"];
       };
       header?: never;
       path?: never;

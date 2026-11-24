@@ -62,8 +62,8 @@ def test_each_routes_schemas_security_and_examples_exist(path: str, method: str)
     operation = OPERATIONS[path, method]
     assert method in {"get", "post", "put", "delete"}
     # The devices' API, or the settings site's pages a touchscreen opens or sends a phone to: registering through the
-    # login, a device's settings, which it shows in a frame, saving a Parcel key, and joining it as a member.
-    pages = {"/register", "/device/{device_id}", "/account/parcel", "/join"}
+    # login, a device's settings, which it shows in a frame, and saving a Parcel key or a person's Soloist key.
+    pages = {"/register", "/device/{device_id}", "/account/parcel", "/soloist"}
     assert path.startswith("/api/") or path in pages
     refs = _refs(operation)
     # A page may take nothing and answer only itself; every route of the API has a schema.
@@ -92,12 +92,12 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/config", "put"),
         ("/api/devices/config/{section}", "put"),
         ("/api/devices/feed", "get"),
-        ("/api/devices/members/codes", "post"),
-        ("/api/devices/members/codes/{code}", "get"),
-        ("/api/devices/members/{user_id}", "delete"),
         ("/api/devices/notices", "get"),
         ("/api/devices/register", "post"),
+        ("/api/devices/soloist/codes", "post"),
         ("/api/devices/soloist/key", "get"),
+        ("/api/devices/soloist/keys", "get"),
+        ("/api/devices/soloist/keys/{person}", "delete"),
         ("/api/devices/spotify/token", "get"),
         ("/api/devices/weather", "get"),
         ("/api/frame", "post"),
@@ -105,9 +105,9 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/places/search", "get"),
         ("/api/stops/search", "get"),
         ("/device/{device_id}", "get"),
-        ("/join", "get"),
         ("/register", "get"),
         ("/register", "post"),
+        ("/soloist", "get"),
     ]
 
 

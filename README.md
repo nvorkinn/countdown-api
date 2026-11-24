@@ -74,18 +74,18 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/places/search` | `q` | `PlaceSearchResult[]` | towns and cities (Open-Meteo), for the weather picker |
 | `GET /api/places/here` | `latitude`, `longitude` (optional) | `PlaceSearchResult[]` (at most one) | the town or city at the position sent, or with none where the caller's IP places it, for the weather picker's current location |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
-| `GET /api/devices/soloist/key` | `user_id` (optional) | `SoloistApiKey` | the Spotify Soloist API key of one of a touchscreen's people (its owner's, or with `user_id` a member's), their own, which it starts its Soloist daemon with for them; `Cache-Control: no-store`, never answered cross-origin, and only for a person linked to the touchscreen |
-| `POST /api/devices/members/codes` | | `MemberCode` (201) | a code a person joins the touchscreen with as a member, shown as a link to `/join`; ten minutes, one use |
-| `GET /api/devices/members/codes/{code}` | | `MemberCodeStatus` | whether someone has joined with the code, and their user id, for the touchscreen to poll |
-| `DELETE /api/devices/members/{user_id}` | | 204 | remove a member from the touchscreen (never its owner) |
-| `GET /api/devices/account` | | `DeviceAccount` | which services the owner's account has linked (Parcel, Spotify, Spotify Soloist), so a device can tell one that's switched off from one never set up; never a login or key |
+| `POST /api/devices/soloist/codes` | `SoloistKeyCodeRequest` | `SoloistKeyCode` (201) | a code one of a touchscreen's people saves their own Spotify Soloist API key with, shown as a link to `/soloist`; ten minutes, one use |
+| `GET /api/devices/soloist/keys` | | `SoloistKeys` | which of the touchscreen's people have a key saved; never a key |
+| `GET /api/devices/soloist/key` | `person` | `SoloistApiKey` | the key saved for one of the touchscreen's people, which it starts its Soloist daemon with for them; `Cache-Control: no-store`, and never answered cross-origin |
+| `DELETE /api/devices/soloist/keys/{person}` | | 204 | forget the key saved for one of the touchscreen's people |
+| `GET /api/devices/account` | | `DeviceAccount` | which services the owner's account has linked (Parcel, Spotify), so a device can tell one that's switched off from one never set up; never a login or key |
 | `GET /api/devices/weather` | | `DeviceWeather` | the forecast for the device's weather place, as the store has it (`v1:weather:<key>`), and its backgrounds so far (`v1:background:<key>`) |
 | `GET /api/backgrounds/{digest}` | | a WebP (`BackgroundImage`), cached immutably | a weather panel background by its SHA-256, with no secret, as a screen loads it as a plain image |
 | `GET /api/devices/arrivals` | | `DeviceArrivals` | the departures from each of the device's stops, in its order, as the store has them (`v1:departures:<stop id>`) |
 | `GET /api/devices/notices` | | `DeviceNotices` | what the store has for the device's notice board (TfL, the Met Office, the Environment Agency's flood warnings, bank holidays, MET Norway's warnings covering a Norwegian postcode, and its owner's parcels when switched on) and every Tube line's status, as each provider stored it |
 | `GET /register` (and `POST`) | `TouchscreenRegistration` | a page, or a 303 to `return_to` | on the settings site, behind the login: registers a touchscreen from its secret's hash and makes the person signed in its owner, then sends it back to its app with `device_id` |
 | `GET /device/{device_id}` | `embed=1` (optional) | a page, or 404 | on the settings site, behind the login: a device's settings for its owner; with `embed=1`, without the site around it, for a frame in the device's own settings (a touchscreen's Settings tab) |
-| `GET /join` | `code` | a page | on the settings site, behind the login: where a person confirms joining the touchscreen whose member code they opened |
+| `GET /soloist` | `code` | a page | on the settings site, with no login: where a person pastes their Spotify Soloist API key for the touchscreen and person the code names |
 | `GET /account/parcel` | | a page | on the settings site, behind the login: where the person finds their Parcel API key and pastes it, for a device to send a phone to while its owner's account has none |
 
 All but the registrations and the backgrounds take the device's secret as `Authorization: Bearer <secret>`
