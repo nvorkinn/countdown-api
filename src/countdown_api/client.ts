@@ -191,6 +191,45 @@ export function locatePlace(
 }
 
 /**
+ * Where a device is, from the Wi-Fi networks it can see, and the UK postcodes nearest it.
+ *
+ * `POST /api/devices/locate`, with the device's secret.
+ */
+export function locateDevice(
+  client: Client,
+  body: operations["locateDevice"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<operations["locateDevice"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "POST", path: "/api/devices/locate", body, secret: true, json: true });
+}
+
+/**
+ * Where a postcode is, for a postcode the owner typed.
+ *
+ * `GET /api/postcodes/lookup`, with the device's secret.
+ */
+export function lookupPostcode(
+  client: Client,
+  query: NonNullable<operations["lookupPostcode"]["parameters"]["query"]>,
+  options: RequestOptions = {},
+): Promise<Result<operations["lookupPostcode"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/postcodes/lookup", query, secret: true, json: true });
+}
+
+/**
+ * The stations and stops nearest a position, to show departures from.
+ *
+ * `GET /api/stops/near`, with the device's secret.
+ */
+export function stopsNear(
+  client: Client,
+  query: NonNullable<operations["stopsNear"]["parameters"]["query"]>,
+  options: RequestOptions = {},
+): Promise<Result<operations["stopsNear"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/stops/near", query, secret: true, json: true });
+}
+
+/**
  * An access token for the owner's Spotify, for a touchscreen.
  *
  * `GET /api/devices/spotify/token`, with the device's secret.

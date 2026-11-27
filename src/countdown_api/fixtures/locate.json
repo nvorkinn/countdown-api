@@ -1,0 +1,188 @@
+{
+  "about": "A setup wizard's location step, as the server answers it. `locate`, what POST /api/devices/locate answers for the Wi-Fi access points in `locate_request`: Google's position for them, in Walworth (south London), and the UK postcodes nearest it, nearest first (postcodes.io). `postcode`, what GET /api/postcodes/lookup answers for a postcode the owner typed (`postcode_query`, in any case and spacing), in its canonical form. `stops_near`, what GET /api/stops/near answers for that postcode's position (`near_query`): TfL's stops near it, nearest first, each as searchStops answers a stop with its distance in metres (the first few of the answer). The store contract's canonical example (countdown-api's countdown_api/fixtures), which every consumer's tests read: change it there.",
+  "locate_request": {
+    "wifi_access_points": [
+      {
+        "mac_address": "a4:2b:b0:5c:1e:7f",
+        "signal_strength": -48,
+        "channel": 6,
+        "age": 0
+      },
+      {
+        "mac_address": "9c:c9:eb:21:4d:10",
+        "signal_strength": -63,
+        "channel": 36,
+        "age": 1200
+      },
+      {
+        "mac_address": "e8:48:b8:7a:03:c2",
+        "signal_strength": -71,
+        "channel": 11
+      },
+      {
+        "mac_address": "00:25:9c:e1:88:5a",
+        "signal_strength": -84
+      }
+    ]
+  },
+  "locate": {
+    "latitude": 51.48471,
+    "longitude": -0.09192,
+    "accuracy": 28.5,
+    "postcodes": [
+      {
+        "postcode": "SE17 2PU",
+        "latitude": 51.484787,
+        "longitude": -0.091724,
+        "distance": 16,
+        "country": "GB"
+      },
+      {
+        "postcode": "SE17 2PT",
+        "latitude": 51.484787,
+        "longitude": -0.091724,
+        "distance": 16,
+        "country": "GB"
+      },
+      {
+        "postcode": "SE17 2PX",
+        "latitude": 51.484714,
+        "longitude": -0.092217,
+        "distance": 21,
+        "country": "GB"
+      },
+      {
+        "postcode": "SE17 2AS",
+        "latitude": 51.484505,
+        "longitude": -0.092068,
+        "distance": 25,
+        "country": "GB"
+      },
+      {
+        "postcode": "SE17 2GS",
+        "latitude": 51.484662,
+        "longitude": -0.092306,
+        "distance": 27,
+        "country": "GB"
+      }
+    ]
+  },
+  "postcode_query": "se172pu",
+  "postcode": {
+    "postcode": "SE17 2PU",
+    "latitude": 51.484787,
+    "longitude": -0.091724,
+    "country": "England",
+    "region": "London",
+    "admin_district": "Southwark"
+  },
+  "near_query": {
+    "latitude": 51.484787,
+    "longitude": -0.091724
+  },
+  "stops_near": [
+    {
+      "id": "490014501K",
+      "name": "Westmoreland Road",
+      "subtitle": "Stop K • 40, 68, 176, 468, N68",
+      "indent": false,
+      "value": {
+        "source": "tfl",
+        "id": "490014501K"
+      },
+      "source": "tfl",
+      "area": "London",
+      "mode": "bus",
+      "letter": "K",
+      "lines": [
+        "40",
+        "68",
+        "176",
+        "468",
+        "N68"
+      ],
+      "distance": 136
+    },
+    {
+      "id": "490014501M",
+      "name": "Westmoreland Road",
+      "subtitle": "Stop M • 12, 68, 148, 171, 176, 468, N68, N89, N171",
+      "indent": false,
+      "value": {
+        "source": "tfl",
+        "id": "490014501M"
+      },
+      "source": "tfl",
+      "area": "London",
+      "mode": "bus",
+      "letter": "M",
+      "lines": [
+        "12",
+        "68",
+        "148",
+        "171",
+        "176",
+        "468",
+        "N68",
+        "N89",
+        "N171"
+      ],
+      "distance": 180
+    },
+    {
+      "id": "490011132W",
+      "name": "Portland Street",
+      "subtitle": "Stop W • 42",
+      "indent": false,
+      "value": {
+        "source": "tfl",
+        "id": "490011132W"
+      },
+      "source": "tfl",
+      "area": "London",
+      "mode": "bus",
+      "letter": "W",
+      "lines": [
+        "42"
+      ],
+      "distance": 270
+    },
+    {
+      "id": "940GZZLUKNG",
+      "name": "Kennington Underground Station",
+      "subtitle": "Northern",
+      "indent": false,
+      "value": {
+        "source": "tfl",
+        "id": "940GZZLUKNG"
+      },
+      "source": "tfl",
+      "area": "London",
+      "mode": "tube",
+      "letter": "",
+      "lines": [
+        "Northern"
+      ],
+      "distance": 1062
+    },
+    {
+      "id": "940GZZLUEAC",
+      "name": "Elephant & Castle Underground Station",
+      "subtitle": "Bakerloo, Northern",
+      "indent": false,
+      "value": {
+        "source": "tfl",
+        "id": "940GZZLUEAC"
+      },
+      "source": "tfl",
+      "area": "London",
+      "mode": "tube",
+      "letter": "",
+      "lines": [
+        "Bakerloo",
+        "Northern"
+      ],
+      "distance": 1198
+    }
+  ]
+}
