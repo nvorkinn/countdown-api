@@ -887,6 +887,63 @@ the wire it is the event's `event:` line and its data as one `data:` line of JSO
 """
 
 
+class WifiAccessPoint(BaseModel):
+    """One Wi-Fi access point a device can see (Google's WifiAccessPoint)."""
+
+    mac_address: Annotated[str, Field(pattern="^([0-9a-f]{2}:){5}[0-9a-f]{2}$")] = Field(
+        description='Its BSSID, in lower case with colons ("a4:2b:b0:5c:1e:7f").',
+    )
+    signal_strength: Annotated[int, Field(ge=-120, le=0)] = Field(description="Its signal, in dBm.")
+    channel: Annotated[int, Field(ge=1, le=233)] | None = Field(default=None, description="The channel it's on.")
+    age: Annotated[int, Field(ge=0)] | None = Field(
+        default=None,
+        description="How long ago it was seen, in milliseconds.",
+    )
+
+
+class DeviceLocateRequest(BaseModel):
+    """The ``DeviceLocateRequest`` object.
+
+    What a device sends locateDevice: the Wi-Fi access points it can see, as Google's Geolocation API
+    takes them (its wifiAccessPoints, in snake case). At least two, as Google needs, and at most 30.
+    """
+
+    wifi_access_points: Annotated[list[WifiAccessPoint], Field(min_length=2, max_length=30)]
+
+
+class NearbyPostcode(BaseModel):
+    """The ``NearbyPostcode`` object.
+
+    A UK postcode near the position locateDevice found, from postcodes.io's reverse geocoding.
+    """
+
+    postcode: Annotated[str, Field(min_length=1)] = Field(
+        description='The postcode in its canonical form, in capitals with its space ("SE17 2PU").',
+    )
+    latitude: float
+    longitude: float
+    distance: Annotated[int, Field(ge=0)] = Field(description="How far its centre is from the position, in metres.")
+    country: Literal["GB"] = Field(description="The postcode's country (ISO 3166-1 alpha-2); only the UK's, for now.")
+
+
+class DeviceLocation(BaseModel):
+    """The ``DeviceLocation`` object.
+
+    Where locateDevice found a device: the position Google's Geolocation API answered, how sure it is,
+    and the UK postcodes nearest it (postcodes.io), nearest first; none when there are none near
+    (outside the UK, say).
+    """
+
+    latitude: Annotated[float, Field(ge=-90, le=90)]
+    longitude: Annotated[float, Field(ge=-180, le=180)]
+    accuracy: Annotated[float, Field(ge=0)] = Field(
+        description="The radius around the position the device is likely in, in metres.",
+    )
+    postcodes: Annotated[list[NearbyPostcode], Field(max_length=10)] = Field(
+        description="The postcodes nearest the position, nearest first.",
+    )
+
+
 class DeviceRegistered(BaseModel):
     """What POST /api/devices/register answers."""
 
@@ -1168,16 +1225,6 @@ MusicTopLists = dict[str, MusicTopRange]
 """A service's top lists by Spotify's time range ("long_term", "short_term")."""
 
 
-Pace = Annotated[str, Field(pattern="^[0-9]+$")]
-"""Seconds, as decimal text (what SET of an integer stores)."""
-
-
-ParcelsLinkStatus = Literal["ok", "invalid_key", "rate_limited"]
-"""Whether Parcel took the device's API key at the last poll; the value of v1:parcels-status:<device
-id>.
-"""
-
-
 class SearchResult(BaseModel):
     """The ``SearchResult`` object.
 
@@ -1192,6 +1239,41 @@ class SearchResult(BaseModel):
     indent: bool = Field(
         description="Whether it belongs to the result before it (a platform of a station), shown indented under it.",
     )
+
+
+class StopSearchResult(SearchResult):
+    """A station or stop that searchStops found (SearchResult)."""
+
+    value: DepartureStop
+    source: Literal["tfl", "entur"] = Field(description="Where it's from, as `value.source`.")
+    area: str = Field(description="The town or district it's in, to tell stops of the same name apart; may be empty.")
+    mode: str = Field(
+        description=(
+            "What it's for, for its icon: tube, metro, tram, rail, water or bus (a bus stop shows its `letter`), or "
+            "another mode, shown as a bus stop is."
+        ),
+    )
+    letter: str = Field(description="Its stop letter or platform code; may be empty.")
+    lines: list[str] = Field(description="The lines that stop there.")
+
+
+class NearbyStopResult(StopSearchResult):
+    """The ``NearbyStopResult`` object.
+
+    A station or stop that stopsNear found (StopSearchResult), with how far it is from the position.
+    """
+
+    distance: Annotated[int, Field(ge=0)] = Field(description="How far it is from the position asked about, in metres.")
+
+
+Pace = Annotated[str, Field(pattern="^[0-9]+$")]
+"""Seconds, as decimal text (what SET of an integer stores)."""
+
+
+ParcelsLinkStatus = Literal["ok", "invalid_key", "rate_limited"]
+"""Whether Parcel took the device's API key at the last poll; the value of v1:parcels-status:<device
+id>.
+"""
 
 
 class PlaceSearchResult(SearchResult):
@@ -1405,22 +1487,6 @@ class SpotifySignInResult(BaseModel):
         default=None,
         description="Spotify's error, when `failed`.",
     )
-
-
-class StopSearchResult(SearchResult):
-    """A station or stop that searchStops found (SearchResult)."""
-
-    value: DepartureStop
-    source: Literal["tfl", "entur"] = Field(description="Where it's from, as `value.source`.")
-    area: str = Field(description="The town or district it's in, to tell stops of the same name apart; may be empty.")
-    mode: str = Field(
-        description=(
-            "What it's for, for its icon: tube, metro, tram, rail, water or bus (a bus stop shows its `letter`), or "
-            "another mode, shown as a bus stop is."
-        ),
-    )
-    letter: str = Field(description="Its stop letter or platform code; may be empty.")
-    lines: list[str] = Field(description="The lines that stop there.")
 
 
 class StoredDeveloper(BaseModel):

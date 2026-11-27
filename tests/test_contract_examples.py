@@ -261,6 +261,59 @@ def test_the_current_location_is_at_most_one_place_as_the_search_answers_it() ->
     assert all(place.value.key is not None for place in here)
 
 
+LOCATE = fixtures.load("locate.json")
+
+
+def test_a_device_is_located_from_the_wi_fi_it_sees_with_the_postcodes_nearest_first() -> None:
+    request = check("DeviceLocateRequest", LOCATE["locate_request"])
+    assert 2 <= len(request.wifi_access_points) <= 30
+    located = check("DeviceLocation", LOCATE["locate"])
+    assert 0 < len(located.postcodes) <= 10
+    distances = [postcode.distance for postcode in located.postcodes]
+    assert distances == sorted(distances)
+    for postcode in located.postcodes:
+        assert postcode.postcode == postcode.postcode.upper().strip()
+        assert " " in postcode.postcode
+        assert postcode.country == "GB"
+
+
+def test_a_device_sends_its_access_points_as_google_takes_them() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    point = LOCATE["locate_request"]["wifi_access_points"][0]
+    for wrong in (
+        {**point, "mac_address": point["mac_address"].upper()},
+        {**point, "mac_address": point["mac_address"].replace(":", "-")},
+        {**point, "signal_strength": 1},
+        {**point, "channel": 0},
+        {key: value for key, value in point.items() if key != "signal_strength"},
+    ):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("WifiAccessPoint", wrong)
+    with pytest.raises(jsonschema.ValidationError):
+        check_schema("DeviceLocateRequest", {"wifi_access_points": [point]})
+
+
+def test_a_typed_postcode_is_looked_up_in_its_canonical_form() -> None:
+    postcode = check("Postcode", LOCATE["postcode"])
+    typed = LOCATE["postcode_query"]
+    assert postcode.postcode.replace(" ", "") == typed.replace(" ", "").upper()
+    assert postcode.postcode in {nearby.postcode for nearby in check("DeviceLocation", LOCATE["locate"]).postcodes}
+
+
+def test_the_stops_near_a_postcode_are_the_searchs_stops_nearest_first() -> None:
+    near = LOCATE["near_query"]
+    assert (near["latitude"], near["longitude"]) == (LOCATE["postcode"]["latitude"], LOCATE["postcode"]["longitude"])
+    stops = [check("NearbyStopResult", result) for result in LOCATE["stops_near"]]
+    assert 0 < len(stops) <= 20
+    assert [stop.distance for stop in stops] == sorted(stop.distance for stop in stops)
+    for stop, result in zip(stops, LOCATE["stops_near"], strict=True):
+        # Without its distance, each is a stop as searchStops answers it.
+        check("StopSearchResult", {key: value for key, value in result.items() if key != "distance"})
+        assert (stop.value.source, stop.value.id) == (stop.source, stop.id) == ("tfl", stop.id)
+    assert {"940GZZLUEAC", "940GZZLUKNG"} <= {stop.id for stop in stops}
+    assert {stop.mode for stop in stops} == {"bus", "tube"}
+
+
 def test_a_touchscreen_gets_its_owners_spotify_as_a_short_lived_token() -> None:
     token = check("SpotifyAccessToken", TOUCHSCREEN["spotify_token"])
 
