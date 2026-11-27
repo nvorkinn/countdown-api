@@ -5,7 +5,7 @@
   "description": "The Node tools: openapi-typescript writes src/countdown_api/store.d.ts from the contract's schemas, TypeScript checks it and client.ts (tsconfig.json), Biome lints and formats the TypeScript and JSON (biome.json), `node --test` runs client.ts's tests, and openapi-generator (a Java program: openapitools.json pins its version, which this command downloads) writes the C++ headers in cpp/countdown_api from the templates in templates/cpp.",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "2.6.8",
+    "@biomejs/biome": "2.6.9",
     "@openapitools/openapi-generator-cli": "2.43.0",
     "openapi-typescript": "7.13.0",
     "typescript": "^5.9.3"
