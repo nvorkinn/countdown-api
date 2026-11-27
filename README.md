@@ -73,6 +73,9 @@ its SHA1 (what `EVALSHA` calls it by) is the same everywhere.
 | `GET /api/stops/search` | `q` | `StopSearchResult[]` | London's and Norway's stops, for a stop picker |
 | `GET /api/places/search` | `q` | `PlaceSearchResult[]` | towns and cities (Open-Meteo), for the weather picker |
 | `GET /api/places/here` | `latitude`, `longitude` (optional) | `PlaceSearchResult[]` (at most one) | the town or city at the position sent, or with none where the caller's IP places it, for the weather picker's current location |
+| `POST /api/devices/locate` | `DeviceLocateRequest` (the Wi-Fi access points it sees) | `DeviceLocation`; 404, 429 with `Retry-After`, 502, 503 | where the device is (Google's Geolocation API, asked by the server) and the UK postcodes nearest it, nearest first, for a setup wizard's location step |
+| `GET /api/postcodes/lookup` | `postcode` | `Postcode`, in its canonical form; 400, 404, 502 | where a UK or Norwegian postcode the owner typed is |
+| `GET /api/stops/near` | `latitude`, `longitude` | `NearbyStopResult[]` (at most 20) | TfL's stations and bus stops nearest a position, nearest first, each a `StopSearchResult` with its `distance` in metres; none outside TfL's area |
 | `GET /api/devices/spotify/token` | | `SpotifyAccessToken` | a touchscreen's short-lived access token for its owner's Spotify; the refresh token stays on the server |
 | `POST /api/devices/soloist/codes` | `SoloistKeyCodeRequest` | `SoloistKeyCode` (201) | a code one of a touchscreen's people saves their own Spotify Soloist API key with, shown as a link to `/soloist`; ten minutes, one use |
 | `GET /api/devices/soloist/keys` | | `SoloistKeys` | which of the touchscreen's people have a key saved; never a key |

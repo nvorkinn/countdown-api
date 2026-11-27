@@ -13,10 +13,13 @@ import {
   getFeedUrl,
   getSoloistKey,
   listSoloistKeys,
+  locateDevice,
+  lookupPostcode,
   putConfig,
   registerDevice,
   registerTouchscreenUrl,
   saveSoloistKeyPageUrl,
+  stopsNear,
 } from "../src/countdown_api/client.ts";
 
 interface Sent {
@@ -142,4 +145,35 @@ test("a person's key is asked for and forgotten by the device's name for them", 
   assert.equal(response.status, 204);
   assert.equal(removed.sent[0]?.method, "DELETE");
   assert.equal(removed.sent[0]?.url, "https://api.example.com/api/devices/soloist/keys/wizzler");
+});
+
+test("a setup wizard's location step sends the Wi-Fi it sees, a typed postcode, and a position", async () => {
+  const wifi = [
+    { mac_address: "a4:2b:b0:5c:1e:7f", signal_strength: -48 },
+    { mac_address: "9c:c9:eb:21:4d:10", signal_strength: -63, channel: 36 },
+  ];
+  const located = fakeServer(200, { latitude: 51.48471, longitude: -0.09192, accuracy: 28.5, postcodes: [] });
+  assert.equal((await locateDevice(located.client, { wifi_access_points: wifi })).data?.accuracy, 28.5);
+  assert.equal(located.sent[0]?.method, "POST");
+  assert.equal(located.sent[0]?.url, "https://api.example.com/api/devices/locate");
+  assert.equal(located.sent[0]?.headers.get("Authorization"), "Bearer s3cret-s3cret-s3cret");
+  assert.deepEqual(located.sent[0]?.body, { wifi_access_points: wifi });
+
+  const throttled = fakeServer(429, { error: "slow down" });
+  const { error, response } = await locateDevice(throttled.client, { wifi_access_points: wifi });
+  assert.deepEqual(error, { error: "slow down" });
+  assert.equal(response.status, 429);
+
+  const postcode = fakeServer(200, {
+    postcode: "SE17 2PU",
+    latitude: 51.484787,
+    longitude: -0.091724,
+    country: "England",
+  });
+  assert.equal((await lookupPostcode(postcode.client, { postcode: "se17 2pu" })).data?.postcode, "SE17 2PU");
+  assert.equal(postcode.sent[0]?.url, "https://api.example.com/api/postcodes/lookup?postcode=se17+2pu");
+
+  const near = fakeServer(200, []);
+  assert.deepEqual((await stopsNear(near.client, { latitude: 51.484787, longitude: -0.091724 })).data, []);
+  assert.equal(near.sent[0]?.url, "https://api.example.com/api/stops/near?latitude=51.484787&longitude=-0.091724");
 });
