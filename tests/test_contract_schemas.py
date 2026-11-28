@@ -62,12 +62,13 @@ def test_each_routes_schemas_security_and_examples_exist(path: str, method: str)
     operation = OPERATIONS[path, method]
     assert method in {"get", "post", "put", "delete"}
     # The devices' API, or the settings site's pages a touchscreen opens or sends a phone to: registering through the
-    # login, a device's settings, which it shows in a frame, saving a Parcel key or a person's Soloist key, and a
+    # login, a device's settings, which it shows in a frame, saving a Parcel key, linking NRK or a person's Soloist key, and a
     # person's Spotify sign-in on their phone, with the callback Spotify sends the phone back to.
     pages = {
         "/register",
         "/device/{device_id}",
         "/account/parcel",
+        "/account/nrk",
         "/soloist",
         "/spotify/sign-in",
         "/spotify/sign-in/callback",
@@ -92,6 +93,7 @@ def test_every_example_is_some_keys_or_routes() -> None:
 def test_the_routes_are_what_they_were() -> None:
     # The routes the devices run on.
     assert sorted(OPERATIONS) == [
+        ("/account/nrk", "get"),
         ("/account/parcel", "get"),
         ("/api/backgrounds/{digest}", "get"),
         ("/api/devices/account", "get"),
@@ -101,6 +103,9 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/config/{section}", "put"),
         ("/api/devices/feed", "get"),
         ("/api/devices/notices", "get"),
+        ("/api/devices/podcasts", "get"),
+        ("/api/devices/podcasts/{podcast_id}/episodes/{episode_id}", "get"),
+        ("/api/devices/podcasts/{podcast_id}/episodes/{episode_id}/progress", "put"),
         ("/api/devices/register", "post"),
         ("/api/devices/setup", "get"),
         ("/api/devices/setup", "put"),
@@ -161,6 +166,7 @@ def test_the_keys_are_what_they_were() -> None:
     assert keys.developer(device) == "v1:developer:a1b2c3d4e5f6"
     assert keys.parcels(device) == "v1:parcels:a1b2c3d4e5f6"
     assert keys.parcels_status(device) == "v1:parcels-status:a1b2c3d4e5f6"
+    assert keys.podcasts(device) == "v1:podcasts:a1b2c3d4e5f6"
     assert keys.pace(keys.DEVELOPER, device) == "v1:pace:developer:a1b2c3d4e5f6"
     assert keys.album_art("https://i.scdn.co/image/ab01300") == "v1:art:f0c75b31e316838c7115ebf3205ef753eb4a0353"
     assert keys.SOURCES == (
@@ -174,6 +180,7 @@ def test_the_keys_are_what_they_were() -> None:
         "postcode",
         "background",
         "address",
+        "nrk",
     )
     assert keys.background_place("london-gb-2643743") == "v1:background-place:london-gb-2643743"
     assert keys.CONFIG_PREFIX == "v1:config:"
@@ -181,6 +188,7 @@ def test_the_keys_are_what_they_were() -> None:
     assert (keys.ENERGY_TTL_S, keys.SPOTIFY_TTL_S, keys.SPOTIFY_TOP_TTL_S) == (86_400, 180, 7_200)
     assert (keys.ALBUM_ART_TTL_S, keys.DEVELOPER_TTL_S, keys.PACE_TTL_S) == (300, 900, 60)
     assert (keys.PARCELS_TTL_S, keys.PARCELS_STATUS_TTL_S) == (43_200, 86_400)
+    assert keys.PODCASTS_TTL_S == 21_600
     # countdown's providers' data, which countdown wrote under these keys before they were the contract's.
     assert keys.departures("490000123W") == "v1:departures:490000123W"
     assert keys.departures("NSR:StopPlace:58381") == "v1:departures:NSR:StopPlace:58381"

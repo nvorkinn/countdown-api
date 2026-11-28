@@ -229,6 +229,10 @@ def test_subscriptions_are_a_set_per_source_and_an_empty_nudge() -> None:
         assert stop["id"] in sets[keys.subscription(stop["source"])]
     assert sets[keys.subscription(keys.BACKGROUND)] == [touchscreen["weather"]["key"]]
     assert set(sets[keys.subscription(keys.BACKGROUND)]) <= set(sets[keys.subscription(keys.WEATHER)])
+    # Its podcasts are on and its owner has NRK linked, so the NRK provider reads its shows.
+    assert touchscreen["podcasts"]["enabled"]
+    assert fixtures.load("touchscreen.json")["account"]["nrk"]["linked"]
+    assert sets[keys.subscription(keys.NRK)] == [fixtures.load("touchscreen.json")["device_id"]]
 
 
 def test_an_epaper_screens_poll_carries_its_report() -> None:
@@ -934,7 +938,8 @@ def test_a_touchscreen_config_from_before_podcasts_has_the_tab_on_with_nothing_p
     check_schema("ConfigResponse", older)
     assert check("TouchscreenConfig", older).podcasts is None
     podcasts = check("TouchscreenPodcasts", {})
-    assert (podcasts.enabled, podcasts.pinned) == (True, [])
+    assert podcasts.enabled
+    assert not podcasts.pinned
     assert check("TouchscreenConfig", TOUCHSCREEN["config"]).podcasts.pinned == ["abels_taarn"]
     assert "podcasts" in contract()["$defs"]["ConfigSection"]["enum"]
     jsonschema = pytest.importorskip("jsonschema")

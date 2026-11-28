@@ -1243,11 +1243,8 @@ export interface components {
        * @default true
        */
       enabled: boolean;
-      /**
-       * @description The shows pinned to this touchscreen, by NRK id, in the owner's order; left out is none.
-       * @default []
-       */
-      pinned: components["schemas"]["NrkPodcastId"][];
+      /** @description The shows pinned to this touchscreen, by NRK id, in the owner's order; left out is none. */
+      pinned?: components["schemas"]["NrkPodcastId"][];
     };
     /** @description A show's id at NRK, as in its radio.nrk.no address (radio.nrk.no/podkast/dagsnytt_atten). */
     NrkPodcastId: string;

@@ -27,8 +27,6 @@ SPOTIFY = "spotify"
 DEVELOPER = "developer"
 # parcel: Device ids with parcels switched on (an e-paper screen's or a touchscreen's), so a Parcel API key saved.
 PARCEL = "parcel"
-# nrk: Touchscreen device ids with podcasts on (TouchscreenPodcasts) whose owner's account has NRK linked.
-NRK = "nrk"
 # postcode: The notice board's place: every screen's postcode in the broker's canonical form ("SW1A 1AA", or "0150" for
 # a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads).
 # Never logged.
@@ -41,7 +39,9 @@ BACKGROUND = "background"
 # "<street>|<house_number>|<postcode>|<city>" ("Thorvald Meyers gate|10|0555|Oslo"): what the bins provider asks Binable
 # for its collection days. Never logged.
 ADDRESS = "address"
-SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, NRK, POSTCODE, BACKGROUND, ADDRESS)
+# nrk: Touchscreen device ids with podcasts on (TouchscreenPodcasts) whose owner's account has NRK linked.
+NRK = "nrk"
+SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND, ADDRESS, NRK)
 
 
 def subscription(source: str) -> str:

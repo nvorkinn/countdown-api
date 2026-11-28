@@ -13,10 +13,10 @@
     "spotify": "Device ids with Spotify (or Apple Music) switched on.",
     "developer": "Device ids with the developer panel switched on.",
     "parcel": "Device ids with parcels switched on (an e-paper screen's or a touchscreen's), so a Parcel API key saved.",
-    "nrk": "Touchscreen device ids with podcasts on (TouchscreenPodcasts) whose owner's account has NRK linked.",
     "postcode": "The notice board's place: every screen's postcode in the broker's canonical form (\"SW1A 1AA\", or \"0150\" for a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads). Never logged.",
     "background": "Weather keys (WeatherKey) of the places the paired touchscreens show, a subset of `weather`'s: the places the background provider makes pictures for. An e-paper screen draws no background, so its place isn't here. Each member has a v1:background-place:<key> beside it, written in the same transaction.",
-    "address": "The notice board's household address, for a Norwegian board with one set (NoticeBoardAddress), as \"<street>|<house_number>|<postcode>|<city>\" (\"Thorvald Meyers gate|10|0555|Oslo\"): what the bins provider asks Binable for its collection days. Never logged."
+    "address": "The notice board's household address, for a Norwegian board with one set (NoticeBoardAddress), as \"<street>|<house_number>|<postcode>|<city>\" (\"Thorvald Meyers gate|10|0555|Oslo\"): what the bins provider asks Binable for its collection days. Never logged.",
+    "nrk": "Touchscreen device ids with podcasts on (TouchscreenPodcasts) whose owner's account has NRK linked."
   },
   "keys": {
     "subscription": {
@@ -3567,7 +3567,6 @@
           "type": "array",
           "maxItems": 20,
           "uniqueItems": true,
-          "default": [],
           "items": {
             "$ref": "#/$defs/NrkPodcastId"
           },
