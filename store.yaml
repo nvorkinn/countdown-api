@@ -953,97 +953,6 @@ paths:
                 items:
                   $ref: '#/$defs/PlaceSearchResult'
       x-examples: [search.json]
-  /api/devices/locate:
-    post:
-      operationId: locateDevice
-      summary: Where a device is, from the Wi-Fi networks it can see, and the UK postcodes nearest it.
-      description: >-
-        The position Google's Geolocation API finds for the Wi-Fi access points a device can see (asked on the server,
-        with the server's own key, so no key is on a device), and the UK postcodes nearest it (postcodes.io), nearest
-        first, for a setup wizard's location step to offer: the owner picks one or types their own (lookupPostcode).
-        Under /api/devices/ so the devices' CORS covers it. Asked at most a few times a minute per device (429 with
-        Retry-After). Nothing about the request or the answer is kept. For paired devices only.
-      security:
-      - deviceSecret: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/$defs/DeviceLocateRequest'
-      responses:
-        '200':
-          description: The position, and the postcodes nearest it, possibly none.
-          content:
-            application/json:
-              schema:
-                $ref: '#/$defs/DeviceLocation'
-        '400':
-          description: A body that isn't a DeviceLocateRequest.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                required:
-                - error
-        '401':
-          description: A missing or unknown secret.
-        '403':
-          description: The device isn't paired yet.
-        '404':
-          description: No position could be found for those access points.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                required:
-                - error
-        '429':
-          description: This device asked too often; try again after Retry-After.
-          headers:
-            Retry-After:
-              description: The seconds to wait before asking again.
-              schema:
-                type: integer
-                minimum: 0
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                required:
-                - error
-        '502':
-          description: Google's Geolocation API or postcodes.io couldn't be asked, or failed.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                required:
-                - error
-        '503':
-          description: The server has no Google key configured, so it can't locate anything.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                required:
-                - error
-      x-examples: [locate.json]
   /api/postcodes/lookup:
     get:
       operationId: lookupPostcode
@@ -1051,8 +960,8 @@ paths:
       description: >-
         Where a UK postcode (postcodes.io) or a Norwegian one (Kartverket's address search) is, in the fields the
         notice board's locations use (Postcode), with the postcode in its canonical form ("se172pu" is "SE17 2PU"):
-        for a setup wizard's location step, when the owner types their postcode instead of picking one locateDevice
-        found. For paired devices only.
+        for a setup wizard's location step, when the owner types their postcode instead of picking one of those
+        nearPostcodes found. For paired devices only.
       security:
       - deviceSecret: []
       parameters:
@@ -1114,11 +1023,11 @@ paths:
       operationId: nearPostcodes
       summary: The UK postcodes nearest a position, such as the one a phone finds for itself.
       description: >-
-        The UK postcodes nearest a position (postcodes.io), nearest first, as locateDevice lists them for the position
-        Google found: for a setup's location step on the owner's phone, which asks the phone where it is and sends
-        that here, so nothing is asked of Google. The owner picks one or types their own (lookupPostcode). A POST,
-        so the position is never part of an address. Nothing about the request or the answer is kept. For paired
-        devices, and on the settings site (APP_HOST) with a person's login instead of a secret.
+        The UK postcodes nearest a position (postcodes.io), nearest first: for a setup's location step on the owner's
+        phone, which asks the phone where it is and sends that here. The owner picks one or types their own
+        (lookupPostcode). A POST, so the position is never part of an address. Nothing about the request or the
+        answer is kept. For paired devices, and on the settings site (APP_HOST) with a person's login instead of a
+        secret.
       security:
       - deviceSecret: []
       requestBody:
@@ -2333,74 +2242,6 @@ $defs:
         description: How far it is from the position asked about, in metres.
     required:
     - distance
-  DeviceLocateRequest:
-    description: >-
-      What a device sends locateDevice: the Wi-Fi access points it can see, as Google's Geolocation API takes them
-      (its wifiAccessPoints, in snake case). At least two, as Google needs, and at most 30.
-    type: object
-    properties:
-      wifi_access_points:
-        type: array
-        minItems: 2
-        maxItems: 30
-        items:
-          $ref: '#/$defs/WifiAccessPoint'
-    required:
-    - wifi_access_points
-  WifiAccessPoint:
-    description: One Wi-Fi access point a device can see (Google's WifiAccessPoint).
-    type: object
-    properties:
-      mac_address:
-        type: string
-        pattern: ^([0-9a-f]{2}:){5}[0-9a-f]{2}$
-        description: Its BSSID, in lower case with colons ("a4:2b:b0:5c:1e:7f").
-      signal_strength:
-        type: integer
-        minimum: -120
-        maximum: 0
-        description: Its signal, in dBm.
-      channel:
-        type: integer
-        minimum: 1
-        maximum: 233
-        description: The channel it's on.
-      age:
-        type: integer
-        minimum: 0
-        description: How long ago it was seen, in milliseconds.
-    required:
-    - mac_address
-    - signal_strength
-  DeviceLocation:
-    description: >-
-      Where locateDevice found a device: the position Google's Geolocation API answered, how sure it is, and the UK
-      postcodes nearest it (postcodes.io), nearest first; none when there are none near (outside the UK, say).
-    type: object
-    properties:
-      latitude:
-        type: number
-        minimum: -90
-        maximum: 90
-      longitude:
-        type: number
-        minimum: -180
-        maximum: 180
-      accuracy:
-        type: number
-        minimum: 0
-        description: The radius around the position the device is likely in, in metres.
-      postcodes:
-        type: array
-        maxItems: 10
-        items:
-          $ref: '#/$defs/NearbyPostcode'
-        description: The postcodes nearest the position, nearest first.
-    required:
-    - latitude
-    - longitude
-    - accuracy
-    - postcodes
   NearPostcodesRequest:
     description: >-
       What nearPostcodes takes: a position, as a browser's Geolocation API gives one (its coords), and how sure it
@@ -2427,8 +2268,7 @@ $defs:
     - longitude
   NearbyPostcode:
     description: >-
-      A UK postcode near a position (locateDevice's, or the one nearPostcodes was sent), from postcodes.io's reverse
-      geocoding.
+      A UK postcode near a position (the one nearPostcodes was sent), from postcodes.io's reverse geocoding.
     type: object
     properties:
       postcode:

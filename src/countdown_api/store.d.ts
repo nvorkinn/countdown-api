@@ -150,26 +150,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/devices/locate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Where a device is, from the Wi-Fi networks it can see, and the UK postcodes nearest it.
-     * @description The position Google's Geolocation API finds for the Wi-Fi access points a device can see (asked on the server, with the server's own key, so no key is on a device), and the UK postcodes nearest it (postcodes.io), nearest first, for a setup wizard's location step to offer: the owner picks one or types their own (lookupPostcode). Under /api/devices/ so the devices' CORS covers it. Asked at most a few times a minute per device (429 with Retry-After). Nothing about the request or the answer is kept. For paired devices only.
-     */
-    post: operations["locateDevice"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/postcodes/lookup": {
     parameters: {
       query?: never;
@@ -179,7 +159,7 @@ export interface paths {
     };
     /**
      * Where a postcode is, for a postcode the owner typed.
-     * @description Where a UK postcode (postcodes.io) or a Norwegian one (Kartverket's address search) is, in the fields the notice board's locations use (Postcode), with the postcode in its canonical form ("se172pu" is "SE17 2PU"): for a setup wizard's location step, when the owner types their postcode instead of picking one locateDevice found. For paired devices only.
+     * @description Where a UK postcode (postcodes.io) or a Norwegian one (Kartverket's address search) is, in the fields the notice board's locations use (Postcode), with the postcode in its canonical form ("se172pu" is "SE17 2PU"): for a setup wizard's location step, when the owner types their postcode instead of picking one of those nearPostcodes found. For paired devices only.
      */
     get: operations["lookupPostcode"];
     put?: never;
@@ -201,7 +181,7 @@ export interface paths {
     put?: never;
     /**
      * The UK postcodes nearest a position, such as the one a phone finds for itself.
-     * @description The UK postcodes nearest a position (postcodes.io), nearest first, as locateDevice lists them for the position Google found: for a setup's location step on the owner's phone, which asks the phone where it is and sends that here, so nothing is asked of Google. The owner picks one or types their own (lookupPostcode). A POST, so the position is never part of an address. Nothing about the request or the answer is kept. For paired devices, and on the settings site (APP_HOST) with a person's login instead of a secret.
+     * @description The UK postcodes nearest a position (postcodes.io), nearest first: for a setup's location step on the owner's phone, which asks the phone where it is and sends that here. The owner picks one or types their own (lookupPostcode). A POST, so the position is never part of an address. Nothing about the request or the answer is kept. For paired devices, and on the settings site (APP_HOST) with a person's login instead of a secret.
      */
     post: operations["nearPostcodes"];
     delete?: never;
@@ -834,30 +814,6 @@ export interface components {
       /** @description How far it is from the position asked about, in metres. */
       distance: number;
     } & components["schemas"]["StopSearchResult"];
-    /** @description What a device sends locateDevice: the Wi-Fi access points it can see, as Google's Geolocation API takes them (its wifiAccessPoints, in snake case). At least two, as Google needs, and at most 30. */
-    DeviceLocateRequest: {
-      wifi_access_points: components["schemas"]["WifiAccessPoint"][];
-    };
-    /** @description One Wi-Fi access point a device can see (Google's WifiAccessPoint). */
-    WifiAccessPoint: {
-      /** @description Its BSSID, in lower case with colons ("a4:2b:b0:5c:1e:7f"). */
-      mac_address: string;
-      /** @description Its signal, in dBm. */
-      signal_strength: number;
-      /** @description The channel it's on. */
-      channel?: number;
-      /** @description How long ago it was seen, in milliseconds. */
-      age?: number;
-    };
-    /** @description Where locateDevice found a device: the position Google's Geolocation API answered, how sure it is, and the UK postcodes nearest it (postcodes.io), nearest first; none when there are none near (outside the UK, say). */
-    DeviceLocation: {
-      latitude: number;
-      longitude: number;
-      /** @description The radius around the position the device is likely in, in metres. */
-      accuracy: number;
-      /** @description The postcodes nearest the position, nearest first. */
-      postcodes: components["schemas"]["NearbyPostcode"][];
-    };
     /** @description What nearPostcodes takes: a position, as a browser's Geolocation API gives one (its coords), and how sure it is of it. */
     NearPostcodesRequest: {
       latitude: number;
@@ -865,7 +821,7 @@ export interface components {
       /** @description The radius around the position the phone is likely in, in metres; the less sure, the wider the search, within the server's limits. Left out, the server searches its narrowest. */
       accuracy?: number;
     };
-    /** @description A UK postcode near a position (locateDevice's, or the one nearPostcodes was sent), from postcodes.io's reverse geocoding. */
+    /** @description A UK postcode near a position (the one nearPostcodes was sent), from postcodes.io's reverse geocoding. */
     NearbyPostcode: {
       /** @description The postcode in its canonical form, in capitals with its space ("SE17 2PU"). */
       postcode: string;
@@ -1758,9 +1714,6 @@ export type SearchResult = components["schemas"]["SearchResult"];
 export type StopSearchResult = components["schemas"]["StopSearchResult"];
 export type PlaceSearchResult = components["schemas"]["PlaceSearchResult"];
 export type NearbyStopResult = components["schemas"]["NearbyStopResult"];
-export type DeviceLocateRequest = components["schemas"]["DeviceLocateRequest"];
-export type WifiAccessPoint = components["schemas"]["WifiAccessPoint"];
-export type DeviceLocation = components["schemas"]["DeviceLocation"];
 export type NearPostcodesRequest = components["schemas"]["NearPostcodesRequest"];
 export type NearbyPostcode = components["schemas"]["NearbyPostcode"];
 export type DepartureStop = components["schemas"]["DepartureStop"];
@@ -2305,101 +2258,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PlaceSearchResult"][];
-        };
-      };
-    };
-  };
-  locateDevice: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DeviceLocateRequest"];
-      };
-    };
-    responses: {
-      /** @description The position, and the postcodes nearest it, possibly none. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DeviceLocation"];
-        };
-      };
-      /** @description A body that isn't a DeviceLocateRequest. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description A missing or unknown secret. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description The device isn't paired yet. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No position could be found for those access points. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description This device asked too often; try again after Retry-After. */
-      429: {
-        headers: {
-          /** @description The seconds to wait before asking again. */
-          "Retry-After"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Google's Geolocation API or postcodes.io couldn't be asked, or failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description The server has no Google key configured, so it can't locate anything. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
         };
       };
     };

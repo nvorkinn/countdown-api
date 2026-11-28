@@ -264,43 +264,17 @@ def test_the_current_location_is_at_most_one_place_as_the_search_answers_it() ->
 LOCATE = fixtures.load("locate.json")
 
 
-def test_a_device_is_located_from_the_wi_fi_it_sees_with_the_postcodes_nearest_first() -> None:
-    request = check("DeviceLocateRequest", LOCATE["locate_request"])
-    assert 2 <= len(request.wifi_access_points) <= 30
-    located = check("DeviceLocation", LOCATE["locate"])
-    assert 0 < len(located.postcodes) <= 10
-    distances = [postcode.distance for postcode in located.postcodes]
+def test_a_phones_own_position_gets_the_postcodes_nearest_it_nearest_first() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    check("NearPostcodesRequest", LOCATE["near_postcodes_request"])
+    near = [check("NearbyPostcode", postcode) for postcode in LOCATE["near_postcodes"]]
+    assert 0 < len(near) <= 10
+    distances = [postcode.distance for postcode in near]
     assert distances == sorted(distances)
-    for postcode in located.postcodes:
+    for postcode in near:
         assert postcode.postcode == postcode.postcode.upper().strip()
         assert " " in postcode.postcode
         assert postcode.country == "GB"
-
-
-def test_a_device_sends_its_access_points_as_google_takes_them() -> None:
-    jsonschema = pytest.importorskip("jsonschema")
-    point = LOCATE["locate_request"]["wifi_access_points"][0]
-    for wrong in (
-        {**point, "mac_address": point["mac_address"].upper()},
-        {**point, "mac_address": point["mac_address"].replace(":", "-")},
-        {**point, "signal_strength": 1},
-        {**point, "channel": 0},
-        {key: value for key, value in point.items() if key != "signal_strength"},
-    ):
-        with pytest.raises(jsonschema.ValidationError):
-            check_schema("WifiAccessPoint", wrong)
-    with pytest.raises(jsonschema.ValidationError):
-        check_schema("DeviceLocateRequest", {"wifi_access_points": [point]})
-
-
-def test_a_phones_own_position_gets_the_same_postcodes_with_nothing_asked_of_google() -> None:
-    jsonschema = pytest.importorskip("jsonschema")
-    request = check("NearPostcodesRequest", LOCATE["near_postcodes_request"])
-    located = check("DeviceLocation", LOCATE["locate"])
-    assert (request.latitude, request.longitude) == (located.latitude, located.longitude)
-    near = [check("NearbyPostcode", postcode) for postcode in LOCATE["near_postcodes"]]
-    assert near == located.postcodes
-    assert 0 < len(near) <= 10
     # A position alone will do; one without both coordinates, or with anything else, won't.
     check_schema("NearPostcodesRequest", {"latitude": 51.5, "longitude": -0.1})
     for wrong in (
@@ -316,7 +290,7 @@ def test_a_typed_postcode_is_looked_up_in_its_canonical_form() -> None:
     postcode = check("Postcode", LOCATE["postcode"])
     typed = LOCATE["postcode_query"]
     assert postcode.postcode.replace(" ", "") == typed.replace(" ", "").upper()
-    assert postcode.postcode in {nearby.postcode for nearby in check("DeviceLocation", LOCATE["locate"]).postcodes}
+    assert postcode.postcode in {nearby["postcode"] for nearby in LOCATE["near_postcodes"]}
 
 
 def test_the_stops_near_a_postcode_are_the_searchs_stops_nearest_first() -> None:
