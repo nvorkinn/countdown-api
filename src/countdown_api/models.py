@@ -941,7 +941,7 @@ class StoredPodcasts(BaseModel):
 
     fetched_at: datetime | None = Field(description="When the NRK provider read it; null when there's nothing stored.")
     shows: list[PodcastShow] = Field(
-        description="The owner's NRK favourites, in NRK's order, then the device's pinned shows that aren't among them.",
+        description="The owner's NRK favourites in NRK's order, then the device's other pinned shows.",
     )
 
 

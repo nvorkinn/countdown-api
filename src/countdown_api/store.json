@@ -3959,7 +3959,7 @@
           "items": {
             "$ref": "#/$defs/PodcastShow"
           },
-          "description": "The owner's NRK favourites, in NRK's order, then the device's pinned shows that aren't among them."
+          "description": "The owner's NRK favourites in NRK's order, then the device's other pinned shows."
         }
       },
       "required": ["fetched_at", "shows"]

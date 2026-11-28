@@ -1402,7 +1402,7 @@ export interface components {
     StoredPodcasts: {
       /** @description When the NRK provider read it; null when there's nothing stored. */
       fetched_at: string | null;
-      /** @description The owner's NRK favourites, in NRK's order, then the device's pinned shows that aren't among them. */
+      /** @description The owner's NRK favourites in NRK's order, then the device's other pinned shows. */
       shows: components["schemas"]["PodcastShow"][];
     };
     /** @description One NRK podcast in a device's list (StoredPodcasts). */

@@ -155,7 +155,8 @@ def test_podcasts_are_the_owners_nrk_favourites_then_the_pinned_shows() -> None:
     # Favourites first, then the pinned shows, each with its newest episode first.
     pinned = [show.pinned for show in stored.shows]
     assert pinned == sorted(pinned)
-    assert True in pinned and False in pinned
+    assert True in pinned
+    assert False in pinned
     for show in stored.shows:
         published = [episode.published_at for episode in show.episodes]
         assert published == sorted(published, reverse=True)
