@@ -91,9 +91,7 @@
     },
     "podcasts": {
       "enabled": true,
-      "pinned": [
-        "abels_taarn"
-      ]
+      "pinned": ["abels_taarn"]
     }
   },
   "save": {
@@ -170,9 +168,7 @@
     },
     "podcasts": {
       "enabled": true,
-      "pinned": [
-        "abels_taarn"
-      ]
+      "pinned": ["abels_taarn"]
     }
   },
   "spotify_token": {
@@ -203,9 +199,7 @@
     "code": "9f2c4e6a8b0d1f3a5c7e9b1d3f5a7c9e"
   },
   "soloist_keys": {
-    "people": [
-      "wizzler"
-    ]
+    "people": ["wizzler"]
   },
   "soloist_key_query": {
     "person": "wizzler"
@@ -363,9 +357,7 @@
       },
       "podcasts": {
         "enabled": true,
-        "pinned": [
-          "abels_taarn"
-        ]
+        "pinned": ["abels_taarn"]
       }
     }
   }
