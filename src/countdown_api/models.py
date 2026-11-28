@@ -257,11 +257,12 @@ ConfigSection = Literal[
     "display",
     "lyrics",
     "holidays",
+    "lights",
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
 type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`,
-`parcels`, `style`, `display`, `lyrics` and `holidays`.
+`parcels`, `style`, `display`, `lyrics`, `holidays` and `lights`.
 """
 
 
@@ -1708,6 +1709,39 @@ class TouchscreenHolidays(BaseModel):
     )
 
 
+class TouchscreenLight(BaseModel):
+    """One Home Assistant light a touchscreen may control (TouchscreenLights)."""
+
+    entity_id: Annotated[str, Field(pattern="^(light|group|switch)\\.[a-z0-9_]+$")] = Field(
+        description=(
+            "Its Home Assistant entity ID, in one of three domains: `light` (a light, or a light group), `group` (a "
+            "group of lights) or `switch` (a lamp on a switched socket); light.kitchen_ceiling, say."
+        ),
+    )
+    name: Annotated[str, Field(min_length=1, max_length=40)] | None = Field(
+        default=None,
+        description="The name to show instead of Home Assistant's own; left out is Home Assistant's.",
+    )
+
+
+class TouchscreenLights(BaseModel):
+    """The Home Assistant lights a touchscreen may control, as its owner chose them.
+
+    A config without it (one saved before it existed) has no light controls. It has no secret: the token
+    Home Assistant takes is never here.
+    """
+
+    home_assistant_url: str = Field(
+        description=(
+            "The address of the Home Assistant instance the lights are on, as the touchscreen reaches it "
+            "(http://homeassistant.local:8123, say)."
+        ),
+    )
+    entities: Annotated[list[TouchscreenLight], Field(max_length=32)] = Field(
+        description="The lights it may control, in the owner's order; none is no light controls.",
+    )
+
+
 class TouchscreenLyrics(BaseModel):
     """How a touchscreen shows a song's synced lyrics.
 
@@ -1755,7 +1789,8 @@ class TouchscreenConfig(ConfigBase):
     It draws itself from it, and saves it from its own settings, as its owner does on the settings site.
     It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or
     interval; and it plays music itself, so it has no music or other integrations' sections but parcels,
-    whose notices join its notice board. Its Wi-Fi stays on the device, never here.
+    whose notices join its notice board, and lights, the Home Assistant lights it may control. Its Wi-Fi
+    stays on the device, never here.
     """
 
     type: Literal["touchscreen"]
@@ -1797,6 +1832,14 @@ class TouchscreenConfig(ConfigBase):
             "(putConfig) that leaves it out keeps it as it is."
         ),
     )
+    lights: TouchscreenLights | None = Field(
+        default=None,
+        description=(
+            "Which Home Assistant lights the touchscreen may control. The server always sends it; null or left out is "
+            "no light controls, so a config from before it was added reads the same, and a whole save (putConfig) that"
+            " leaves it out keeps it as it is."
+        ),
+    )
 
 
 class TouchscreenRegistration(BaseModel):
@@ -1832,9 +1875,10 @@ pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/c
 take. A few flat fields (who and what the device is, its size, and its clock format), then a section
 per panel, each its own schema, and `style`, which every type has but whose schema is the type's
 own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the
-notice board, its look, its screen's sleep, its lyrics and how soon it mentions a holiday; an
-e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which:
-an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of
-any kind: logins and keys are the owner's account's, held on the server. A read-only field
-(readOnly) is the server's, or what the device said at registration, and isn't changed by a save.
+notice board, its look, its screen's sleep, its lyrics, how soon it mentions a holiday and the
+lights it may control; an e-paper screen's also has its time zone, pairing code and the rest of its
+panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's
+(TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's,
+held on the server. A read-only field (readOnly) is the server's, or what the device said at
+registration, and isn't changed by a save.
 """

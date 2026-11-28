@@ -754,7 +754,7 @@ export interface components {
     /** @description A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and only then. getConfig answers it, and a save sends it back as If-Match. */
     ConfigVersion: string;
     /**
-     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display`, `lyrics` and `holidays`.
+     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display`, `lyrics`, `holidays` and `lights`.
      * @enum {string}
      */
     ConfigSection:
@@ -771,7 +771,8 @@ export interface components {
       | "style"
       | "display"
       | "lyrics"
-      | "holidays";
+      | "holidays"
+      | "lights";
     /** @description One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape). */
     SearchResult: {
       /** @description The result's id at its source, as text. */
@@ -961,7 +962,7 @@ export interface components {
        */
       return_to?: string;
     };
-    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep, its lyrics and how soon it mentions a holiday; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
+    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep, its lyrics, how soon it mentions a holiday and the lights it may control; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
     ConfigResponse: components["schemas"]["EpaperConfig"] | components["schemas"]["TouchscreenConfig"];
     /** @description What every device's config has (ConfigResponse), whatever its type: who and what the device is, its size, its clock format, and the panels both types show (arrivals, weather and the notice board). */
     ConfigBase: {
@@ -1033,7 +1034,7 @@ export interface components {
       /** @description Which layout the screen is drawn in, or null for its size's default. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. */
       layout: components["schemas"]["Layout"] | null;
     };
-    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections but parcels, whose notices join its notice board. Its Wi-Fi stays on the device, never here. */
+    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections but parcels, whose notices join its notice board, and lights, the Home Assistant lights it may control. Its Wi-Fi stays on the device, never here. */
     TouchscreenConfig: {
       /** @constant */
       readonly type: "touchscreen";
@@ -1057,6 +1058,11 @@ export interface components {
        * @default null
        */
       parcels: components["schemas"]["Parcels"] | null;
+      /**
+       * @description Which Home Assistant lights the touchscreen may control. The server always sends it; null or left out is no light controls, so a config from before it was added reads the same, and a whole save (putConfig) that leaves it out keeps it as it is.
+       * @default null
+       */
+      lights: components["schemas"]["TouchscreenLights"] | null;
     } & (WithRequired<components["schemas"]["ConfigBase"], "type"> & {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -1126,6 +1132,23 @@ export interface components {
        * @enum {integer}
        */
       days_ahead: 2 | 4 | 7 | 14;
+    };
+    /** @description The Home Assistant lights a touchscreen may control, as its owner chose them. A config without it (one saved before it existed) has no light controls. It has no secret: the token Home Assistant takes is never here. */
+    TouchscreenLights: {
+      /**
+       * Format: uri
+       * @description The address of the Home Assistant instance the lights are on, as the touchscreen reaches it (http://homeassistant.local:8123, say).
+       */
+      home_assistant_url: string;
+      /** @description The lights it may control, in the owner's order; none is no light controls. */
+      entities: components["schemas"]["TouchscreenLight"][];
+    };
+    /** @description One Home Assistant light a touchscreen may control (TouchscreenLights). */
+    TouchscreenLight: {
+      /** @description Its Home Assistant entity ID, in one of three domains: `light` (a light, or a light group), `group` (a group of lights) or `switch` (a lamp on a switched socket); light.kitchen_ceiling, say. */
+      entity_id: string;
+      /** @description The name to show instead of Home Assistant's own; left out is Home Assistant's. */
+      name?: string;
     };
     /** @description The arrivals panel (bus, train and tram stops). */
     Arrivals: {
@@ -1752,6 +1775,8 @@ export type TouchscreenQuietHours = components["schemas"]["TouchscreenQuietHours
 export type MinuteOfDay = components["schemas"]["MinuteOfDay"];
 export type TouchscreenLyrics = components["schemas"]["TouchscreenLyrics"];
 export type TouchscreenHolidays = components["schemas"]["TouchscreenHolidays"];
+export type TouchscreenLights = components["schemas"]["TouchscreenLights"];
+export type TouchscreenLight = components["schemas"]["TouchscreenLight"];
 export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
@@ -2044,7 +2069,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics), and for `holidays` TouchscreenHolidays. */
+    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics), for `holidays` TouchscreenHolidays, and for `lights` TouchscreenLights. */
     requestBody: {
       content: {
         "application/json":
@@ -2061,6 +2086,7 @@ export interface operations {
           | components["schemas"]["TouchscreenDisplay"]
           | components["schemas"]["TouchscreenLyrics"]
           | components["schemas"]["TouchscreenHolidays"]
+          | components["schemas"]["TouchscreenLights"]
           | ("12h" | "24h")
           | ("en" | "nb");
       };

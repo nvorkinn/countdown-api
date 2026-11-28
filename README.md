@@ -155,8 +155,9 @@ body, so there is no model of an answer and no JSON library. Which routes get a 
   sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
 - a touchscreen's own: `display` (when its screen sleeps, how bright it is and its quiet hours), `lyrics` (the synced
   lyrics' size and alignment; a config from before it has none, which a touchscreen shows as medium, on the left),
-  `holidays` (how many days ahead its notice board mentions the next holiday; none reads as a week) and
-  `parcels` (whether its notice board has its owner's parcels). That is all of it: a touchscreen keeps its own time, plays music itself and has no other
+  `holidays` (how many days ahead its notice board mentions the next holiday; none reads as a week),
+  `parcels` (whether its notice board has its owner's parcels) and `lights` (which Home Assistant lights it may
+  control: the instance's address and the entities; none reads as no light controls). That is all of it: a touchscreen keeps its own time, plays music itself and has no other
   integrations. Every setting a device has lives here on the server, but for its Wi-Fi, which stays
   on the device.
 

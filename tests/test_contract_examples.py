@@ -452,6 +452,13 @@ def test_a_config_takes_only_its_types_style() -> None:
         {**touchscreen, "lyrics": {"size": "huge", "align": "left"}},
         {**touchscreen, "lyrics": {"size": "medium", "align": "justify"}},
         {**touchscreen, "holidays": {"days_ahead": 31}},
+        {**touchscreen, "lights": {"entities": []}},
+        {**touchscreen, "lights": {"home_assistant_url": "http://homeassistant.local:8123"}},
+        {**touchscreen, "lights": {**touchscreen["lights"], "entities": [{"name": "Kitchen"}]}},
+        {**touchscreen, "lights": {**touchscreen["lights"], "entities": [{"entity_id": "sensor.kitchen"}]}},
+        {**touchscreen, "lights": {**touchscreen["lights"], "entities": [{"entity_id": "light.Kitchen"}]}},
+        {**touchscreen, "lights": {**touchscreen["lights"], "entities": [{"entity_id": "light.kitchen", "name": ""}]}},
+        {**touchscreen, "lights": {**touchscreen["lights"], "entities": [{"entity_id": "light.kitchen"}] * 33}},
         {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
         {key: value for key, value in epaper.items() if key != "language"},
         {key: value for key, value in epaper.items() if key != "pairing_code"},
@@ -474,6 +481,31 @@ def test_a_touchscreen_config_from_before_holidays_mentions_them_a_week_ahead() 
     check_schema("ConfigResponse", older)
     assert check("TouchscreenConfig", older).holidays is None
     assert check("TouchscreenHolidays", {}).days_ahead == 7
+
+
+def test_a_touchscreen_config_from_before_lights_has_no_light_controls() -> None:
+    older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "lights"}
+    check_schema("ConfigResponse", older)
+    assert check("TouchscreenConfig", older).lights is None
+    assert check("TouchscreenConfig", {**older, "lights": None}).lights is None
+
+
+def test_a_touchscreens_lights_are_home_assistant_entities_in_its_owners_order() -> None:
+    lights = check("TouchscreenConfig", TOUCHSCREEN["config"]).lights
+    assert str(lights.home_assistant_url).rstrip("/") == "http://homeassistant.local:8123"
+    # A light, a group of lights and a lamp on a switched socket; a name only where the owner gave one.
+    assert [light.entity_id for light in lights.entities] == [
+        "light.kitchen_ceiling",
+        "group.living_room_lamps",
+        "switch.reading_lamp",
+    ]
+    assert [light.name for light in lights.entities] == [None, "Living room", "Reading lamp"]
+    # None chosen is still a section, and as many as 32 are.
+    empty = {**TOUCHSCREEN["config"]["lights"], "entities": []}
+    assert check("TouchscreenLights", empty).entities == []
+    full = {**empty, "entities": [{"entity_id": f"light.lamp_{number}"} for number in range(32)]}
+    assert len(check("TouchscreenLights", full).entities) == 32
+    assert "lights" in contract()["$defs"]["ConfigSection"]["enum"]
 
 
 def test_a_touchscreen_style_without_dynamic_has_it_on() -> None:
@@ -507,8 +539,8 @@ def test_a_touchscreen_config_from_before_its_language_is_english() -> None:
 
 def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
     # The flat fields, whether its brightness can be set, its language, the panels it shows, its look, its screen's
-    # sleep and its parcel notices: no pairing code, time zone, interval, music or other integrations, which only an
-    # e-paper screen has.
+    # sleep, its parcel notices and its lights: no pairing code, time zone, interval, music or other integrations,
+    # which only an e-paper screen has.
     assert set(models.TouchscreenConfig.model_fields) == {
         "device_id",
         "type",
@@ -525,6 +557,7 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
         "lyrics",
         "holidays",
         "parcels",
+        "lights",
     }
     assert set(TOUCHSCREEN["config"]) == set(models.TouchscreenConfig.model_fields)
     epaper_only = set(models.EpaperConfig.model_fields) - set(models.TouchscreenConfig.model_fields)

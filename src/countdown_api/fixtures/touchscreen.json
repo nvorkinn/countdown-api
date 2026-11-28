@@ -72,6 +72,22 @@
       "enabled": false,
       "days_ahead": null,
       "kept_hours": 4
+    },
+    "lights": {
+      "home_assistant_url": "http://homeassistant.local:8123",
+      "entities": [
+        {
+          "entity_id": "light.kitchen_ceiling"
+        },
+        {
+          "entity_id": "group.living_room_lamps",
+          "name": "Living room"
+        },
+        {
+          "entity_id": "switch.reading_lamp",
+          "name": "Reading lamp"
+        }
+      ]
     }
   },
   "save": {
@@ -129,6 +145,22 @@
       "enabled": false,
       "days_ahead": null,
       "kept_hours": 4
+    },
+    "lights": {
+      "home_assistant_url": "http://homeassistant.local:8123",
+      "entities": [
+        {
+          "entity_id": "light.kitchen_ceiling"
+        },
+        {
+          "entity_id": "group.living_room_lamps",
+          "name": "Living room"
+        },
+        {
+          "entity_id": "switch.reading_lamp",
+          "name": "Reading lamp"
+        }
+      ]
     }
   },
   "spotify_token": {
@@ -295,6 +327,22 @@
         "enabled": false,
         "days_ahead": null,
         "kept_hours": 4
+      },
+      "lights": {
+        "home_assistant_url": "http://homeassistant.local:8123",
+        "entities": [
+          {
+            "entity_id": "light.kitchen_ceiling"
+          },
+          {
+            "entity_id": "group.living_room_lamps",
+            "name": "Living room"
+          },
+          {
+            "entity_id": "switch.reading_lamp",
+            "name": "Reading lamp"
+          }
+        ]
       }
     }
   }
