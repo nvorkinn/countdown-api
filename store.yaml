@@ -1109,6 +1109,61 @@ paths:
                 required:
                 - error
       x-examples: [locate.json]
+  /api/postcodes/near:
+    post:
+      operationId: nearPostcodes
+      summary: The UK postcodes nearest a position, such as the one a phone finds for itself.
+      description: >-
+        The UK postcodes nearest a position (postcodes.io), nearest first, as locateDevice lists them for the position
+        Google found: for a setup's location step on the owner's phone, which asks the phone where it is and sends
+        that here, so nothing is asked of Google. The owner picks one or types their own (lookupPostcode). A POST,
+        so the position is never part of an address. Nothing about the request or the answer is kept. For paired
+        devices, and on the settings site (APP_HOST) with a person's login instead of a secret.
+      security:
+      - deviceSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/$defs/NearPostcodesRequest'
+      responses:
+        '200':
+          description: The postcodes nearest the position, nearest first, possibly none (outside the UK, say).
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 10
+                items:
+                  $ref: '#/$defs/NearbyPostcode'
+        '400':
+          description: A body that isn't a NearPostcodesRequest.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+        '401':
+          description: A missing or unknown secret, or, on the settings site, no login.
+        '403':
+          description: The device isn't paired yet.
+        '502':
+          description: postcodes.io couldn't be asked, or failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+      x-examples: [locate.json]
   /api/stops/near:
     get:
       operationId: stopsNear
@@ -2346,8 +2401,34 @@ $defs:
     - longitude
     - accuracy
     - postcodes
+  NearPostcodesRequest:
+    description: >-
+      What nearPostcodes takes: a position, as a browser's Geolocation API gives one (its coords), and how sure it
+      is of it.
+    type: object
+    additionalProperties: false
+    properties:
+      latitude:
+        type: number
+        minimum: -90
+        maximum: 90
+      longitude:
+        type: number
+        minimum: -180
+        maximum: 180
+      accuracy:
+        type: number
+        minimum: 0
+        description: >-
+          The radius around the position the phone is likely in, in metres; the less sure, the wider the search, within
+          the server's limits. Left out, the server searches its narrowest.
+    required:
+    - latitude
+    - longitude
   NearbyPostcode:
-    description: A UK postcode near the position locateDevice found, from postcodes.io's reverse geocoding.
+    description: >-
+      A UK postcode near a position (locateDevice's, or the one nearPostcodes was sent), from postcodes.io's reverse
+      geocoding.
     type: object
     properties:
       postcode:

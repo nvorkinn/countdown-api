@@ -16,6 +16,7 @@ import {
   listSoloistKeys,
   locateDevice,
   lookupPostcode,
+  nearPostcodes,
   putConfig,
   registerDevice,
   registerTouchscreenUrl,
@@ -206,4 +207,13 @@ test("a touchscreen reports its side of its setup and asks which step it is at",
   // A touchscreen that has reported nothing doesn't take part.
   const apart = fakeServer(404, { error: "no setup" });
   assert.equal((await getSetup(apart.client)).response.status, 404);
+});
+
+test("a position a phone found is sent in the body, never in the address", async () => {
+  const position = { latitude: 51.48471, longitude: -0.09192, accuracy: 35 };
+  const near = fakeServer(200, []);
+  assert.deepEqual((await nearPostcodes(near.client, position)).data, []);
+  assert.equal(near.sent[0]?.method, "POST");
+  assert.equal(near.sent[0]?.url, "https://api.example.com/api/postcodes/near");
+  assert.deepEqual(near.sent[0]?.body, position);
 });

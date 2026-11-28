@@ -117,6 +117,7 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/places/here", "get"),
         ("/api/places/search", "get"),
         ("/api/postcodes/lookup", "get"),
+        ("/api/postcodes/near", "post"),
         ("/api/stops/near", "get"),
         ("/api/stops/search", "get"),
         ("/device/{device_id}", "get"),
