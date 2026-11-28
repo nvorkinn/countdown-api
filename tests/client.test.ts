@@ -11,6 +11,7 @@ import {
   getBackgroundImageUrl,
   getConfig,
   getFeedUrl,
+  getSetup,
   getSoloistKey,
   listSoloistKeys,
   locateDevice,
@@ -18,6 +19,7 @@ import {
   putConfig,
   registerDevice,
   registerTouchscreenUrl,
+  reportSetup,
   saveSoloistKeyPageUrl,
   stopsNear,
 } from "../src/countdown_api/client.ts";
@@ -176,4 +178,32 @@ test("a setup wizard's location step sends the Wi-Fi it sees, a typed postcode, 
   const near = fakeServer(200, []);
   assert.deepEqual((await stopsNear(near.client, { latitude: 51.484787, longitude: -0.091724 })).data, []);
   assert.equal(near.sent[0]?.url, "https://api.example.com/api/stops/near?latitude=51.484787&longitude=-0.091724");
+});
+
+test("a touchscreen reports its side of its setup and asks which step it is at", async () => {
+  const challenge = {
+    client_id: "79012ca710ca4dd5ad18c2973510b670",
+    code_challenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+    scope: "user-read-private",
+  };
+  const reported = fakeServer(200, { step: "account" });
+  assert.equal((await reportSetup(reported.client, { spotify: challenge })).data?.step, "account");
+  assert.equal(reported.sent[0]?.method, "PUT");
+  assert.equal(reported.sent[0]?.url, "https://api.example.com/api/devices/setup");
+  assert.equal(reported.sent[0]?.headers.get("Authorization"), "Bearer s3cret-s3cret-s3cret");
+  assert.deepEqual(reported.sent[0]?.body, { spotify: challenge });
+
+  const signIn = {
+    id: "4b7d1e9a3c5f2a8d6e0b9c1f7a3d5e2b",
+    redirect_uri: "https://app.example.com/cb",
+    expires_in: 600,
+  };
+  const asked = fakeServer(200, { step: "spotify", spotify_sign_in: signIn });
+  assert.deepEqual((await getSetup(asked.client)).data?.spotify_sign_in, signIn);
+  assert.equal(asked.sent[0]?.method, "GET");
+  assert.equal(asked.sent[0]?.url, "https://api.example.com/api/devices/setup");
+
+  // A touchscreen that has reported nothing doesn't take part.
+  const apart = fakeServer(404, { error: "no setup" });
+  assert.equal((await getSetup(apart.client)).response.status, 404);
 });

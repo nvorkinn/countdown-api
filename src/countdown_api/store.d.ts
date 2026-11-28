@@ -350,6 +350,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/devices/setup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Where a touchscreen's setup stands, for it and its owner's phone alike.
+     * @description A new touchscreen is set up on two screens at once: its own, and its owner's phone, which the one code it shows takes through the settings site's pages. Both ask here which step the setup is at (SetupStatus) every couple of seconds, so they always show the same one. The server works the step out from what it knows itself (the touchscreen has an owner, someone has a Soloist key code or a key, the owner has said where it is) and from what only the touchscreen knows and reports (reportSetup). A touchscreen takes part by reporting, which it does first when it registers; one that never has is answered a 404, and is set up as before. The settings site (APP_HOST) reads it too, with the person's login instead of a secret, for the touchscreen its `device_id` names.
+     */
+    get: operations["getSetup"];
+    /**
+     * What a touchscreen tells the server of its own setup.
+     * @description What only the touchscreen knows of its setup (SetupReport): the PKCE challenge for its first person's Spotify sign-in, the name its Soloist goes by in Spotify and whether it has signed in, whether its owner's phone is paired over Bluetooth, and that it has finished. Each field sent replaces what was reported before, and one left out stays as it was, so an empty report only says the touchscreen takes part. It reports first before it is paired, as soon as it has registered, so that the server can send its owner's phone on to Spotify the moment the touchscreen is theirs (spotifySignInPage), without waiting for the touchscreen to ask. Answers the setup as it then stands, as getSetup does.
+     */
+    put: operations["reportSetup"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/devices/account": {
     parameters: {
       query?: never;
@@ -1215,6 +1239,33 @@ export interface components {
       /** @description Spotify's error, when `failed`. */
       error?: string;
     };
+    /**
+     * @description A step of a touchscreen's setup, in the order they come. `account`: its owner signs in on their phone and makes it theirs, from the code it shows. `spotify`: its first person signs in to Spotify on the phone. `soloist_key`: they paste their Soloist API key on the phone. `soloist_sign_in`: they pick the touchscreen in their Spotify app, which signs its Soloist in. `location`: the owner says on the phone where it is (its postcode, weather place and stops), or skips that. `presence`: the touchscreen pairs with the phone over Bluetooth. `done`: the touchscreen has finished.
+     * @enum {string}
+     */
+    SetupStep: "account" | "spotify" | "soloist_key" | "soloist_sign_in" | "location" | "presence" | "done";
+    /** @description Where a touchscreen's setup stands (getSetup, reportSetup): the step both it and its owner's phone show. */
+    SetupStatus: {
+      /** @description The first step not yet done. */
+      step: components["schemas"]["SetupStep"];
+      /** @description While the step is `spotify`, the sign-in the server made for the phone from the challenge the touchscreen reported, once it has: the touchscreen asks for its result (getSpotifySignIn) and exchanges Spotify's code with its verifier, as for a sign-in it made itself. A sign-in that lapses is made again, with a new id. */
+      spotify_sign_in?: components["schemas"]["SpotifySignIn"];
+      /** @description The name the touchscreen's Soloist goes by in Spotify, as it reported it, for the phone to say which device to pick. */
+      soloist_device?: string;
+    };
+    /** @description What a touchscreen reports of its own setup (reportSetup). Every field is optional: one sent replaces what was reported before, and one left out stays as it was. */
+    SetupReport: {
+      /** @description What its first person's Spotify sign-in asks for, with the challenge of a PKCE verifier the touchscreen keeps until that sign-in is done. The server makes the sign-in from it when the phone gets there. */
+      spotify?: components["schemas"]["SpotifySignInRequest"];
+      /** @description The name its Soloist goes by in Spotify. */
+      soloist_device?: string;
+      /** @description Whether its Soloist has signed in to Spotify, which picking it in the Spotify app does. */
+      soloist_signed_in?: boolean;
+      /** @description Whether its owner's phone is paired with it over Bluetooth. */
+      phone_paired?: boolean;
+      /** @description Whether it has finished its setup; once true the step is `done` whatever else is reported. */
+      finished?: boolean;
+    };
     /** @description The account that owns a device, as the device is told of it (getAccount): which of the services a device shows it has linked. A service per field, each an AccountLink. */
     DeviceAccount: {
       /** @description Parcel: linked while the account has a Parcel API key saved, which the parcel provider reads the owner's deliveries with. */
@@ -1724,6 +1775,9 @@ export type SpotifySignInId = components["schemas"]["SpotifySignInId"];
 export type SpotifySignInRequest = components["schemas"]["SpotifySignInRequest"];
 export type SpotifySignIn = components["schemas"]["SpotifySignIn"];
 export type SpotifySignInResult = components["schemas"]["SpotifySignInResult"];
+export type SetupStep = components["schemas"]["SetupStep"];
+export type SetupStatus = components["schemas"]["SetupStatus"];
+export type SetupReport = components["schemas"]["SetupReport"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
 export type StopDepartures = components["schemas"]["StopDepartures"];
@@ -2746,6 +2800,102 @@ export interface operations {
       };
       /** @description No such sign-in for this touchscreen, one that has lapsed, or one that has already answered. */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSetup: {
+    parameters: {
+      query?: {
+        /** @description On the settings site only, with the person's login instead of the secret: which of their devices. A device sends no `device_id`: its secret says which it is. */
+        device_id?: components["schemas"]["DeviceId"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Where the setup stands. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SetupStatus"];
+        };
+      };
+      /** @description On the settings site, no `device_id`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The touchscreen has reported nothing yet, so doesn't take part; or, on the settings site, not one of the signed-in person's devices. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't a touchscreen. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  reportSetup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetupReport"];
+      };
+    };
+    responses: {
+      /** @description Where the setup stands now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SetupStatus"];
+        };
+      };
+      /** @description A report that isn't a SetupReport. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't a touchscreen. */
+      409: {
         headers: {
           [name: string]: unknown;
         };

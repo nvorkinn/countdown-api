@@ -352,6 +352,32 @@ export function getSpotifySignIn(
 }
 
 /**
+ * Where a touchscreen's setup stands, for it and its owner's phone alike.
+ *
+ * `GET /api/devices/setup`, with the device's secret.
+ */
+export function getSetup(
+  client: Client,
+  query: NonNullable<operations["getSetup"]["parameters"]["query"]> = {},
+  options: RequestOptions = {},
+): Promise<Result<operations["getSetup"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/setup", query, secret: true, json: true });
+}
+
+/**
+ * What a touchscreen tells the server of its own setup.
+ *
+ * `PUT /api/devices/setup`, with the device's secret.
+ */
+export function reportSetup(
+  client: Client,
+  body: operations["reportSetup"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<operations["reportSetup"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "PUT", path: "/api/devices/setup", body, secret: true, json: true });
+}
+
+/**
  * What the owner's account has linked.
  *
  * `GET /api/devices/account`, with the device's secret.
