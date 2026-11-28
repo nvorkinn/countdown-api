@@ -288,6 +288,9 @@
         "size": "large",
         "align": "center"
       },
+      "holidays": {
+        "days_ahead": 4
+      },
       "parcels": {
         "enabled": false,
         "days_ahead": null,
