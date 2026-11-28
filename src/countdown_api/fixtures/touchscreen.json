@@ -88,6 +88,10 @@
           "name": "Reading lamp"
         }
       ]
+    },
+    "podcasts": {
+      "enabled": true,
+      "pinned": ["abels_taarn"]
     }
   },
   "save": {
@@ -161,6 +165,10 @@
           "name": "Reading lamp"
         }
       ]
+    },
+    "podcasts": {
+      "enabled": true,
+      "pinned": ["abels_taarn"]
     }
   },
   "spotify_token": {
@@ -174,6 +182,9 @@
       "linked": false
     },
     "spotify": {
+      "linked": true
+    },
+    "nrk": {
       "linked": true
     }
   },
@@ -343,6 +354,10 @@
             "name": "Reading lamp"
           }
         ]
+      },
+      "podcasts": {
+        "enabled": true,
+        "pinned": ["abels_taarn"]
       }
     }
   }

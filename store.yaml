@@ -38,6 +38,7 @@ sources:
     The notice board's household address, for a Norwegian board with one set (NoticeBoardAddress), as
     "<street>|<house_number>|<postcode>|<city>" ("Thorvald Meyers gate|10|0555|Oslo"): what the bins provider asks
     Binable for its collection days. Never logged.
+  nrk: Touchscreen device ids with podcasts on (TouchscreenPodcasts) whose owner's account has NRK linked.
 
 # Every key and channel that crosses the boundary. Each becomes a builder (or, with no parameter, a constant) of the
 # same name in countdown_api.keys; a TTL becomes <NAME>_TTL_S or <NAME>_TTL_MS there. `redis` is the Redis type;
@@ -255,6 +256,24 @@ keys:
     description: >-
       Whether the device's Parcel API key works: `ok`, `invalid_key` (Parcel answered 401) or `rate_limited`. A missing
       key means the provider hasn't tried it yet.
+  podcasts:
+    pattern: "v1:podcasts:{device_id}"
+    params:
+      device_id: the device's id (DeviceId).
+    redis: string
+    value: StoredPodcasts
+    encoding: json
+    ttl_s: 21600
+    ttl: >-
+      six hours, renewed on every poll that gets an answer, so a short NRK outage still leaves the last list to show;
+      `fetched_at` says how old it is.
+    written_by: the broker's NRK provider
+    read_by: the broker's `getPodcasts` and getFeed's `podcasts` event
+    examples: [podcasts.json]
+    description: >-
+      The shows a touchscreen's Podcasts tab lists: its owner's NRK favourites, then the device's pinned shows that
+      aren't among them, each with its newest episodes and the owner's NRK listening progress on each. A missing key
+      means no answer yet, or the key lapsed: the tab lists nothing.
   pace:
     pattern: "v1:pace:{source}:{item_id}"
     params:
@@ -762,7 +781,7 @@ paths:
         description: >-
           The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and
           `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics),
-          for `holidays` TouchscreenHolidays, and for `lights` TouchscreenLights.
+          for `holidays` TouchscreenHolidays, for `lights` TouchscreenLights, and for `podcasts` TouchscreenPodcasts.
         content:
           application/json:
             schema:
@@ -781,6 +800,7 @@ paths:
               - $ref: '#/$defs/TouchscreenLyrics'
               - $ref: '#/$defs/TouchscreenHolidays'
               - $ref: '#/$defs/TouchscreenLights'
+              - $ref: '#/$defs/TouchscreenPodcasts'
               - enum: [12h, 24h]
                 type: string
               - enum: [en, nb]
@@ -1532,11 +1552,12 @@ paths:
   /api/devices/feed:
     get:
       operationId: getFeed
-      summary: The device's weather, arrivals and notices, live.
+      summary: The device's weather, arrivals, notices and podcasts, live.
       description: >-
-        A server-sent event stream (text/event-stream) of what getWeather, getArrivals and getNotices answer, so a
-        touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`)
-        whose data is that route's answer as JSON (DeviceFeedEvent), all three as the stream opens and then each
+        A server-sent event stream (text/event-stream) of what getWeather, getArrivals, getNotices and getPodcasts
+        answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`,
+        `arrivals`, `notices`, `podcasts`) whose data is that route's answer as JSON (DeviceFeedEvent), all four as the
+        stream opens and then each
         again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes
         quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes
         down, and the device opens it again (its `retry` field says after how long). It takes the device's secret
@@ -1557,6 +1578,113 @@ paths:
           description: The device isn't paired yet, so it has no config to read.
         '503':
           description: The store couldn't be reached; try again shortly.
+  /api/devices/podcasts:
+    get:
+      operationId: getPodcasts
+      summary: The device's podcasts.
+      description: >-
+        The shows the device's Podcasts tab lists, as the store has them (StoredPodcasts, read from
+        v1:podcasts:<device id>): no shows and a null `fetched_at` while there's no answer yet, or while podcasts are
+        off or NRK isn't linked. getFeed sends the same as its `podcasts` event.
+      security:
+      - deviceSecret: []
+      responses:
+        '200':
+          description: The device's podcasts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/StoredPodcasts'
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, so it has no config to read.
+        '503':
+          description: The store couldn't be reached; try again shortly.
+      x-examples: [podcasts.json]
+  /api/devices/podcasts/{podcast_id}/episodes/{episode_id}:
+    get:
+      operationId: getPodcastPlayback
+      summary: What to play for one episode, and where the owner left it.
+      description: >-
+        Asks NRK for the episode's audio and for the owner's listening progress on it, so the device starts where the
+        owner left off on radio.nrk.no or in the NRK app, and how often NRK wants the position reported
+        (putPodcastProgress). Read from NRK as it's asked, not from the store. NRK's tokens stay on the server.
+      security:
+      - deviceSecret: []
+      parameters:
+      - name: podcast_id
+        in: path
+        required: true
+        description: The show's NRK id (PodcastShow's id), dagsnytt_atten, say.
+        schema:
+          $ref: '#/$defs/NrkPodcastId'
+      - name: episode_id
+        in: path
+        required: true
+        description: The episode's NRK id (PodcastEpisode's id).
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,80}$
+      responses:
+        '200':
+          description: The episode's audio and progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/$defs/PodcastPlayback'
+        '401':
+          description: A missing or unknown secret.
+        '404':
+          description: NRK has no such episode, or it can't be played.
+        '409':
+          description: The device isn't paired yet, or its owner's account hasn't NRK linked.
+        '502':
+          description: NRK couldn't be reached or refused; try again shortly.
+      x-examples: [podcasts.json]
+  /api/devices/podcasts/{podcast_id}/episodes/{episode_id}/progress:
+    put:
+      operationId: putPodcastProgress
+      summary: Save where the owner is in an episode, to NRK.
+      description: >-
+        Passes the position on to the owner's NRK account, as radio.nrk.no does while it plays, so the NRK app and
+        radio.nrk.no carry on from it. The device sends it first `report.first_after_s` after playback starts, then
+        every `report.every_s` while it plays, and on pause and at the end (getPodcastPlayback's PodcastPlayback).
+        NRK marks the episode finished itself, near its end.
+      security:
+      - deviceSecret: []
+      parameters:
+      - name: podcast_id
+        in: path
+        required: true
+        description: The show's NRK id (PodcastShow's id), dagsnytt_atten, say.
+        schema:
+          $ref: '#/$defs/NrkPodcastId'
+      - name: episode_id
+        in: path
+        required: true
+        description: The episode's NRK id (PodcastEpisode's id).
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,80}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/$defs/PodcastProgressReport'
+      responses:
+        '204':
+          description: NRK has the position.
+        '400':
+          description: A body that isn't a PodcastProgressReport.
+        '401':
+          description: A missing or unknown secret.
+        '409':
+          description: The device isn't paired yet, or its owner's account hasn't NRK linked.
+        '502':
+          description: NRK couldn't be reached or refused; try again shortly.
+      x-examples: [podcasts.json]
   # No secret: a screen loads it as a plain image (an <img> or a CSS background), which can't send one. Its address is
   # the picture's own SHA-256, so it says nothing about the device or its place.
   /api/backgrounds/{digest}:
@@ -1814,6 +1942,22 @@ paths:
         to paste it into, and nothing else of their account. A device whose owner's account has no key
         (getAccount's parcel.linked) sends a phone here, as a code to scan; the key is saved to the account, for
         every device they own, and never reaches a device. The page's own form posts are the page's.
+      responses:
+        '200':
+          description: The page.
+          content:
+            text/html:
+              schema:
+                type: string
+  /account/nrk:
+    get:
+      operationId: connectNrkPage
+      summary: The page where the signed-in person links their NRK account.
+      description: >-
+        On the settings site, behind the login: the person's NRK email and password, which the server signs in to NRK
+        with once and then forgets, keeping only NRK's session, which it renews. NRK has no sign-in for other apps, so
+        this is the same sign-in radio.nrk.no does. The session is the account's, for every device the owner has, and
+        never reaches a device. The page's own form posts are the page's.
       responses:
         '200':
           description: The page.
@@ -2143,12 +2287,13 @@ $defs:
     - lyrics
     - holidays
     - lights
+    - podcasts
     type: string
     description: >-
       A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the
       server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a
       touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`,
-      `display`, `lyrics`, `holidays` and `lights`.
+      `display`, `lyrics`, `holidays`, `lights` and `podcasts`.
   SearchResult:
     description: >-
       One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over
@@ -2745,8 +2890,8 @@ $defs:
       A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own
       settings, as its owner does on the settings site. It is paired by token, so it has no pairing code; it keeps its
       own time, so it has no time zone or interval; and it plays music itself, so it has no music or other
-      integrations' sections but parcels, whose notices join its notice board, and lights, the Home Assistant lights
-      it may control. Its Wi-Fi stays on the device, never here.
+      integrations' sections but parcels, whose notices join its notice board, lights, the Home Assistant lights
+      it may control, and podcasts, its NRK Podcasts tab. Its Wi-Fi stays on the device, never here.
     allOf:
     - $ref: '#/$defs/ConfigBase'
     type: object
@@ -2796,6 +2941,16 @@ $defs:
           Which Home Assistant lights the touchscreen may control. The server always sends it; null or left out is
           no light controls, so a config from before it was added reads the same, and a whole save (putConfig) that
           leaves it out keeps it as it is.
+      podcasts:
+        anyOf:
+        - $ref: '#/$defs/TouchscreenPodcasts'
+        - type: 'null'
+        default: null
+        description: >-
+          Its Podcasts tab: whether it shows, and the shows pinned to it besides the owner's NRK favourites. The server
+          always sends it; null or left out is on with nothing pinned, so a config from before it was added reads the
+          same, and a whole save (putConfig) that leaves it out keeps it as it is. The tab shows only while it's on
+          and the owner's account has NRK linked (getAccount's nrk.linked).
     required:
     - type
     - style
@@ -2970,6 +3125,27 @@ $defs:
         description: The name to show instead of Home Assistant's own; left out is Home Assistant's.
     required:
     - entity_id
+  TouchscreenPodcasts:
+    description: >-
+      A touchscreen's Podcasts tab, as its owner set it: whether it shows, and which NRK shows are pinned to it. The
+      tab lists the owner's NRK favourites first, then the pinned shows that aren't among them.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        default: true
+        description: Whether the tab shows. Left out is on.
+      pinned:
+        type: array
+        maxItems: 20
+        uniqueItems: true
+        items:
+          $ref: '#/$defs/NrkPodcastId'
+        description: The shows pinned to this touchscreen, by NRK id, in the owner's order; left out is none.
+  NrkPodcastId:
+    description: A show's id at NRK, as in its radio.nrk.no address (radio.nrk.no/podkast/dagsnytt_atten).
+    type: string
+    pattern: ^[a-z0-9_-]{1,80}$
   Arrivals:
     description: The arrivals panel (bus, train and tram stops).
     type: object
@@ -3293,9 +3469,15 @@ $defs:
         $ref: '#/$defs/AccountLink'
         description: >-
           Spotify: linked while the account has signed in to Spotify on the Account page.
+      nrk:
+        $ref: '#/$defs/AccountLink'
+        description: >-
+          NRK: linked while the server holds a working NRK session for the account, made on the Account page
+          (connectNrkPage). One NRK refused to renew is unlinked, until the owner signs in again.
     required:
     - parcel
     - spotify
+    - nrk
   AccountLink:
     description: One of an account's services (DeviceAccount), by whether it's linked; never its login or key.
     type: object
@@ -3305,6 +3487,156 @@ $defs:
         description: Whether the account has the login or key the service needs.
     required:
     - linked
+  StoredPodcasts:
+    description: >-
+      The value of v1:podcasts:<device id>, and what getPodcasts and getFeed's `podcasts` event answer: the shows the
+      device's Podcasts tab lists, in order, each with its newest episodes.
+    type: object
+    properties:
+      fetched_at:
+        anyOf:
+        - type: string
+          format: date-time
+        - type: 'null'
+        description: When the NRK provider read it; null when there's nothing stored.
+      shows:
+        type: array
+        items:
+          $ref: '#/$defs/PodcastShow'
+        description: The owner's NRK favourites in NRK's order, then the device's other pinned shows.
+    required:
+    - fetched_at
+    - shows
+  PodcastShow:
+    description: One NRK podcast in a device's list (StoredPodcasts).
+    type: object
+    properties:
+      id:
+        $ref: '#/$defs/NrkPodcastId'
+      title:
+        type: string
+      image_url:
+        anyOf:
+        - type: string
+          format: uri
+        - type: 'null'
+        description: NRK's square picture of the show, about 600 pixels wide; null when it has none.
+      pinned:
+        type: boolean
+        description: Whether it's listed because it's pinned to the device rather than one of the owner's favourites.
+      episodes:
+        type: array
+        maxItems: 20
+        items:
+          $ref: '#/$defs/PodcastEpisode'
+        description: Its newest episodes, newest first.
+    required:
+    - id
+    - title
+    - image_url
+    - pinned
+    - episodes
+  PodcastEpisode:
+    description: One episode of a show (PodcastShow), with the owner's NRK progress on it.
+    type: object
+    properties:
+      id:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{1,80}$
+        description: Its NRK id (l_41ce8c56-...), what getPodcastPlayback takes.
+      title:
+        type: string
+      published_at:
+        type: string
+        format: date-time
+      duration_s:
+        type: integer
+        minimum: 0
+      image_url:
+        anyOf:
+        - type: string
+          format: uri
+        - type: 'null'
+        description: NRK's picture of the episode, when it has its own; null is the show's.
+      progress:
+        anyOf:
+        - $ref: '#/$defs/PodcastProgress'
+        - type: 'null'
+        description: Where the owner is in it, as NRK had it when the provider read it; null is not started.
+    required:
+    - id
+    - title
+    - published_at
+    - duration_s
+    - image_url
+    - progress
+  PodcastProgress:
+    description: The owner's NRK listening progress on an episode.
+    type: object
+    properties:
+      position_s:
+        type: integer
+        minimum: 0
+        description: Where they stopped, in whole seconds from the start; 0 when finished.
+      finished:
+        type: boolean
+        description: Whether NRK counts it as listened to.
+    required:
+    - position_s
+    - finished
+  PodcastPlayback:
+    description: >-
+      What getPodcastPlayback answers: the episode's audio, the owner's progress on it, and how often NRK wants the
+      position reported while it plays (putPodcastProgress).
+    type: object
+    properties:
+      url:
+        type: string
+        format: uri
+        description: The audio, for the device to play itself; NRK's own address, which needs no login.
+      format:
+        enum: [mp3, hls]
+        type: string
+        description: An MP3 file (what NRK's podcasts mostly are) or an HLS playlist.
+      duration_s:
+        type: integer
+        minimum: 0
+      progress:
+        anyOf:
+        - $ref: '#/$defs/PodcastProgress'
+        - type: 'null'
+        description: Where the owner is in it now, as NRK has it; null is not started.
+      report:
+        type: object
+        description: NRK's own cadence for reporting the position (radio.nrk.no's reportInterval).
+        properties:
+          first_after_s:
+            type: integer
+            minimum: 0
+            description: How long after playback starts the first report goes (NRK's notBefore).
+          every_s:
+            type: integer
+            minimum: 1
+            description: How often the next ones go while it plays (NRK's interval).
+        required:
+        - first_after_s
+        - every_s
+    required:
+    - url
+    - format
+    - duration_s
+    - progress
+    - report
+  PodcastProgressReport:
+    description: What putPodcastProgress takes, the position the device has reached in an episode.
+    type: object
+    properties:
+      position_s:
+        type: integer
+        minimum: 0
+        description: Whole seconds from the start.
+    required:
+    - position_s
   StopDepartures:
     description: >-
       The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the providers'
@@ -3964,7 +4296,8 @@ $defs:
   DeviceFeedEvent:
     description: >-
       One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or
-      `notices` with a DeviceNotices, each what that route would answer at the time. On the wire it is the event's
+      `notices` with a DeviceNotices, or `podcasts` with a StoredPodcasts (getPodcasts'), each what that route would
+      answer at the time. On the wire it is the event's
       `event:` line and its data as one `data:` line of JSON.
     oneOf:
     - type: object
@@ -3987,6 +4320,13 @@ $defs:
           const: notices
         data:
           $ref: '#/$defs/DeviceNotices'
+      required: [event, data]
+    - type: object
+      properties:
+        event:
+          const: podcasts
+        data:
+          $ref: '#/$defs/StoredPodcasts'
       required: [event, data]
   DeviceWeather:
     description: >-

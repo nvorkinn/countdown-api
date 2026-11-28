@@ -258,11 +258,12 @@ ConfigSection = Literal[
     "lyrics",
     "holidays",
     "lights",
+    "podcasts",
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
 type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`,
-`parcels`, `style`, `display`, `lyrics`, `holidays` and `lights`.
+`parcels`, `style`, `display`, `lyrics`, `holidays`, `lights` and `podcasts`.
 """
 
 
@@ -336,6 +337,9 @@ class DeviceAccount(BaseModel):
         description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
     )
     spotify: AccountLink = Field(
+        description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
+    )
+    nrk: AccountLink = Field(
         description="One of an account's services (DeviceAccount), by whether it's linked; never its login or key.",
     )
 
@@ -882,10 +886,87 @@ class DeviceFeedEventValueOption3(BaseModel):
     )
 
 
-DeviceFeedEvent = DeviceFeedEventValueOption1 | DeviceFeedEventValueOption2 | DeviceFeedEventValueOption3
+NrkPodcastId = Annotated[str, Field(pattern="^[a-z0-9_-]{1,80}$")]
+"""A show's id at NRK, as in its radio.nrk.no address (radio.nrk.no/podkast/dagsnytt_atten)."""
+
+
+class PodcastProgress(BaseModel):
+    """The owner's NRK listening progress on an episode."""
+
+    position_s: Annotated[int, Field(ge=0)] = Field(
+        description="Where they stopped, in whole seconds from the start; 0 when finished.",
+    )
+    finished: bool = Field(description="Whether NRK counts it as listened to.")
+
+
+class PodcastEpisode(BaseModel):
+    """One episode of a show (PodcastShow), with the owner's NRK progress on it."""
+
+    id: Annotated[str, Field(pattern="^[A-Za-z0-9_-]{1,80}$")] = Field(
+        description="Its NRK id (l_41ce8c56-...), what getPodcastPlayback takes.",
+    )
+    title: str
+    published_at: datetime
+    duration_s: Annotated[int, Field(ge=0)]
+    image_url: str | None = Field(description="NRK's picture of the episode, when it has its own; null is the show's.")
+    progress: PodcastProgress | None = Field(
+        description="Where the owner is in it, as NRK had it when the provider read it; null is not started.",
+    )
+
+
+class PodcastShow(BaseModel):
+    """One NRK podcast in a device's list (StoredPodcasts)."""
+
+    id: NrkPodcastId = Field(
+        description="A show's id at NRK, as in its radio.nrk.no address (radio.nrk.no/podkast/dagsnytt_atten).",
+    )
+    title: str
+    image_url: str | None = Field(
+        description="NRK's square picture of the show, about 600 pixels wide; null when it has none.",
+    )
+    pinned: bool = Field(
+        description="Whether it's listed because it's pinned to the device rather than one of the owner's favourites.",
+    )
+    episodes: Annotated[list[PodcastEpisode], Field(max_length=20)] = Field(
+        description="Its newest episodes, newest first.",
+    )
+
+
+class StoredPodcasts(BaseModel):
+    """The ``StoredPodcasts`` object.
+
+    The value of v1:podcasts:<device id>, and what getPodcasts and getFeed's `podcasts` event answer:
+    the shows the device's Podcasts tab lists, in order, each with its newest episodes.
+    """
+
+    fetched_at: datetime | None = Field(description="When the NRK provider read it; null when there's nothing stored.")
+    shows: list[PodcastShow] = Field(
+        description="The owner's NRK favourites in NRK's order, then the device's other pinned shows.",
+    )
+
+
+class DeviceFeedEventValueOption4(BaseModel):
+    """The ``DeviceFeedEventValueOption4`` object."""
+
+    event: Literal["podcasts"]
+    data: StoredPodcasts = Field(
+        description=(
+            "The value of v1:podcasts:<device id>, and what getPodcasts and getFeed's `podcasts` event answer: the "
+            "shows the device's Podcasts tab lists, in order, each with its newest episodes."
+        ),
+    )
+
+
+DeviceFeedEvent = (
+    DeviceFeedEventValueOption1
+    | DeviceFeedEventValueOption2
+    | DeviceFeedEventValueOption3
+    | DeviceFeedEventValueOption4
+)
 """One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a
-DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On
-the wire it is the event's `event:` line and its data as one `data:` line of JSON.
+DeviceArrivals or `notices` with a DeviceNotices, or `podcasts` with a StoredPodcasts
+(getPodcasts'), each what that route would answer at the time. On the wire it is the event's
+`event:` line and its data as one `data:` line of JSON.
 """
 
 
@@ -1270,6 +1351,43 @@ class PlaceSearchResult(SearchResult):
     country_code: str = Field(description="Its country (ISO 3166-1 alpha-2); empty when Open-Meteo gives none.")
     latitude: float
     longitude: float
+
+
+class PodcastPlaybackReport(BaseModel):
+    """NRK's own cadence for reporting the position (radio.nrk.no's reportInterval)."""
+
+    first_after_s: Annotated[int, Field(ge=0)] = Field(
+        description="How long after playback starts the first report goes (NRK's notBefore).",
+    )
+    every_s: Annotated[int, Field(ge=1)] = Field(
+        description="How often the next ones go while it plays (NRK's interval).",
+    )
+
+
+class PodcastPlayback(BaseModel):
+    """The ``PodcastPlayback`` object.
+
+    What getPodcastPlayback answers: the episode's audio, the owner's progress on it, and how often NRK
+    wants the position reported while it plays (putPodcastProgress).
+    """
+
+    url: str = Field(description="The audio, for the device to play itself; NRK's own address, which needs no login.")
+    format: Literal["mp3", "hls"] = Field(
+        description="An MP3 file (what NRK's podcasts mostly are) or an HLS playlist.",
+    )
+    duration_s: Annotated[int, Field(ge=0)]
+    progress: PodcastProgress | None = Field(
+        description="Where the owner is in it now, as NRK has it; null is not started.",
+    )
+    report: PodcastPlaybackReport = Field(
+        description="NRK's own cadence for reporting the position (radio.nrk.no's reportInterval).",
+    )
+
+
+class PodcastProgressReport(BaseModel):
+    """What putPodcastProgress takes, the position the device has reached in an episode."""
+
+    position_s: Annotated[int, Field(ge=0)] = Field(description="Whole seconds from the start.")
 
 
 class Postcode(BaseModel):
@@ -1757,6 +1875,20 @@ class TouchscreenLyrics(BaseModel):
     align: Literal["left", "center", "right"] = Field(description="Which side the lines line up on.")
 
 
+class TouchscreenPodcasts(BaseModel):
+    """The ``TouchscreenPodcasts`` object.
+
+    A touchscreen's Podcasts tab, as its owner set it: whether it shows, and which NRK shows are pinned
+    to it. The tab lists the owner's NRK favourites first, then the pinned shows that aren't among them.
+    """
+
+    enabled: bool = Field(default=True, description="Whether the tab shows. Left out is on.")
+    pinned: Annotated[list[NrkPodcastId], Field(max_length=20)] | None = Field(
+        default=None,
+        description="The shows pinned to this touchscreen, by NRK id, in the owner's order; left out is none.",
+    )
+
+
 class TouchscreenStyle(BaseModel):
     """How a touchscreen looks."""
 
@@ -1789,8 +1921,8 @@ class TouchscreenConfig(ConfigBase):
     It draws itself from it, and saves it from its own settings, as its owner does on the settings site.
     It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or
     interval; and it plays music itself, so it has no music or other integrations' sections but parcels,
-    whose notices join its notice board, and lights, the Home Assistant lights it may control. Its Wi-Fi
-    stays on the device, never here.
+    whose notices join its notice board, lights, the Home Assistant lights it may control, and podcasts,
+    its NRK Podcasts tab. Its Wi-Fi stays on the device, never here.
     """
 
     type: Literal["touchscreen"]
@@ -1838,6 +1970,15 @@ class TouchscreenConfig(ConfigBase):
             "Which Home Assistant lights the touchscreen may control. The server always sends it; null or left out is "
             "no light controls, so a config from before it was added reads the same, and a whole save (putConfig) that"
             " leaves it out keeps it as it is."
+        ),
+    )
+    podcasts: TouchscreenPodcasts | None = Field(
+        default=None,
+        description=(
+            "Its Podcasts tab: whether it shows, and the shows pinned to it besides the owner's NRK favourites. The "
+            "server always sends it; null or left out is on with nothing pinned, so a config from before it was added "
+            "reads the same, and a whole save (putConfig) that leaves it out keeps it as it is. The tab shows only "
+            "while it's on and the owner's account has NRK linked (getAccount's nrk.linked)."
         ),
     )
 
