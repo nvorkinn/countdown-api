@@ -190,6 +190,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/postcodes/near": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The UK postcodes nearest a position, such as the one a phone finds for itself.
+     * @description The UK postcodes nearest a position (postcodes.io), nearest first, as locateDevice lists them for the position Google found: for a setup's location step on the owner's phone, which asks the phone where it is and sends that here, so nothing is asked of Google. The owner picks one or types their own (lookupPostcode). A POST, so the position is never part of an address. Nothing about the request or the answer is kept. For paired devices, and on the settings site (APP_HOST) with a person's login instead of a secret.
+     */
+    post: operations["nearPostcodes"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/stops/near": {
     parameters: {
       query?: never;
@@ -838,7 +858,14 @@ export interface components {
       /** @description The postcodes nearest the position, nearest first. */
       postcodes: components["schemas"]["NearbyPostcode"][];
     };
-    /** @description A UK postcode near the position locateDevice found, from postcodes.io's reverse geocoding. */
+    /** @description What nearPostcodes takes: a position, as a browser's Geolocation API gives one (its coords), and how sure it is of it. */
+    NearPostcodesRequest: {
+      latitude: number;
+      longitude: number;
+      /** @description The radius around the position the phone is likely in, in metres; the less sure, the wider the search, within the server's limits. Left out, the server searches its narrowest. */
+      accuracy?: number;
+    };
+    /** @description A UK postcode near a position (locateDevice's, or the one nearPostcodes was sent), from postcodes.io's reverse geocoding. */
     NearbyPostcode: {
       /** @description The postcode in its canonical form, in capitals with its space ("SE17 2PU"). */
       postcode: string;
@@ -1734,6 +1761,7 @@ export type NearbyStopResult = components["schemas"]["NearbyStopResult"];
 export type DeviceLocateRequest = components["schemas"]["DeviceLocateRequest"];
 export type WifiAccessPoint = components["schemas"]["WifiAccessPoint"];
 export type DeviceLocation = components["schemas"]["DeviceLocation"];
+export type NearPostcodesRequest = components["schemas"]["NearPostcodesRequest"];
 export type NearbyPostcode = components["schemas"]["NearbyPostcode"];
 export type DepartureStop = components["schemas"]["DepartureStop"];
 export type AppleMusic = components["schemas"]["AppleMusic"];
@@ -2434,6 +2462,66 @@ export interface operations {
         };
       };
       /** @description postcodes.io or Kartverket couldn't be asked, or failed. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  nearPostcodes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NearPostcodesRequest"];
+      };
+    };
+    responses: {
+      /** @description The postcodes nearest the position, nearest first, possibly none (outside the UK, say). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NearbyPostcode"][];
+        };
+      };
+      /** @description A body that isn't a NearPostcodesRequest. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description A missing or unknown secret, or, on the settings site, no login. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description postcodes.io couldn't be asked, or failed. */
       502: {
         headers: {
           [name: string]: unknown;

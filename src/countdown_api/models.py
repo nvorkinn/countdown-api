@@ -914,7 +914,8 @@ class DeviceLocateRequest(BaseModel):
 class NearbyPostcode(BaseModel):
     """The ``NearbyPostcode`` object.
 
-    A UK postcode near the position locateDevice found, from postcodes.io's reverse geocoding.
+    A UK postcode near a position (locateDevice's, or the one nearPostcodes was sent), from
+    postcodes.io's reverse geocoding.
     """
 
     postcode: Annotated[str, Field(min_length=1)] = Field(
@@ -1223,6 +1224,26 @@ class MusicTopRange(BaseModel):
 
 MusicTopLists = dict[str, MusicTopRange]
 """A service's top lists by Spotify's time range ("long_term", "short_term")."""
+
+
+class NearPostcodesRequest(BaseModel):
+    """The ``NearPostcodesRequest`` object.
+
+    What nearPostcodes takes: a position, as a browser's Geolocation API gives one (its coords), and how
+    sure it is of it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    latitude: Annotated[float, Field(ge=-90, le=90)]
+    longitude: Annotated[float, Field(ge=-180, le=180)]
+    accuracy: Annotated[float, Field(ge=0)] | None = Field(
+        default=None,
+        description=(
+            "The radius around the position the phone is likely in, in metres; the less sure, the wider the search, "
+            "within the server's limits. Left out, the server searches its narrowest."
+        ),
+    )
 
 
 class SearchResult(BaseModel):

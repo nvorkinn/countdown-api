@@ -293,6 +293,25 @@ def test_a_device_sends_its_access_points_as_google_takes_them() -> None:
         check_schema("DeviceLocateRequest", {"wifi_access_points": [point]})
 
 
+def test_a_phones_own_position_gets_the_same_postcodes_with_nothing_asked_of_google() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    request = check("NearPostcodesRequest", LOCATE["near_postcodes_request"])
+    located = check("DeviceLocation", LOCATE["locate"])
+    assert (request.latitude, request.longitude) == (located.latitude, located.longitude)
+    near = [check("NearbyPostcode", postcode) for postcode in LOCATE["near_postcodes"]]
+    assert near == located.postcodes
+    assert 0 < len(near) <= 10
+    # A position alone will do; one without both coordinates, or with anything else, won't.
+    check_schema("NearPostcodesRequest", {"latitude": 51.5, "longitude": -0.1})
+    for wrong in (
+        {"latitude": 51.5},
+        {"latitude": 91, "longitude": 0},
+        {"latitude": 51.5, "longitude": -0.1, "wifi": []},
+    ):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("NearPostcodesRequest", wrong)
+
+
 def test_a_typed_postcode_is_looked_up_in_its_canonical_form() -> None:
     postcode = check("Postcode", LOCATE["postcode"])
     typed = LOCATE["postcode_query"]

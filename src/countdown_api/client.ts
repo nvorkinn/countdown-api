@@ -217,6 +217,19 @@ export function lookupPostcode(
 }
 
 /**
+ * The UK postcodes nearest a position, such as the one a phone finds for itself.
+ *
+ * `POST /api/postcodes/near`, with the device's secret.
+ */
+export function nearPostcodes(
+  client: Client,
+  body: operations["nearPostcodes"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<operations["nearPostcodes"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "POST", path: "/api/postcodes/near", body, secret: true, json: true });
+}
+
+/**
  * The stations and stops nearest a position, to show departures from.
  *
  * `GET /api/stops/near`, with the device's secret.
