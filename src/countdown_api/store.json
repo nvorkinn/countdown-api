@@ -762,7 +762,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics).",
+          "description": "The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics), and for `holidays` TouchscreenHolidays.",
           "content": {
             "application/json": {
               "schema": {
@@ -802,6 +802,9 @@
                   },
                   {
                     "$ref": "#/$defs/TouchscreenLyrics"
+                  },
+                  {
+                    "$ref": "#/$defs/TouchscreenHolidays"
                   },
                   {
                     "enum": ["12h", "24h"],
@@ -2563,10 +2566,11 @@
         "parcels",
         "style",
         "display",
-        "lyrics"
+        "lyrics",
+        "holidays"
       ],
       "type": "string",
-      "description": "A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display` and `lyrics`."
+      "description": "A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display`, `lyrics` and `holidays`."
     },
     "SearchResult": {
       "description": "One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape).",
@@ -2973,7 +2977,7 @@
       "required": ["secret_hash", "width", "height", "brightness_control"]
     },
     "ConfigResponse": {
-      "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",
+      "description": "A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep, its lyrics and how soon it mentions a holiday; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save.",
       "oneOf": [
         {
           "$ref": "#/$defs/EpaperConfig"
@@ -3178,6 +3182,9 @@
         "lyrics": {
           "$ref": "#/$defs/TouchscreenLyrics"
         },
+        "holidays": {
+          "$ref": "#/$defs/TouchscreenHolidays"
+        },
         "parcels": {
           "anyOf": [
             {
@@ -3209,7 +3216,7 @@
         },
         "dynamic": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Whether the day skin's colours follow the album art while music plays, fading back to the colour once it has stopped for a while."
         }
       },
@@ -3276,6 +3283,18 @@
         }
       },
       "required": ["size", "align"]
+    },
+    "TouchscreenHolidays": {
+      "description": "When a touchscreen's notice board mentions the next bank or public holiday. A config without it (one saved before it existed) mentions it a week ahead.",
+      "type": "object",
+      "properties": {
+        "days_ahead": {
+          "enum": [2, 4, 7, 14],
+          "type": "integer",
+          "default": 7,
+          "description": "How many days before the holiday its notice shows."
+        }
+      }
     },
     "Arrivals": {
       "description": "The arrivals panel (bus, train and tram stops).",
