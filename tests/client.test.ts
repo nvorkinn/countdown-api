@@ -193,7 +193,11 @@ test("a touchscreen reports its side of its setup and asks which step it is at",
   assert.equal(reported.sent[0]?.headers.get("Authorization"), "Bearer s3cret-s3cret-s3cret");
   assert.deepEqual(reported.sent[0]?.body, { spotify: challenge });
 
-  const signIn = { id: "4b7d1e9a3c5f2a8d6e0b9c1f7a3d5e2b", redirect_uri: "https://app.example.com/cb", expires_in: 600 };
+  const signIn = {
+    id: "4b7d1e9a3c5f2a8d6e0b9c1f7a3d5e2b",
+    redirect_uri: "https://app.example.com/cb",
+    expires_in: 600,
+  };
   const asked = fakeServer(200, { step: "spotify", spotify_sign_in: signIn });
   assert.deepEqual((await getSetup(asked.client)).data?.spotify_sign_in, signIn);
   assert.equal(asked.sent[0]?.method, "GET");
