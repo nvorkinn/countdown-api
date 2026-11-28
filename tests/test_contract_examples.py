@@ -451,6 +451,7 @@ def test_a_config_takes_only_its_types_style() -> None:
         {**touchscreen, "language": "de"},
         {**touchscreen, "lyrics": {"size": "huge", "align": "left"}},
         {**touchscreen, "lyrics": {"size": "medium", "align": "justify"}},
+        {**touchscreen, "holidays": {"days_ahead": 31}},
         {**touchscreen, "style": {**touchscreen["style"], "skin": "dusk"}},
         {key: value for key, value in epaper.items() if key != "language"},
         {key: value for key, value in epaper.items() if key != "pairing_code"},
@@ -466,6 +467,17 @@ def test_a_touchscreen_config_from_before_lyrics_is_still_one() -> None:
     older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "lyrics"}
     check_schema("ConfigResponse", older)
     assert check("TouchscreenConfig", older).lyrics is None
+
+
+def test_a_touchscreen_config_from_before_holidays_mentions_them_a_week_ahead() -> None:
+    older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "holidays"}
+    check_schema("ConfigResponse", older)
+    assert check("TouchscreenConfig", older).holidays is None
+    assert check("TouchscreenHolidays", {}).days_ahead == 7
+
+
+def test_a_touchscreen_style_without_dynamic_has_it_on() -> None:
+    assert check("TouchscreenStyle", {"skin": "auto", "colour": "forest"}).dynamic is True
 
 
 def test_a_touchscreen_config_from_before_brightness_and_quiet_hours_is_at_full_brightness_with_none() -> None:
@@ -511,6 +523,7 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
         "style",
         "display",
         "lyrics",
+        "holidays",
         "parcels",
     }
     assert set(TOUCHSCREEN["config"]) == set(models.TouchscreenConfig.model_fields)

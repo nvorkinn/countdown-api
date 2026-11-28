@@ -761,7 +761,8 @@ paths:
         required: true
         description: >-
           The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and
-          `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics).
+          `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics),
+          and for `holidays` TouchscreenHolidays.
         content:
           application/json:
             schema:
@@ -778,6 +779,7 @@ paths:
               - $ref: '#/$defs/TouchscreenStyle'
               - $ref: '#/$defs/TouchscreenDisplay'
               - $ref: '#/$defs/TouchscreenLyrics'
+              - $ref: '#/$defs/TouchscreenHolidays'
               - enum: [12h, 24h]
                 type: string
               - enum: [en, nb]
@@ -2138,12 +2140,13 @@ $defs:
     - style
     - display
     - lyrics
+    - holidays
     type: string
     description: >-
       A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the
       server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a
       touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`,
-      `display` and `lyrics`.
+      `display`, `lyrics` and `holidays`.
   SearchResult:
     description: >-
       One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over
@@ -2552,7 +2555,8 @@ $defs:
       v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and
       what the device is, its size, and its clock format), then a section per panel, each its own schema, and
       `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself:
-      its language, the arrivals, the weather and the notice board, its look, its screen's sleep and its lyrics; an
+      its language, the arrivals, the weather and the notice board, its look, its screen's sleep, its lyrics and how soon it
+      mentions a holiday; an
       e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper
       screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and
       keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the
@@ -2770,6 +2774,8 @@ $defs:
         $ref: '#/$defs/TouchscreenDisplay'
       lyrics:
         $ref: '#/$defs/TouchscreenLyrics'
+      holidays:
+        $ref: '#/$defs/TouchscreenHolidays'
       parcels:
         anyOf:
         - $ref: '#/$defs/Parcels'
@@ -2813,7 +2819,7 @@ $defs:
           The colour, in both skins; violet's play button is a gradient. dynamic is the old dynamic: true, over forest.
       dynamic:
         type: boolean
-        default: false
+        default: true
         description: >-
           Whether the day skin's colours follow the album art while music plays, fading back to the colour once it has
           stopped for a while.
@@ -2900,6 +2906,21 @@ $defs:
     required:
     - size
     - align
+  TouchscreenHolidays:
+    description: >-
+      When a touchscreen's notice board mentions the next bank or public holiday. A config without it (one saved
+      before it existed) mentions it a week ahead.
+    type: object
+    properties:
+      days_ahead:
+        enum:
+        - 2
+        - 4
+        - 7
+        - 14
+        type: integer
+        default: 7
+        description: How many days before the holiday its notice shows.
   Arrivals:
     description: The arrivals panel (bus, train and tram stops).
     type: object
