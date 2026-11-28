@@ -149,12 +149,13 @@ body, so there is no model of an answer and no JSON library. Which routes get a 
   or what the device said at registration), then `clock_format`;
 - every type's sections: `arrivals`, `weather` and `notice_board`;
 - `style`, on every type, but its type's own schema: an e-paper screen's (`EpaperStyle`: orientation, drawing style,
-  weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin and colour);
+  weather design, layout) or a touchscreen's (`TouchscreenStyle`: skin, colour and Dynamic, on unless turned off);
 - `language` (en or nb), on every type; a touchscreen's config from before it has none, which reads as en;
 - an e-paper screen's own: its read-only `pairing_code` and frame `format`, its `interval` and `timezone`, and the
   sections `spotify`, `apple_music`, `glowmarkt`, `developer` and `parcels`;
 - a touchscreen's own: `display` (when its screen sleeps, how bright it is and its quiet hours), `lyrics` (the synced
-  lyrics' size and alignment; a config from before it has none, which a touchscreen shows as medium, on the left) and
+  lyrics' size and alignment; a config from before it has none, which a touchscreen shows as medium, on the left),
+  `holidays` (how many days ahead its notice board mentions the next holiday; none reads as a week) and
   `parcels` (whether its notice board has its owner's parcels). That is all of it: a touchscreen keeps its own time, plays music itself and has no other
   integrations. Every setting a device has lives here on the server, but for its Wi-Fi, which stays
   on the device.

@@ -256,11 +256,12 @@ ConfigSection = Literal[
     "style",
     "display",
     "lyrics",
+    "holidays",
 ]
 """A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-
 only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's
 type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`,
-`parcels`, `style`, `display` and `lyrics`.
+`parcels`, `style`, `display`, `lyrics` and `holidays`.
 """
 
 
@@ -1695,6 +1696,18 @@ class TouchscreenDisplay(BaseModel):
     )
 
 
+class TouchscreenHolidays(BaseModel):
+    """When a touchscreen's notice board mentions the next bank or public holiday.
+
+    A config without it (one saved before it existed) mentions it a week ahead.
+    """
+
+    days_ahead: Literal[2, 4, 7, 14] = Field(
+        default=7,
+        description="How many days before the holiday its notice shows.",
+    )
+
+
 class TouchscreenLyrics(BaseModel):
     """How a touchscreen shows a song's synced lyrics.
 
@@ -1728,7 +1741,7 @@ class TouchscreenStyle(BaseModel):
         )
     )
     dynamic: bool = Field(
-        default=False,
+        default=True,
         description=(
             "Whether the day skin's colours follow the album art while music plays, fading back to the colour once it "
             "has stopped for a while."
@@ -1767,6 +1780,13 @@ class TouchscreenConfig(ConfigBase):
         description=(
             "How a touchscreen shows a song's synced lyrics. A config without it (one saved before it existed) shows "
             "them at medium size, lined up on the left."
+        ),
+    )
+    holidays: TouchscreenHolidays | None = Field(
+        default=None,
+        description=(
+            "When a touchscreen's notice board mentions the next bank or public holiday. A config without it (one "
+            "saved before it existed) mentions it a week ahead."
         ),
     )
     parcels: Parcels | None = Field(
@@ -1812,9 +1832,9 @@ pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/c
 take. A few flat fields (who and what the device is, its size, and its clock format), then a section
 per panel, each its own schema, and `style`, which every type has but whose schema is the type's
 own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the
-notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its time
-zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig)
-or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the
-owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the
-device said at registration, and isn't changed by a save.
+notice board, its look, its screen's sleep, its lyrics and how soon it mentions a holiday; an
+e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which:
+an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of
+any kind: logins and keys are the owner's account's, held on the server. A read-only field
+(readOnly) is the server's, or what the device said at registration, and isn't changed by a save.
 """

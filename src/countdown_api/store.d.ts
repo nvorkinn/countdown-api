@@ -754,7 +754,7 @@ export interface components {
     /** @description A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and only then. getConfig answers it, and a save sends it back as If-Match. */
     ConfigVersion: string;
     /**
-     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display` and `lyrics`.
+     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display`, `lyrics` and `holidays`.
      * @enum {string}
      */
     ConfigSection:
@@ -770,7 +770,8 @@ export interface components {
       | "parcels"
       | "style"
       | "display"
-      | "lyrics";
+      | "lyrics"
+      | "holidays";
     /** @description One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape). */
     SearchResult: {
       /** @description The result's id at its source, as text. */
@@ -960,7 +961,7 @@ export interface components {
        */
       return_to?: string;
     };
-    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep and its lyrics; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
+    /** @description A device's config: the value of v1:config:<device id> (with no pairing code) and, with its pairing_code set, of v1:pairing:<device id>, and what GET and PUT /api/devices/config answer and take. A few flat fields (who and what the device is, its size, and its clock format), then a section per panel, each its own schema, and `style`, which every type has but whose schema is the type's own. A touchscreen's has only what it shows itself: its language, the arrivals, the weather and the notice board, its look, its screen's sleep, its lyrics and how soon it mentions a holiday; an e-paper screen's also has its time zone, pairing code and the rest of its panels. `type` says which: an e-paper screen's (EpaperConfig) or a touchscreen's (TouchscreenConfig). It never has a secret of any kind: logins and keys are the owner's account's, held on the server. A read-only field (readOnly) is the server's, or what the device said at registration, and isn't changed by a save. */
     ConfigResponse: components["schemas"]["EpaperConfig"] | components["schemas"]["TouchscreenConfig"];
     /** @description What every device's config has (ConfigResponse), whatever its type: who and what the device is, its size, its clock format, and the panels both types show (arrivals, weather and the notice board). */
     ConfigBase: {
@@ -1050,6 +1051,7 @@ export interface components {
       style: components["schemas"]["TouchscreenStyle"];
       display: components["schemas"]["TouchscreenDisplay"];
       lyrics?: components["schemas"]["TouchscreenLyrics"];
+      holidays?: components["schemas"]["TouchscreenHolidays"];
       /**
        * @description Whether its notice board has the owner's parcels (DeviceNotices.parcels). The server always sends it; null or left out is off, so a config from before it was added reads the same, and a whole save (putConfig) that leaves it out keeps it as it is.
        * @default null
@@ -1076,7 +1078,7 @@ export interface components {
       colour: "forest" | "navy" | "teal" | "plum" | "terracotta" | "pink" | "yellow" | "black" | "violet" | "dynamic";
       /**
        * @description Whether the day skin's colours follow the album art while music plays, fading back to the colour once it has stopped for a while.
-       * @default false
+       * @default true
        */
       dynamic: boolean;
     };
@@ -1115,6 +1117,15 @@ export interface components {
        * @enum {string}
        */
       align: "left" | "center" | "right";
+    };
+    /** @description When a touchscreen's notice board mentions the next bank or public holiday. A config without it (one saved before it existed) mentions it a week ahead. */
+    TouchscreenHolidays: {
+      /**
+       * @description How many days before the holiday its notice shows.
+       * @default 7
+       * @enum {integer}
+       */
+      days_ahead: 2 | 4 | 7 | 14;
     };
     /** @description The arrivals panel (bus, train and tram stops). */
     Arrivals: {
@@ -1740,6 +1751,7 @@ export type TouchscreenDisplay = components["schemas"]["TouchscreenDisplay"];
 export type TouchscreenQuietHours = components["schemas"]["TouchscreenQuietHours"];
 export type MinuteOfDay = components["schemas"]["MinuteOfDay"];
 export type TouchscreenLyrics = components["schemas"]["TouchscreenLyrics"];
+export type TouchscreenHolidays = components["schemas"]["TouchscreenHolidays"];
 export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
@@ -2032,7 +2044,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics). */
+    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics), and for `holidays` TouchscreenHolidays. */
     requestBody: {
       content: {
         "application/json":
@@ -2048,6 +2060,7 @@ export interface operations {
           | components["schemas"]["TouchscreenStyle"]
           | components["schemas"]["TouchscreenDisplay"]
           | components["schemas"]["TouchscreenLyrics"]
+          | components["schemas"]["TouchscreenHolidays"]
           | ("12h" | "24h")
           | ("en" | "nb");
       };
