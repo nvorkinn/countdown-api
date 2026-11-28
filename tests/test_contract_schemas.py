@@ -103,6 +103,8 @@ def test_the_routes_are_what_they_were() -> None:
         ("/api/devices/locate", "post"),
         ("/api/devices/notices", "get"),
         ("/api/devices/register", "post"),
+        ("/api/devices/setup", "get"),
+        ("/api/devices/setup", "put"),
         ("/api/devices/soloist/codes", "post"),
         ("/api/devices/soloist/key", "get"),
         ("/api/devices/soloist/keys", "get"),

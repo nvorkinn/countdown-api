@@ -1341,6 +1341,121 @@ secret can't.
 """
 
 
+class SpotifySignInRequest(BaseModel):
+    """The ``SpotifySignInRequest`` object.
+
+    What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing
+    of it is secret.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    client_id: Annotated[str, Field(pattern="^[0-9a-zA-Z]{1,64}$")] = Field(
+        description="The touchscreen's Spotify app's client id.",
+    )
+    code_challenge: Annotated[str, Field(pattern="^[A-Za-z0-9_-]{43,128}$")] = Field(
+        description="The SHA-256 challenge of the touchscreen's PKCE verifier (S256), base64url without padding.",
+    )
+    scope: Annotated[str, Field(max_length=1024, pattern="^[a-z-]+( [a-z-]+)*$")] = Field(
+        description="The scopes it asks for, space-separated.",
+    )
+
+
+class SetupReport(BaseModel):
+    """What a touchscreen reports of its own setup (reportSetup).
+
+    Every field is optional: one sent replaces what was reported before, and one left out stays as it
+    was.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    spotify: SpotifySignInRequest | None = Field(
+        default=None,
+        description=(
+            "What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing of "
+            "it is secret."
+        ),
+    )
+    soloist_device: Annotated[str, Field(min_length=1, max_length=64)] | None = Field(
+        default=None,
+        description="The name its Soloist goes by in Spotify.",
+    )
+    soloist_signed_in: bool | None = Field(
+        default=None,
+        description="Whether its Soloist has signed in to Spotify, which picking it in the Spotify app does.",
+    )
+    phone_paired: bool | None = Field(
+        default=None,
+        description="Whether its owner's phone is paired with it over Bluetooth.",
+    )
+    finished: bool | None = Field(
+        default=None,
+        description="Whether it has finished its setup; once true the step is `done` whatever else is reported.",
+    )
+
+
+SetupStep = Literal["account", "spotify", "soloist_key", "soloist_sign_in", "location", "presence", "done"]
+"""A step of a touchscreen's setup, in the order they come. `account`: its owner signs in on their
+phone and makes it theirs, from the code it shows. `spotify`: its first person signs in to Spotify
+on the phone. `soloist_key`: they paste their Soloist API key on the phone. `soloist_sign_in`: they
+pick the touchscreen in their Spotify app, which signs its Soloist in. `location`: the owner says on
+the phone where it is (its postcode, weather place and stops), or skips that. `presence`: the
+touchscreen pairs with the phone over Bluetooth. `done`: the touchscreen has finished.
+"""
+
+
+SpotifySignInId = Annotated[str, Field(pattern="^[0-9a-f]{32}$")]
+"""A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state."""
+
+
+class SpotifySignIn(BaseModel):
+    """A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan."""
+
+    id: SpotifySignInId = Field(
+        description="A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state.",
+    )
+    redirect_uri: str = Field(
+        description=(
+            "The redirect address the phone signs in with (spotifySignInCallbackPage, on the settings site), which the"
+            " touchscreen sends again when it exchanges the code."
+        ),
+    )
+    expires_in: Annotated[int, Field(ge=0)] = Field(description="Seconds until it lapses, counted from the answer.")
+
+
+class SetupStatus(BaseModel):
+    """The ``SetupStatus`` object.
+
+    Where a touchscreen's setup stands (getSetup, reportSetup): the step both it and its owner's phone
+    show.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    step: SetupStep = Field(
+        description=(
+            "A step of a touchscreen's setup, in the order they come. `account`: its owner signs in on their phone and"
+            " makes it theirs, from the code it shows. `spotify`: its first person signs in to Spotify on the phone. "
+            "`soloist_key`: they paste their Soloist API key on the phone. `soloist_sign_in`: they pick the "
+            "touchscreen in their Spotify app, which signs its Soloist in. `location`: the owner says on the phone "
+            "where it is (its postcode, weather place and stops), or skips that. `presence`: the touchscreen pairs "
+            "with the phone over Bluetooth. `done`: the touchscreen has finished."
+        ),
+    )
+    spotify_sign_in: SpotifySignIn | None = Field(
+        default=None,
+        description="A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan.",
+    )
+    soloist_device: Annotated[str, Field(min_length=1, max_length=64)] | None = Field(
+        default=None,
+        description=(
+            "The name the touchscreen's Soloist goes by in Spotify, as it reported it, for the phone to say which "
+            "device to pick."
+        ),
+    )
+
+
 class SoloistApiKey(BaseModel):
     """The ``SoloistApiKey`` object.
 
@@ -1428,45 +1543,6 @@ class SpotifyPlayback(BaseModel):
     is_playing: bool
     progress_ms: Annotated[int, Field(ge=0)]
     track_id: str | None = None
-
-
-SpotifySignInId = Annotated[str, Field(pattern="^[0-9a-f]{32}$")]
-"""A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state."""
-
-
-class SpotifySignIn(BaseModel):
-    """A touchscreen's Spotify sign-in (createSpotifySignIn), to show as a code to scan."""
-
-    id: SpotifySignInId = Field(
-        description="A Spotify sign-in's id, 32 hex digits, opened as a link and sent to Spotify as its state.",
-    )
-    redirect_uri: str = Field(
-        description=(
-            "The redirect address the phone signs in with (spotifySignInCallbackPage, on the settings site), which the"
-            " touchscreen sends again when it exchanges the code."
-        ),
-    )
-    expires_in: Annotated[int, Field(ge=0)] = Field(description="Seconds until it lapses, counted from the answer.")
-
-
-class SpotifySignInRequest(BaseModel):
-    """The ``SpotifySignInRequest`` object.
-
-    What createSpotifySignIn takes: what the phone asks Spotify for on the touchscreen's behalf. Nothing
-    of it is secret.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    client_id: Annotated[str, Field(pattern="^[0-9a-zA-Z]{1,64}$")] = Field(
-        description="The touchscreen's Spotify app's client id.",
-    )
-    code_challenge: Annotated[str, Field(pattern="^[A-Za-z0-9_-]{43,128}$")] = Field(
-        description="The SHA-256 challenge of the touchscreen's PKCE verifier (S256), base64url without padding.",
-    )
-    scope: Annotated[str, Field(max_length=1024, pattern="^[a-z-]+( [a-z-]+)*$")] = Field(
-        description="The scopes it asks for, space-separated.",
-    )
 
 
 class SpotifySignInResult(BaseModel):

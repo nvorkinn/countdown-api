@@ -363,6 +363,52 @@ def test_a_touchscreens_people_sign_in_to_spotify_on_their_phones() -> None:
     assert done.code == back["code"]
 
 
+def test_a_touchscreens_setup_is_one_step_that_it_and_the_phone_both_show() -> None:
+    # It reports as soon as it has registered: its first person's sign-in, as a challenge and never the verifier.
+    start = check("SetupReport", TOUCHSCREEN["setup_start"])
+    assert start.spotify == check("SpotifySignInRequest", TOUCHSCREEN["spotify_sign_in_request"])
+    assert "code_verifier" not in str(TOUCHSCREEN["setup_start"])
+    assert check("SetupStatus", TOUCHSCREEN["setup_account"]).step == "account"
+
+    # Once it has an owner, the server has made the sign-in for the phone, and tells the touchscreen which.
+    spotify = check("SetupStatus", TOUCHSCREEN["setup_spotify"])
+    assert spotify.step == "spotify"
+    assert spotify.spotify_sign_in == check("SpotifySignIn", TOUCHSCREEN["spotify_sign_in"])
+
+    # What only the touchscreen knows moves the step on: its Soloist signed in, then its phone paired and the end.
+    soloist = check("SetupReport", TOUCHSCREEN["setup_soloist_report"])
+    assert soloist.soloist_signed_in
+    location = check("SetupStatus", TOUCHSCREEN["setup_location"])
+    assert location.step == "location"
+    assert location.soloist_device == soloist.soloist_device
+    assert location.spotify_sign_in is None
+    finish = check("SetupReport", TOUCHSCREEN["setup_finish"])
+    assert finish.phone_paired
+    assert finish.finished
+    assert check("SetupStatus", TOUCHSCREEN["setup_done"]).step == "done"
+
+
+def test_a_setups_steps_come_in_their_order_and_a_report_may_say_nothing() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    assert contract()["$defs"]["SetupStep"]["enum"] == [
+        "account",
+        "spotify",
+        "soloist_key",
+        "soloist_sign_in",
+        "location",
+        "presence",
+        "done",
+    ]
+    # An empty report only says the touchscreen takes part.
+    check_schema("SetupReport", {})
+    for wrong in ({"step": "done"}, {"finished": "yes"}, {"soloist_device": ""}):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("SetupReport", wrong)
+    for wrong in ({}, {"step": "wifi"}, {"step": "done", "person": "wizzler"}):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("SetupStatus", wrong)
+
+
 def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothing_more() -> None:
     account = check("DeviceAccount", TOUCHSCREEN["account"])
     # The example's owner has pasted no Parcel key, so its parcels are off whatever its own switch says.
