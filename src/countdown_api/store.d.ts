@@ -462,11 +462,71 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The device's weather, arrivals and notices, live.
-     * @description A server-sent event stream (text/event-stream) of what getWeather, getArrivals and getNotices answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`) whose data is that route's answer as JSON (DeviceFeedEvent), all three as the stream opens and then each again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes down, and the device opens it again (its `retry` field says after how long). It takes the device's secret in the Authorization header like every route, so a device reads it with fetch rather than EventSource, which can't send one.
+     * The device's weather, arrivals, notices and podcasts, live.
+     * @description A server-sent event stream (text/event-stream) of what getWeather, getArrivals, getNotices and getPodcasts answer, so a touchscreen's panels update without polling: each as an event named for it (`weather`, `arrivals`, `notices`, `podcasts`) whose data is that route's answer as JSON (DeviceFeedEvent), all four as the stream opens and then each again whenever it changes. A comment line (`: ping`) every 15 s keeps it open through proxies; one that goes quiet for longer has dropped. The server ends the stream after about ten minutes, and when the store goes down, and the device opens it again (its `retry` field says after how long). It takes the device's secret in the Authorization header like every route, so a device reads it with fetch rather than EventSource, which can't send one.
      */
     get: operations["getFeed"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/podcasts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The device's podcasts.
+     * @description The shows the device's Podcasts tab lists, as the store has them (StoredPodcasts, read from v1:podcasts:<device id>): no shows and a null `fetched_at` while there's no answer yet, or while podcasts are off or NRK isn't linked. getFeed sends the same as its `podcasts` event.
+     */
+    get: operations["getPodcasts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/podcasts/{podcast_id}/episodes/{episode_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What to play for one episode, and where the owner left it.
+     * @description Asks NRK for the episode's audio and for the owner's listening progress on it, so the device starts where the owner left off on radio.nrk.no or in the NRK app, and how often NRK wants the position reported (putPodcastProgress). Read from NRK as it's asked, not from the store. NRK's tokens stay on the server.
+     */
+    get: operations["getPodcastPlayback"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/devices/podcasts/{podcast_id}/episodes/{episode_id}/progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Save where the owner is in an episode, to NRK.
+     * @description Passes the position on to the owner's NRK account, as radio.nrk.no does while it plays, so the NRK app and radio.nrk.no carry on from it. The device sends it first `report.first_after_s` after playback starts, then every `report.every_s` while it plays, and on pause and at the end (getPodcastPlayback's PodcastPlayback). NRK marks the episode finished itself, near its end.
+     */
+    put: operations["putPodcastProgress"];
     post?: never;
     delete?: never;
     options?: never;
@@ -618,6 +678,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/account/nrk": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The page where the signed-in person links their NRK account.
+     * @description On the settings site, behind the login: the person's NRK email and password, which the server signs in to NRK with once and then forgets, keeping only NRK's session, which it renews. NRK has no sign-in for other apps, so this is the same sign-in radio.nrk.no does. The session is the account's, for every device the owner has, and never reaches a device. The page's own form posts are the page's.
+     */
+    get: operations["connectNrkPage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -754,7 +834,7 @@ export interface components {
     /** @description A config's version, as an HTTP ETag (quoted): it changes whenever anything in the config does, and only then. getConfig answers it, and a save sends it back as If-Match. */
     ConfigVersion: string;
     /**
-     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display`, `lyrics`, `holidays` and `lights`.
+     * @description A part of a config that's saved on its own (putConfigSection): a top-level field that isn't read-only or the server's (`interval`, `timezone`), named as in ConfigResponse. Only those the device's type has: a touchscreen has `clock_format`, `language`, `arrivals`, `weather`, `notice_board`, `parcels`, `style`, `display`, `lyrics`, `holidays`, `lights` and `podcasts`.
      * @enum {string}
      */
     ConfigSection:
@@ -772,7 +852,8 @@ export interface components {
       | "display"
       | "lyrics"
       | "holidays"
-      | "lights";
+      | "lights"
+      | "podcasts";
     /** @description One result of a picker's search (searchStops, searchPlaces), the same in both: what to show (`name` over `subtitle`, indented under the result before it when `indent`) and what picking it saves (`value`, in the config's own shape). */
     SearchResult: {
       /** @description The result's id at its source, as text. */
@@ -1034,7 +1115,7 @@ export interface components {
       /** @description Which layout the screen is drawn in, or null for its size's default. Each size of screen has its own layouts, the first its default. A 1872x1404 screen hung portrait has classic (the weather on top, then the stops, Spotify and the notices), masthead (the clock and the weather in a black band across the top), column (the weather down a column beside the stops), lockscreen (a big clock over a card for each panel), timeline (each departure placed by its minute along a line down the middle), board (each route once, with its next three times) and pages (the stops and the rest of the panels on two pages that take turns); hung landscape, sidebar (the clock and the weather in a black sidebar), board (the stops side by side as big departure boards, the weather and the energy chart under them), column (the weather down a column, the stops beside it, then Spotify and the developer panel), focus (each stop's next departure huge, the clock, weather and the rest in a column beside them), newspaper (a front page, the stops, the weather and the notices in columns under a masthead) and pages (as portrait's, side by side in landscape); the 7.5" screens, classic. Hung portrait, both sizes also have the kerbside layouts, the weather in brief over one stop, both big, as track (each route with its departures along a line of the next half hour), ledger (each route once, with the times after the next under where it's going) and queue (every departure on a row of its own). A layout the screen's size doesn't have is drawn as its default. */
       layout: components["schemas"]["Layout"] | null;
     };
-    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections but parcels, whose notices join its notice board, and lights, the Home Assistant lights it may control. Its Wi-Fi stays on the device, never here. */
+    /** @description A touchscreen's config (ConfigResponse with type touchscreen). It draws itself from it, and saves it from its own settings, as its owner does on the settings site. It is paired by token, so it has no pairing code; it keeps its own time, so it has no time zone or interval; and it plays music itself, so it has no music or other integrations' sections but parcels, whose notices join its notice board, lights, the Home Assistant lights it may control, and podcasts, its NRK Podcasts tab. Its Wi-Fi stays on the device, never here. */
     TouchscreenConfig: {
       /** @constant */
       readonly type: "touchscreen";
@@ -1063,6 +1144,11 @@ export interface components {
        * @default null
        */
       lights: components["schemas"]["TouchscreenLights"] | null;
+      /**
+       * @description Its Podcasts tab: whether it shows, and the shows pinned to it besides the owner's NRK favourites. The server always sends it; null or left out is on with nothing pinned, so a config from before it was added reads the same, and a whole save (putConfig) that leaves it out keeps it as it is. The tab shows only while it's on and the owner's account has NRK linked (getAccount's nrk.linked).
+       * @default null
+       */
+      podcasts: components["schemas"]["TouchscreenPodcasts"] | null;
     } & (WithRequired<components["schemas"]["ConfigBase"], "type"> & {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -1150,6 +1236,21 @@ export interface components {
       /** @description The name to show instead of Home Assistant's own; left out is Home Assistant's. */
       name?: string;
     };
+    /** @description A touchscreen's Podcasts tab, as its owner set it: whether it shows, and which NRK shows are pinned to it. The tab lists the owner's NRK favourites first, then the pinned shows that aren't among them. */
+    TouchscreenPodcasts: {
+      /**
+       * @description Whether the tab shows. Left out is on.
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * @description The shows pinned to this touchscreen, by NRK id, in the owner's order; left out is none.
+       * @default []
+       */
+      pinned: components["schemas"]["NrkPodcastId"][];
+    };
+    /** @description A show's id at NRK, as in its radio.nrk.no address (radio.nrk.no/podkast/dagsnytt_atten). */
+    NrkPodcastId: string;
     /** @description The arrivals panel (bus, train and tram stops). */
     Arrivals: {
       /** @description Every stop whose departures the device shows, from any source, in the owner's order. */
@@ -1289,11 +1390,79 @@ export interface components {
       parcel: components["schemas"]["AccountLink"];
       /** @description Spotify: linked while the account has signed in to Spotify on the Account page. */
       spotify: components["schemas"]["AccountLink"];
+      /** @description NRK: linked while the server holds a working NRK session for the account, made on the Account page (connectNrkPage). One NRK refused to renew is unlinked, until the owner signs in again. */
+      nrk: components["schemas"]["AccountLink"];
     };
     /** @description One of an account's services (DeviceAccount), by whether it's linked; never its login or key. */
     AccountLink: {
       /** @description Whether the account has the login or key the service needs. */
       linked: boolean;
+    };
+    /** @description The value of v1:podcasts:<device id>, and what getPodcasts and getFeed's `podcasts` event answer: the shows the device's Podcasts tab lists, in order, each with its newest episodes. */
+    StoredPodcasts: {
+      /** @description When the NRK provider read it; null when there's nothing stored. */
+      fetched_at: string | null;
+      /** @description The owner's NRK favourites, in NRK's order, then the device's pinned shows that aren't among them. */
+      shows: components["schemas"]["PodcastShow"][];
+    };
+    /** @description One NRK podcast in a device's list (StoredPodcasts). */
+    PodcastShow: {
+      id: components["schemas"]["NrkPodcastId"];
+      title: string;
+      /** @description NRK's square picture of the show, about 600 pixels wide; null when it has none. */
+      image_url: string | null;
+      /** @description Whether it's listed because it's pinned to the device rather than one of the owner's favourites. */
+      pinned: boolean;
+      /** @description Its newest episodes, newest first. */
+      episodes: components["schemas"]["PodcastEpisode"][];
+    };
+    /** @description One episode of a show (PodcastShow), with the owner's NRK progress on it. */
+    PodcastEpisode: {
+      /** @description Its NRK id (l_41ce8c56-...), what getPodcastPlayback takes. */
+      id: string;
+      title: string;
+      /** Format: date-time */
+      published_at: string;
+      duration_s: number;
+      /** @description NRK's picture of the episode, when it has its own; null is the show's. */
+      image_url: string | null;
+      /** @description Where the owner is in it, as NRK had it when the provider read it; null is not started. */
+      progress: components["schemas"]["PodcastProgress"] | null;
+    };
+    /** @description The owner's NRK listening progress on an episode. */
+    PodcastProgress: {
+      /** @description Where they stopped, in whole seconds from the start; 0 when finished. */
+      position_s: number;
+      /** @description Whether NRK counts it as listened to. */
+      finished: boolean;
+    };
+    /** @description What getPodcastPlayback answers: the episode's audio, the owner's progress on it, and how often NRK wants the position reported while it plays (putPodcastProgress). */
+    PodcastPlayback: {
+      /**
+       * Format: uri
+       * @description The audio, for the device to play itself; NRK's own address, which needs no login.
+       */
+      url: string;
+      /**
+       * @description An MP3 file (what NRK's podcasts mostly are) or an HLS playlist.
+       * @enum {string}
+       */
+      format: "mp3" | "hls";
+      duration_s: number;
+      /** @description Where the owner is in it now, as NRK has it; null is not started. */
+      progress: components["schemas"]["PodcastProgress"] | null;
+      /** @description NRK's own cadence for reporting the position (radio.nrk.no's reportInterval). */
+      report: {
+        /** @description How long after playback starts the first report goes (NRK's notBefore). */
+        first_after_s: number;
+        /** @description How often the next ones go while it plays (NRK's interval). */
+        every_s: number;
+      };
+    };
+    /** @description What putPodcastProgress takes, the position the device has reached in an episode. */
+    PodcastProgressReport: {
+      /** @description Whole seconds from the start. */
+      position_s: number;
     };
     /** @description The value of v1:departures:<stop id>: a stop's next departures, whatever the country or mode, in the providers' own shape (TfL's and Entur's answers mapped to one). */
     StopDepartures: {
@@ -1618,7 +1787,7 @@ export interface components {
       /** @description current.json?lang=en, in English, for every other screen. */
       en: Record<string, never>;
     };
-    /** @description One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or `notices` with a DeviceNotices, each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON. */
+    /** @description One event of getFeed's stream, by its name: `weather` with a DeviceWeather, `arrivals` with a DeviceArrivals or `notices` with a DeviceNotices, or `podcasts` with a StoredPodcasts (getPodcasts'), each what that route would answer at the time. On the wire it is the event's `event:` line and its data as one `data:` line of JSON. */
     DeviceFeedEvent:
       | {
           /** @constant */
@@ -1634,6 +1803,11 @@ export interface components {
           /** @constant */
           event: "notices";
           data: components["schemas"]["DeviceNotices"];
+        }
+      | {
+          /** @constant */
+          event: "podcasts";
+          data: components["schemas"]["StoredPodcasts"];
         };
     /** @description A device's weather (getWeather): its config's place, and the place's stored forecast as v1:weather:<key> has it. */
     DeviceWeather: {
@@ -1777,6 +1951,8 @@ export type TouchscreenLyrics = components["schemas"]["TouchscreenLyrics"];
 export type TouchscreenHolidays = components["schemas"]["TouchscreenHolidays"];
 export type TouchscreenLights = components["schemas"]["TouchscreenLights"];
 export type TouchscreenLight = components["schemas"]["TouchscreenLight"];
+export type TouchscreenPodcasts = components["schemas"]["TouchscreenPodcasts"];
+export type NrkPodcastId = components["schemas"]["NrkPodcastId"];
 export type Arrivals = components["schemas"]["Arrivals"];
 export type Weather = components["schemas"]["Weather"];
 export type NoticeBoard = components["schemas"]["NoticeBoard"];
@@ -1798,6 +1974,12 @@ export type SetupStatus = components["schemas"]["SetupStatus"];
 export type SetupReport = components["schemas"]["SetupReport"];
 export type DeviceAccount = components["schemas"]["DeviceAccount"];
 export type AccountLink = components["schemas"]["AccountLink"];
+export type StoredPodcasts = components["schemas"]["StoredPodcasts"];
+export type PodcastShow = components["schemas"]["PodcastShow"];
+export type PodcastEpisode = components["schemas"]["PodcastEpisode"];
+export type PodcastProgress = components["schemas"]["PodcastProgress"];
+export type PodcastPlayback = components["schemas"]["PodcastPlayback"];
+export type PodcastProgressReport = components["schemas"]["PodcastProgressReport"];
 export type StopDepartures = components["schemas"]["StopDepartures"];
 export type Departure = components["schemas"]["Departure"];
 export type StoredForecast = components["schemas"]["StoredForecast"];
@@ -2069,7 +2251,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics), for `holidays` TouchscreenHolidays, and for `lights` TouchscreenLights. */
+    /** @description The section's new value, in its own schema: the field's in ConfigBase, or for `style`, `display` and `lyrics`, the device type's own (EpaperStyle or TouchscreenStyle, TouchscreenDisplay, TouchscreenLyrics), for `holidays` TouchscreenHolidays, for `lights` TouchscreenLights, and for `podcasts` TouchscreenPodcasts. */
     requestBody: {
       content: {
         "application/json":
@@ -2087,6 +2269,7 @@ export interface operations {
           | components["schemas"]["TouchscreenLyrics"]
           | components["schemas"]["TouchscreenHolidays"]
           | components["schemas"]["TouchscreenLights"]
+          | components["schemas"]["TouchscreenPodcasts"]
           | ("12h" | "24h")
           | ("en" | "nb");
       };
@@ -3086,6 +3269,155 @@ export interface operations {
       };
     };
   };
+  getPodcasts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The device's podcasts. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StoredPodcasts"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, so it has no config to read. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The store couldn't be reached; try again shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getPodcastPlayback: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The show's NRK id (PodcastShow's id), dagsnytt_atten, say. */
+        podcast_id: components["schemas"]["NrkPodcastId"];
+        /** @description The episode's NRK id (PodcastEpisode's id). */
+        episode_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The episode's audio and progress. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PodcastPlayback"];
+        };
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description NRK has no such episode, or it can't be played. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or its owner's account hasn't NRK linked. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description NRK couldn't be reached or refused; try again shortly. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  putPodcastProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The show's NRK id (PodcastShow's id), dagsnytt_atten, say. */
+        podcast_id: components["schemas"]["NrkPodcastId"];
+        /** @description The episode's NRK id (PodcastEpisode's id). */
+        episode_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PodcastProgressReport"];
+      };
+    };
+    responses: {
+      /** @description NRK has the position. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A body that isn't a PodcastProgressReport. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A missing or unknown secret. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The device isn't paired yet, or its owner's account hasn't NRK linked. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description NRK couldn't be reached or refused; try again shortly. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   getBackgroundImage: {
     parameters: {
       query?: never;
@@ -3343,6 +3675,26 @@ export interface operations {
     };
   };
   connectParcelPage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/html": string;
+        };
+      };
+    };
+  };
+  connectNrkPage: {
     parameters: {
       query?: never;
       header?: never;

@@ -27,6 +27,8 @@ SPOTIFY = "spotify"
 DEVELOPER = "developer"
 # parcel: Device ids with parcels switched on (an e-paper screen's or a touchscreen's), so a Parcel API key saved.
 PARCEL = "parcel"
+# nrk: Touchscreen device ids with podcasts on (TouchscreenPodcasts) whose owner's account has NRK linked.
+NRK = "nrk"
 # postcode: The notice board's place: every screen's postcode in the broker's canonical form ("SW1A 1AA", or "0150" for
 # a Norwegian one, which is four digits), for the providers of notices about a place (floods, weather warnings, roads).
 # Never logged.
@@ -39,7 +41,7 @@ BACKGROUND = "background"
 # "<street>|<house_number>|<postcode>|<city>" ("Thorvald Meyers gate|10|0555|Oslo"): what the bins provider asks Binable
 # for its collection days. Never logged.
 ADDRESS = "address"
-SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, POSTCODE, BACKGROUND, ADDRESS)
+SOURCES = (TFL, ENTUR, WEATHER, GLOW, SPOTIFY, DEVELOPER, PARCEL, NRK, POSTCODE, BACKGROUND, ADDRESS)
 
 
 def subscription(source: str) -> str:
@@ -338,6 +340,31 @@ PARCELS_STATUS_PREFIX = "v1:parcels-status:"
 
 # The TTL of `v1:parcels-status:{device_id}`, in seconds.
 PARCELS_STATUS_TTL_S = 86400
+
+
+def podcasts(device_id: str) -> str:
+    """Return the key `v1:podcasts:{device_id}`.
+
+    The shows a touchscreen's Podcasts tab lists: its owner's NRK favourites, then the device's pinned shows that aren't
+    among them, each with its newest episodes and the owner's NRK listening progress on each. A missing key means no
+    answer yet, or the key lapsed: the tab lists nothing.
+
+    A Redis string of models.StoredPodcasts (json), with a TTL of 21600 s: six hours, renewed on every poll that gets an
+    answer, so a short NRK outage still leaves the last list to show; `fetched_at` says how old it is.
+
+    Written by the broker's NRK provider. Read by the broker's `getPodcasts` and getFeed's `podcasts` event.
+
+    Example: countdown_api.fixtures, podcasts.json.
+    """
+    return f"v1:podcasts:{device_id}"
+
+
+# What every `v1:podcasts:{device_id}` key starts with, for SCAN and removeprefix().
+PODCASTS_PREFIX = "v1:podcasts:"
+
+
+# The TTL of `v1:podcasts:{device_id}`, in seconds.
+PODCASTS_TTL_S = 21600
 
 
 def pace(source: str, item_id: str) -> str:

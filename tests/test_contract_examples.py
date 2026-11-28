@@ -147,6 +147,48 @@ def test_parcels_are_the_owners_deliveries_and_a_link_status() -> None:
     check_schema("DeviceId", example["device_id"])
 
 
+def test_podcasts_are_the_owners_nrk_favourites_then_the_pinned_shows() -> None:
+    example = fixtures.load("podcasts.json")
+    assert example["key"] == keys.podcasts(example["device_id"])
+    assert example["ttl_s"] == keys.PODCASTS_TTL_S == 21_600
+    stored = check("StoredPodcasts", example["value"])
+    # Favourites first, then the pinned shows, each with its newest episode first.
+    pinned = [show.pinned for show in stored.shows]
+    assert pinned == sorted(pinned)
+    assert True in pinned and False in pinned
+    for show in stored.shows:
+        published = [episode.published_at for episode in show.episodes]
+        assert published == sorted(published, reverse=True)
+    # Not started, part listened to and finished, the three a tab tells apart.
+    progresses = [episode.progress for show in stored.shows for episode in show.episodes]
+    assert None in progresses
+    assert {(p.finished, p.position_s > 0) for p in progresses if p is not None} == {(False, True), (True, False)}
+    empty = check("StoredPodcasts", example["empty"])
+    assert (empty.fetched_at, empty.shows) == (None, [])
+    check_schema("DeviceId", example["device_id"])
+
+
+def test_an_episodes_playback_is_its_audio_its_progress_and_nrks_report_cadence() -> None:
+    example = fixtures.load("podcasts.json")
+    show = next(show for show in example["value"]["shows"] if show["id"] == example["podcast_id"])
+    episode = next(episode for episode in show["episodes"] if episode["id"] == example["episode_id"])
+    playback = check("PodcastPlayback", example["playback"])
+    assert playback.format == "mp3"
+    assert playback.duration_s == episode["duration_s"]
+    assert playback.progress.position_s == episode["progress"]["position_s"]
+    assert (playback.report.first_after_s, playback.report.every_s) == (5, 30)
+    report = check("PodcastProgressReport", example["progress_report"])
+    assert report.position_s > playback.progress.position_s
+    check_schema("NrkPodcastId", example["podcast_id"])
+    jsonschema = pytest.importorskip("jsonschema")
+    for bad in ({"position_s": -1}, {"position_s": 1.5}, {}):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("PodcastProgressReport", bad)
+    for bad in ("Dagsnytt_Atten", "dagsnytt atten", "", "a" * 81):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("NrkPodcastId", bad)
+
+
 def test_weather_keys_are_weather_keys() -> None:
     example = fixtures.load("weather_keys.json")
     for case in example["keys"]:
@@ -408,6 +450,7 @@ def test_a_device_is_told_which_services_its_owners_account_has_linked_and_nothi
     assert not account.parcel.linked
     assert not check("ConfigResponse", TOUCHSCREEN["config"]).parcels.enabled
     assert account.spotify.linked
+    assert account.nrk.linked
     # Only whether each is linked.
     assert all(set(link) == {"linked"} for link in TOUCHSCREEN["account"].values())
 
@@ -558,6 +601,7 @@ def test_a_touchscreens_config_has_only_what_it_shows_itself() -> None:
         "holidays",
         "parcels",
         "lights",
+        "podcasts",
     }
     assert set(TOUCHSCREEN["config"]) == set(models.TouchscreenConfig.model_fields)
     epaper_only = set(models.EpaperConfig.model_fields) - set(models.TouchscreenConfig.model_fields)
@@ -882,6 +926,20 @@ def test_get_notices_for_a_norwegian_postcode_has_mets_warnings_covering_its_pla
     member = f"{address['street']}|{address['house_number']}|{board['postcode']}|{address['city']}"
     stored_bins = {entry["key"]: entry["value"] for entry in fixtures.load("bins.json")["addresses"]}
     assert NORWAY["notices"]["bins"] == stored_bins[keys.bins(member)]
+
+
+def test_a_touchscreen_config_from_before_podcasts_has_the_tab_on_with_nothing_pinned() -> None:
+    older = {key: value for key, value in TOUCHSCREEN["config"].items() if key != "podcasts"}
+    check_schema("ConfigResponse", older)
+    assert check("TouchscreenConfig", older).podcasts is None
+    podcasts = check("TouchscreenPodcasts", {})
+    assert (podcasts.enabled, podcasts.pinned) == (True, [])
+    assert check("TouchscreenConfig", TOUCHSCREEN["config"]).podcasts.pinned == ["abels_taarn"]
+    assert "podcasts" in contract()["$defs"]["ConfigSection"]["enum"]
+    jsonschema = pytest.importorskip("jsonschema")
+    for pinned in (["abels_taarn", "abels_taarn"], ["Abels Taarn"], [f"show_{number}" for number in range(21)]):
+        with pytest.raises(jsonschema.ValidationError):
+            check_schema("TouchscreenPodcasts", {"pinned": pinned})
 
 
 def test_a_touchscreens_parcels_are_off_and_its_notices_have_none_when_left_out() -> None:

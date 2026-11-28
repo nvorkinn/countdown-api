@@ -426,12 +426,64 @@ export function getNotices(
 }
 
 /**
- * The device's weather, arrivals and notices, live.
+ * The device's weather, arrivals, notices and podcasts, live.
  *
  * The address of the event stream `GET /api/devices/feed`, to read with fetch and the device's secret (Authorization), which EventSource can't send.
  */
 export function getFeedUrl(baseUrl: string | URL): URL {
   return url(baseUrl, "/api/devices/feed", {});
+}
+
+/**
+ * The device's podcasts.
+ *
+ * `GET /api/devices/podcasts`, with the device's secret.
+ */
+export function getPodcasts(
+  client: Client,
+  options: RequestOptions = {},
+): Promise<Result<operations["getPodcasts"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, { ...options, method: "GET", path: "/api/devices/podcasts", secret: true, json: true });
+}
+
+/**
+ * What to play for one episode, and where the owner left it.
+ *
+ * `GET /api/devices/podcasts/{podcast_id}/episodes/{episode_id}`, with the device's secret.
+ */
+export function getPodcastPlayback(
+  client: Client,
+  path: operations["getPodcastPlayback"]["parameters"]["path"],
+  options: RequestOptions = {},
+): Promise<Result<operations["getPodcastPlayback"]["responses"][200]["content"]["application/json"]>> {
+  return request(client, {
+    ...options,
+    method: "GET",
+    path: `/api/devices/podcasts/${encodeURIComponent(path.podcast_id)}/episodes/${encodeURIComponent(path.episode_id)}`,
+    secret: true,
+    json: true,
+  });
+}
+
+/**
+ * Save where the owner is in an episode, to NRK.
+ *
+ * `PUT /api/devices/podcasts/{podcast_id}/episodes/{episode_id}/progress`, with the device's secret.
+ */
+export function putPodcastProgress(
+  client: Client,
+  path: operations["putPodcastProgress"]["parameters"]["path"],
+  body: operations["putPodcastProgress"]["requestBody"]["content"]["application/json"],
+  options: RequestOptions = {},
+): Promise<Result<undefined>> {
+  return request(client, {
+    ...options,
+    method: "PUT",
+    path: `/api/devices/podcasts/${encodeURIComponent(path.podcast_id)}/episodes/${encodeURIComponent(path.episode_id)}/progress`,
+    body,
+    secret: true,
+    json: false,
+  });
 }
 
 /**
@@ -514,4 +566,13 @@ export function spotifySignInCallbackPageUrl(
  */
 export function connectParcelPageUrl(baseUrl: string | URL): URL {
   return url(baseUrl, "/account/parcel", {});
+}
+
+/**
+ * The page where the signed-in person links their NRK account.
+ *
+ * The address of the page `GET /account/nrk`, to send a browser to.
+ */
+export function connectNrkPageUrl(baseUrl: string | URL): URL {
+  return url(baseUrl, "/account/nrk", {});
 }

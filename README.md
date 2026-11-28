@@ -30,6 +30,7 @@ device, and reading and saving a device's config. A device is an e-paper screen 
 | `v1:developer:<device id>` | string, JSON | `StoredDeveloper` | 900 s | the broker's developer provider | the developer panel |
 | `v1:parcels:<device id>` | string, JSON | `ParcelList` | 43,200 s | the parcel provider | the parcels panel and notices, the broker's `getNotices` |
 | `v1:parcels-status:<device id>` | string | `ParcelsLinkStatus` | 86,400 s | the parcel provider | the broker |
+| `v1:podcasts:<device id>` | string, JSON | `StoredPodcasts` | 21,600 s | the broker's NRK provider | the broker's `getPodcasts` and getFeed |
 | `v1:pace:<source>:<id>` | string | `Pace` (seconds) | 60 s | any bursty provider | the broker |
 | `v1:departures:<stop id>` | string, JSON | `StopDepartures` | 120 s | countdown's TfL and Entur providers | the arrivals panels, the broker's `getArrivals` |
 | `v1:weather:<weather key>` | string, JSON | `StoredForecast` | 1,800 s | countdown's weather provider | the weather panel, the broker's `getWeather` |
@@ -112,7 +113,7 @@ For TypeScript, `client.ts` has a function per route, named by its `operationId`
 (each answers `{ data, response }` for a 2xx and `{ error, response }` otherwise, and sends `client.secret` as the
 bearer where the route takes it), and a URL builder for each page a device sends a browser to,
 `registerTouchscreenUrl(server, { secret_hash, width, height, brightness_control, return_to })`,
-`deviceSettingsPageUrl(server, { device_id })` and `connectParcelPageUrl(server)`. It's plain `fetch`, typed by
+`deviceSettingsPageUrl(server, { device_id })`, `connectParcelPageUrl(server)` and `connectNrkPageUrl(server)`. It's plain `fetch`, typed by
 `store.d.ts`, with nothing to install; `generate.py` writes it with the rest, so a new route gets its function in the
 same PR.
 
@@ -156,8 +157,9 @@ body, so there is no model of an answer and no JSON library. Which routes get a 
 - a touchscreen's own: `display` (when its screen sleeps, how bright it is and its quiet hours), `lyrics` (the synced
   lyrics' size and alignment; a config from before it has none, which a touchscreen shows as medium, on the left),
   `holidays` (how many days ahead its notice board mentions the next holiday; none reads as a week),
-  `parcels` (whether its notice board has its owner's parcels) and `lights` (which Home Assistant lights it may
-  control: the instance's address and the entities; none reads as no light controls). That is all of it: a touchscreen keeps its own time, plays music itself and has no other
+  `parcels` (whether its notice board has its owner's parcels), `lights` (which Home Assistant lights it may
+  control: the instance's address and the entities; none reads as no light controls) and `podcasts` (whether its NRK
+  Podcasts tab shows, and the shows pinned to it; none reads as on with nothing pinned). That is all of it: a touchscreen keeps its own time, plays music itself and has no other
   integrations. Every setting a device has lives here on the server, but for its Wi-Fi, which stays
   on the device.
 

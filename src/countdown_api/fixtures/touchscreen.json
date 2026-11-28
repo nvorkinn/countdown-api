@@ -88,6 +88,12 @@
           "name": "Reading lamp"
         }
       ]
+    },
+    "podcasts": {
+      "enabled": true,
+      "pinned": [
+        "abels_taarn"
+      ]
     }
   },
   "save": {
@@ -161,6 +167,12 @@
           "name": "Reading lamp"
         }
       ]
+    },
+    "podcasts": {
+      "enabled": true,
+      "pinned": [
+        "abels_taarn"
+      ]
     }
   },
   "spotify_token": {
@@ -175,6 +187,9 @@
     },
     "spotify": {
       "linked": true
+    },
+    "nrk": {
+      "linked": true
     }
   },
   "soloist_code_request": {
@@ -188,7 +203,9 @@
     "code": "9f2c4e6a8b0d1f3a5c7e9b1d3f5a7c9e"
   },
   "soloist_keys": {
-    "people": ["wizzler"]
+    "people": [
+      "wizzler"
+    ]
   },
   "soloist_key_query": {
     "person": "wizzler"
@@ -342,6 +359,12 @@
             "entity_id": "switch.reading_lamp",
             "name": "Reading lamp"
           }
+        ]
+      },
+      "podcasts": {
+        "enabled": true,
+        "pinned": [
+          "abels_taarn"
         ]
       }
     }
