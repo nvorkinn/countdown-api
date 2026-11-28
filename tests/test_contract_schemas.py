@@ -62,8 +62,8 @@ def test_each_routes_schemas_security_and_examples_exist(path: str, method: str)
     operation = OPERATIONS[path, method]
     assert method in {"get", "post", "put", "delete"}
     # The devices' API, or the settings site's pages a touchscreen opens or sends a phone to: registering through the
-    # login, a device's settings, which it shows in a frame, saving a Parcel key, linking NRK or a person's Soloist key, and a
-    # person's Spotify sign-in on their phone, with the callback Spotify sends the phone back to.
+    # login, a device's settings, which it shows in a frame, saving a Parcel key, linking NRK or saving a person's
+    # Soloist key, and a person's Spotify sign-in on their phone, with the callback Spotify sends the phone back to.
     pages = {
         "/register",
         "/device/{device_id}",
