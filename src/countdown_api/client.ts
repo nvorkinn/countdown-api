@@ -191,19 +191,6 @@ export function locatePlace(
 }
 
 /**
- * Where a device is, from the Wi-Fi networks it can see, and the UK postcodes nearest it.
- *
- * `POST /api/devices/locate`, with the device's secret.
- */
-export function locateDevice(
-  client: Client,
-  body: operations["locateDevice"]["requestBody"]["content"]["application/json"],
-  options: RequestOptions = {},
-): Promise<Result<operations["locateDevice"]["responses"][200]["content"]["application/json"]>> {
-  return request(client, { ...options, method: "POST", path: "/api/devices/locate", body, secret: true, json: true });
-}
-
-/**
  * Where a postcode is, for a postcode the owner typed.
  *
  * `GET /api/postcodes/lookup`, with the device's secret.

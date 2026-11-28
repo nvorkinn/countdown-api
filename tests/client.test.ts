@@ -14,7 +14,6 @@ import {
   getSetup,
   getSoloistKey,
   listSoloistKeys,
-  locateDevice,
   lookupPostcode,
   nearPostcodes,
   putConfig,
@@ -150,23 +149,7 @@ test("a person's key is asked for and forgotten by the device's name for them", 
   assert.equal(removed.sent[0]?.url, "https://api.example.com/api/devices/soloist/keys/wizzler");
 });
 
-test("a setup wizard's location step sends the Wi-Fi it sees, a typed postcode, and a position", async () => {
-  const wifi = [
-    { mac_address: "a4:2b:b0:5c:1e:7f", signal_strength: -48 },
-    { mac_address: "9c:c9:eb:21:4d:10", signal_strength: -63, channel: 36 },
-  ];
-  const located = fakeServer(200, { latitude: 51.48471, longitude: -0.09192, accuracy: 28.5, postcodes: [] });
-  assert.equal((await locateDevice(located.client, { wifi_access_points: wifi })).data?.accuracy, 28.5);
-  assert.equal(located.sent[0]?.method, "POST");
-  assert.equal(located.sent[0]?.url, "https://api.example.com/api/devices/locate");
-  assert.equal(located.sent[0]?.headers.get("Authorization"), "Bearer s3cret-s3cret-s3cret");
-  assert.deepEqual(located.sent[0]?.body, { wifi_access_points: wifi });
-
-  const throttled = fakeServer(429, { error: "slow down" });
-  const { error, response } = await locateDevice(throttled.client, { wifi_access_points: wifi });
-  assert.deepEqual(error, { error: "slow down" });
-  assert.equal(response.status, 429);
-
+test("a setup wizard's location step sends a typed postcode and a position", async () => {
   const postcode = fakeServer(200, {
     postcode: "SE17 2PU",
     latitude: 51.484787,
